@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "fuel_type": "SPKLU Ultra Fast (DC 150-200 kW)",
+    "price_per_unit": 2900.0,
+    "unit": "kWh",
+    "updated_at": "2026-10-13T13:52:40.226038"
+  },
+  {
+    "id": 2,
+    "fuel_type": "PLN Diskon Malam (22.00-05.00)",
+    "price_per_unit": 1189.0,
+    "unit": "kWh",
+    "updated_at": "2026-10-13T13:52:40.226038"
+  },
+  {
+    "id": 3,
+    "fuel_type": "Pertalite (Subsidi)",
+    "price_per_unit": 10000.0,
+    "unit": "L",
+    "updated_at": "2026-09-24T06:55:36.543990"
+  },
+  {
+    "id": 4,
+    "fuel_type": "Pertamax (RON 92)",
+    "price_per_unit": 15950.0,
+    "unit": "L",
+    "updated_at": "2026-10-13T15:55:44.773323"
+  },
+  {
+    "id": 5,
+    "fuel_type": "Pertamax Turbo (RON 98)",
+    "price_per_unit": 16250.0,
+    "unit": "L",
+    "updated_at": "2026-09-24T06:55:36.543990"
+  },
+  {
+    "id": 6,
+    "fuel_type": "Dexlite (Cetane 51)",
+    "price_per_unit": 16100.0,
+    "unit": "L",
+    "updated_at": "2026-09-24T06:55:36.543990"
+  },
+  {
+    "id": 7,
+    "fuel_type": "PLN Rumah Reguler (7 kW)",
+    "price_per_unit": 1699.0,
+    "unit": "kWh",
+    "updated_at": "2026-10-13T13:52:40.226038"
+  },
+  {
+    "id": 8,
+    "fuel_type": "SPKLU Fast Charging (DC 50 kW)",
+    "price_per_unit": 2466.0,
+    "unit": "kWh",
+    "updated_at": "2026-10-13T13:52:54.770707"
+  }
+]

@@ -1,0 +1,75 @@
+---
+// kalkulator.astro — Halaman Dedicated Kalkulator Energi & Biaya EV (Theme: evnesia-v2)
+import BaseLayout from "../layouts/BaseLayout.astro";
+import EvHeroCalculator from "../components/EvHeroCalculator.astro";
+import ToolsBentoTiles from "../components/ToolsBentoTiles.astro";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+
+const totalCars = ELECTRIFIED_CARS_DATA.length;
+---
+
+<BaseLayout
+  title="Kalkulator Hemat Mobil Listrik vs Bensin & Tarif SPKLU | EVHub.id"
+  description="Hitung penghematan biaya harian & bulanan mobil listrik vs mobil bensin, serta simulasi tarif pengisian daya SPKLU PLN di Indonesia."
+  currentPath="/kalkulator"
+>
+  <div class="max-w-5xl mx-auto px-3.5 sm:px-6 pt-20 sm:pt-24 pb-28 sm:pb-16 space-y-8">
+    
+    <!-- Hero Header -->
+    <div class="text-center space-y-2 max-w-2xl mx-auto">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider">
+        <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+        Simulasi Finansial & Pengisian Daya
+      </div>
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+        Kalkulator Efisiensi Energi EV
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+        Bandingkan biaya operasional riil antara mobil bensin konvensional vs kendaraan listrik berbasis tarif PLN dan harga BBM terkini di Indonesia.
+      </p>
+    </div>
+
+    <!-- Calculator Widget -->
+    <EvHeroCalculator />
+
+    <!-- FAQ & Information Guide Bento Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm space-y-2">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          Tarif Listrik Rumah (Home Charging)
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Tarif PLN golongan R-1/R-2 (3.500 VA ke atas) adalah ~Rp 1.699,53 per kWh. Pengguna home charger juga berhak mendapatkan diskon 30% pada pukul 22.00 - 05.00 WIB (~Rp 1.189/kWh).
+        </p>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm space-y-2">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+          Tarif SPKLU Fast & Ultra Fast
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Tarif pengisian SPKLU publik di Indonesia rata-rata Rp 2.466 per kWh (AC/DC Medium-Fast) hingga Rp 2.900 per kWh untuk Ultra Fast Charging (150-200 kW) sesuai regulasi Kementerian ESDM.
+        </p>
+      </div>
+
+      <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm space-y-2">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          Efisiensi Rata-Rata (km / kWh)
+        </h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+          Mobil listrik perkotaan rata-rata mencatat efisiensi 6.5 - 8.5 km/kWh. Model SUV & Sedan menengah berkisar 5.5 - 6.8 km/kWh, setara konsumsi bensin 45 - 60 km per liter.
+        </p>
+      </div>
+    </div>
+
+    <!-- Other Tools -->
+    <div class="pt-6">
+      <h2 class="text-base font-bold text-slate-900 dark:text-white mb-3">Eksplorasi Tools Otomotif Lainnya</h2>
+      <ToolsBentoTiles />
+    </div>
+
+  </div>
+</BaseLayout>

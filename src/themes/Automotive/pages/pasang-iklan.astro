@@ -1,0 +1,47 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import StaticPage from "@/components/StaticPage.astro";
+import { fetchSiteConfigFromApi, portalDomainFromScope } from "@/lib/api";
+import { portalIdentityForDomain } from "@/site";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, params, url } = Astro.props;
+
+const siteConfig = await fetchSiteConfigFromApi(request);
+const identity = portalIdentityForDomain(portalDomainFromScope(request), siteConfig?.portal?.name);
+---
+
+<PageLayout
+  title="Pasang Iklan & Kerjasama"
+  lead="Jangkau pembaca profesional Insight melalui beragam format yang elegan dan efektif."
+>
+  <StaticPage request={request} slug="pasang-iklan">
+  <h2 id="format">Format yang tersedia</h2>
+  <ul>
+    <li><strong>Display ad</strong> — leaderboard, rectangle, dan in-article.</li>
+    <li>
+      <strong>Artikel kerjasama (advertorial)</strong> — konten bersponsor yang
+      ditulis profesional dan ditandai jelas dengan label “Bersponsor”.
+    </li>
+    <li><strong>Newsletter sponsorship</strong> — sisipan di buletin mingguan.</li>
+    <li><strong>Event &amp; riset bersama</strong> — kolaborasi jangka panjang.</li>
+  </ul>
+
+  <h2 id="prinsip">Prinsip kami</h2>
+  <p>
+    Kepercayaan pembaca adalah aset utama. Semua konten berbayar diberi label
+    transparan dan mengikuti <a href="/disclosure">pedoman konten bersponsor</a>.
+    Tautan komersial menggunakan atribut <code>rel="sponsored"</code>.
+  </p>
+
+  <h2 id="hubungi">Hubungi tim kemitraan</h2>
+  <p>
+    Minta <em>media kit</em> dan tarif terbaru melalui
+    <a href={`mailto:${identity.partnershipEmail}`}>{identity.partnershipEmail}</a>.
+  </p>
+  </StaticPage>
+</PageLayout>

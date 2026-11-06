@@ -1,0 +1,49 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+interface Props {
+  title: string;
+  lead?: string;
+  description?: string;
+}
+const { title, lead, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description ?? lead}>
+  <div class="mx-auto max-w-5xl px-4 pt-4 pb-16 space-y-6">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="Breadcrumb" class="text-xs font-semibold text-slate-400">
+      <ol class="flex items-center gap-2">
+        <li><a href="/" class="hover:text-cyan-500 transition">Beranda</a></li>
+        <li aria-hidden="true">/</li>
+        <li class="text-slate-900 dark:text-white font-bold truncate">{title}</li>
+      </ol>
+    </nav>
+
+    <!-- Liquid Glass Card Container -->
+    <div class="figma-liquid-glass rounded-3xl border border-slate-200/90 dark:border-white/20 p-6 sm:p-10 md:p-12 backdrop-blur-2xl shadow-xl relative overflow-hidden">
+      <!-- Ambient Glow Decorator -->
+      <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+
+      <!-- Header -->
+      <header class="border-b border-slate-200/60 dark:border-white/10 pb-8 space-y-3 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-[11px] font-bold uppercase tracking-wider">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+          Informasi Resmi EVnesia
+        </div>
+        <h1 class="font-headline font-black text-3xl sm:text-4xl lg:text-5xl text-slate-900 dark:text-white tracking-tight">
+          {title}
+        </h1>
+        {lead && (
+          <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-normal leading-relaxed max-w-3xl">
+            {lead}
+          </p>
+        )}
+      </header>
+
+      <!-- Content Body with Rich Prose -->
+      <div class="mt-8 prose prose-slate dark:prose-invert max-w-none relative z-10 prose-headings:font-headline prose-headings:font-bold prose-a:text-cyan-600 dark:prose-a:text-cyan-400 hover:prose-a:text-cyan-500 prose-a:no-underline hover:prose-a:underline prose-p:leading-relaxed">
+        <slot />
+      </div>
+    </div>
+  </div>
+</BaseLayout>

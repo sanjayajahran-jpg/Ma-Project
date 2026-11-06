@@ -1,0 +1,915 @@
+---
+// komparasi.astro — Halaman Komparasi Spesifikasi Kendaraan (Theme: evnesia-v2)
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+import ToolsBentoTiles from "../components/ToolsBentoTiles.astro";
+import { getBrandLogo } from "../lib/brand-utils";
+
+// Helper: Bersihkan nama mobil agar tidak duplikat dengan nama merek
+function cleanCarName(c: any): string {
+  if (!c) return "";
+  const brandClean = (c.brand || "").replace(/\s*\(.*?\)/, "").trim();
+  const nameClean = (c.name || "").trim();
+  if (nameClean.toLowerCase().startsWith(brandClean.toLowerCase())) {
+    return nameClean;
+  }
+  return `${brandClean} ${nameClean}`;
+}
+
+const ALL_CARS = ELECTRIFIED_CARS_DATA.map((c: any) => {
+  const brandClean = (c.brand || "").replace(/\s*\(.*?\)/, "").trim();
+  const displayName = cleanCarName(c);
+  const sp = c.specs || {};
+  const length = sp.length_mm;
+  const width = sp.width_mm;
+  const height = sp.height_mm;
+  const dimensions = length && width && height ? `${length} × ${width} × ${height} mm` : "-";
+
+  return {
+    slug: c.slug,
+    name: displayName,
+    rawName: c.name,
+    brand: brandClean,
+    fullBrand: c.brand,
+    brandLogo: getBrandLogo(c.brand),
+    price: c.price || `Rp ${c.priceVal || 500} Juta`,
+    priceVal: c.priceVal || 500,
+    hp: c.hp || "-",
+    torque: c.torque || "-",
+    acc: c.acc || "-",
+    topSpeed: sp.top_speed_kmh ? `${sp.top_speed_kmh} km/j` : "-",
+    battery: sp.battery_capacity_kwh ? `${sp.battery_capacity_kwh} kWh` : "-",
+    batteryType: sp.battery_type || "-",
+    range: sp.electric_range_km ? `${sp.electric_range_km} km` : (c.consumption || "-"),
+    engineType: (c.engineType || "bev").toUpperCase(),
+    engineLabel: c.engineLabel || (c.engineType === "hev" ? "🍃 Full Hybrid (HEV)" : c.engineType === "phev" ? "🔌 Plug-in Hybrid (PHEV)" : "⚡ Electric (BEV)"),
+    bodyType: (c.bodyType || "SUV").toUpperCase(),
+    image: c.img || "/images/cars/byd-seal.png",
+    transmission: sp.transmission || "Otomatis",
+    drivetrain: sp.drivetrain || "FWD",
+    seating: sp.seating_capacity ? `${sp.seating_capacity} Kursi` : (c.seating || "5 Kursi"),
+    charging: sp.dc_charging_time_min ? `${sp.dc_charging_time_min} mnt (DC)` : (c.charging || "-"),
+    v2l: sp.v2l_support || "Tidak",
+    dimensions,
+    wheelbase: sp.wheelbase_mm ? `${sp.wheelbase_mm} mm` : "-",
+    groundClearance: sp.ground_clearance_mm ? `${sp.ground_clearance_mm} mm` : "-",
+    trunk: sp.trunk_volume_liters ? `${sp.trunk_volume_liters} Liter` : "-",
+    adas: sp.adas_name || (sp.safety_adas_full ? "Level 2 ADAS" : "-"),
+    airbags: sp.airbag_count ? `${sp.airbag_count} Airbags` : "-",
+    assembly: sp.assembly_status || "CBU",
+    annualTax: sp.annual_tax_estimate || (c.engineType === "bev" ? "Rp 0 - 350.000 / thn (Bebas PKB)" : "Pajak Reguler"),
+    batteryWarranty: sp.warranty_battery || "8 Tahun / 160.000 km",
+    vehicleWarranty: sp.warranty_vehicle || "5 Tahun / 150.000 km",
+    video: c.video || {
+      youtube_id: c.youtube_video_id || "kYJvM9e2V34",
+      youtube_url: c.youtube_url || `https://www.youtube.com/watch?v=${c.youtube_video_id || "kYJvM9e2V34"}`,
+      search_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(displayName + " review indonesia")}`,
+      channel: "YouTube Review",
+      title: `Review ${displayName} Indonesia`,
+      duration: "18:00",
+      views_label: "300 rb tayangan"
+    },
+  };
+});
+
+// Brand list for quick filter chips in picker with logos
+const UNIQUE_BRANDS = Array.from(new Set(ALL_CARS.map(c => c.brand)))
+  .sort()
+  .map(b => ({
+    name: b,
+    logo: getBrandLogo(b)
+  }));
+
+// Preset komparasi populer
+const PRESETS = [
+  {
+    title: "MG S5 EV vs Omoda E5",
+    car1Slug: "mg-s5-ev",
+    car2Slug: "chery-omoda-e5",
+  },
+  {
+    title: "Sedan Premium: BYD Seal vs Ioniq 6",
+    car1Slug: "byd-seal",
+    car2Slug: "hyundai-ioniq-6",
+  },
+  {
+    title: "Family EV: BYD M6 vs Aletra L8",
+    car1Slug: "byd-m6",
+    car2Slug: "aletra-l8",
+  },
+  {
+    title: "Compact City: Binguo EV vs Neta V-II",
+    car1Slug: "wuling-binguo-ev",
+    car2Slug: "neta-v-ii",
+  },
+];
+
+// Resolusi parameter URL (car1, car_a, slug, car2, car_b)
+const urlCar1 = Astro.url.searchParams.get("car1") || Astro.url.searchParams.get("car_a") || Astro.url.searchParams.get("slug");
+const urlCar2 = Astro.url.searchParams.get("car2") || Astro.url.searchParams.get("car_b");
+
+const initialCar1 = (urlCar1 && ALL_CARS.find(c => c.slug === urlCar1)) || ALL_CARS.find(c => c.slug === "mg-s5-ev") || ALL_CARS[0];
+
+// Cari mobil pembanding yang relevan jika car2 tidak diisi secara eksplisit
+const initialCar2 = (urlCar2 && ALL_CARS.find(c => c.slug === urlCar2)) ||
+  ALL_CARS.find(c => c.slug !== initialCar1.slug && (c.bodyType === initialCar1.bodyType || Math.abs(c.priceVal - initialCar1.priceVal) < 150)) ||
+  ALL_CARS.find(c => c.slug !== initialCar1.slug) ||
+  ALL_CARS[1];
+---
+
+<BaseLayout
+  title={`Komparasi ${initialCar1.name} vs ${initialCar2.name} | EVHub.id`}
+  description="Bandingkan harga OTR, jarak tempuh baterai, tenaga motor listrik, dimensi, dan fitur keselamatan ADAS secara berdampingan."
+  currentPath="/komparasi"
+>
+  <div class="max-w-5xl mx-auto px-3.5 sm:px-6 pt-14 sm:pt-16 pb-28 sm:pb-16 space-y-6 sm:space-y-8">
+    
+    <!-- Hero Header -->
+    <div class="text-center space-y-2 max-w-2xl mx-auto">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider">
+        <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+        Head-to-Head Comparison
+      </div>
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+        Komparasi Spesifikasi Kendaraan
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+        Bandingkan 2 mobil listrik atau hybrid secara berdampingan. Klik tombol ganti untuk mencari dari 146 unit mobil resmi di Indonesia.
+      </p>
+    </div>
+
+    <!-- Quick Preset Chips -->
+    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+      <span class="text-xs font-bold text-slate-400 shrink-0">Preset:</span>
+      {PRESETS.map((p) => (
+        <button
+          type="button"
+          class="preset-compare-btn shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-cyan-500 hover:text-cyan-600 dark:hover:text-cyan-400 transition-all cursor-pointer shadow-2xs"
+          data-car1={p.car1Slug}
+          data-car2={p.car2Slug}
+        >
+          {p.title}
+        </button>
+      ))}
+    </div>
+
+    <!-- Car Selector Row (Premium Interactive Cards) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- Mobil A Card -->
+      <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm space-y-3.5 relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-sm"></span>
+            <span class="text-xs font-black text-cyan-600 dark:text-cyan-400 uppercase tracking-wider">Kendaraan A</span>
+          </div>
+          <button
+            type="button"
+            id="btn-open-picker-1"
+            class="touch-spring inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 border border-cyan-500/25 hover:border-cyan-500/50 text-xs font-bold transition-all cursor-pointer"
+            title="Ganti Kendaraan A"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span>Ganti Mobil A</span>
+          </button>
+        </div>
+        
+        <!-- Preview Display A -->
+        <div id="preview-car-1" class="text-center space-y-2.5 pt-1">
+          <div class="aspect-video w-full max-w-72 mx-auto rounded-xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-3 border border-slate-100 dark:border-white/5 relative group-hover:scale-102 transition-transform duration-300">
+            <img
+              id="img-car-1"
+              src={initialCar1.image}
+              alt={initialCar1.name}
+              class="max-h-full max-w-full object-contain drop-shadow-md"
+              loading="eager"
+              onerror="this.onerror=null; this.src='/images/cars/default-car.png';"
+            />
+            <span id="badge-engine-1" class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-cyan-500/15 border border-cyan-400/30 text-cyan-700 dark:text-cyan-300">
+              {initialCar1.engineType}
+            </span>
+          </div>
+          <div class="space-y-0.5">
+            <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white" id="name-car-1">
+              {initialCar1.name}
+            </h2>
+            <div class="text-sm font-extrabold text-cyan-600 dark:text-cyan-400 font-mono" id="price-car-1">
+              {initialCar1.price}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobil B Card -->
+      <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm space-y-3.5 relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm"></span>
+            <span class="text-xs font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Kendaraan B</span>
+          </div>
+          <button
+            type="button"
+            id="btn-open-picker-2"
+            class="touch-spring inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 hover:border-emerald-500/50 text-xs font-bold transition-all cursor-pointer"
+            title="Ganti Kendaraan B"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span>Ganti Mobil B</span>
+          </button>
+        </div>
+
+        <!-- Preview Display B -->
+        <div id="preview-car-2" class="text-center space-y-2.5 pt-1">
+          <div class="aspect-video w-full max-w-72 mx-auto rounded-xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-3 border border-slate-100 dark:border-white/5 relative group-hover:scale-102 transition-transform duration-300">
+            <img
+              id="img-car-2"
+              src={initialCar2.image}
+              alt={initialCar2.name}
+              class="max-h-full max-w-full object-contain drop-shadow-md"
+              loading="eager"
+              onerror="this.onerror=null; this.src='/images/cars/default-car.png';"
+            />
+            <span id="badge-engine-2" class="absolute bottom-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-emerald-500/15 border border-emerald-400/30 text-emerald-700 dark:text-emerald-300">
+              {initialCar2.engineType}
+            </span>
+          </div>
+          <div class="space-y-0.5">
+            <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white" id="name-car-2">
+              {initialCar2.name}
+            </h2>
+            <div class="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 font-mono" id="price-car-2">
+              {initialCar2.price}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Side-by-Side Specs Comparison Table (25+ Parameter Lengkap Terstruktur) -->
+    <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm overflow-hidden">
+      <div class="p-4 border-b border-slate-100 dark:border-white/10 bg-slate-50/80 dark:bg-slate-950/80 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white">Matriks Perbandingan Spesifikasi Teknis</h2>
+        </div>
+        <span class="text-[10px] text-slate-400 font-mono">Berdasarkan Data & Brosur Resmi APM</span>
+      </div>
+
+      <!-- Sticky Column Indicator on Mobile -->
+      <div class="sticky top-14 sm:top-16 z-20 bg-slate-950/95 backdrop-blur-md border-b border-white/10 px-3 py-2 grid grid-cols-12 items-center text-xs shadow-md">
+        <div class="col-span-4 text-[10px] uppercase font-bold text-slate-400">Parameter</div>
+        <div class="col-span-4 font-bold text-white text-[11px] truncate flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
+          <span id="sticky-name-car-1" class="truncate">{initialCar1.name}</span>
+        </div>
+        <div class="col-span-4 font-bold text-white text-[11px] truncate flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+          <span id="sticky-name-car-2" class="truncate">{initialCar2.name}</span>
+        </div>
+      </div>
+
+      <div class="divide-y divide-slate-100 dark:divide-white/10 text-xs">
+        
+        <!-- ========================================== -->
+        <!-- SEKSI 1: RINGKASAN & HARGA OTR -->
+        <!-- ========================================== -->
+        <div class="px-3.5 py-2.5 bg-slate-100/70 dark:bg-slate-950/70 font-extrabold text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          1. Harga & Identitas Resmi
+        </div>
+
+        <!-- Tipe Powertrain -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Tipe Kendaraan</div>
+          <div id="spec-engine-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.engineLabel}</div>
+          <div id="spec-engine-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.engineLabel}</div>
+        </div>
+
+        <!-- Harga OTR -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Estimasi Harga OTR</div>
+          <div id="spec-price-1" class="col-span-4 font-bold text-cyan-600 dark:text-cyan-400 font-mono">{initialCar1.price}</div>
+          <div id="spec-price-2" class="col-span-4 font-bold text-emerald-600 dark:text-emerald-400 font-mono">{initialCar2.price}</div>
+        </div>
+
+        <!-- Tipe Bodi -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Tipe Bodi (Segment)</div>
+          <div id="spec-body-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.bodyType}</div>
+          <div id="spec-body-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.bodyType}</div>
+        </div>
+
+        <!-- Status Perakitan -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Status Produksi / Perakitan</div>
+          <div id="spec-assembly-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.assembly}</div>
+          <div id="spec-assembly-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.assembly}</div>
+        </div>
+
+        <!-- Pajak PKB Tahunan -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Estimasi Pajak PKB Tahunan</div>
+          <div id="spec-tax-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.annualTax}</div>
+          <div id="spec-tax-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.annualTax}</div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SEKSI 2: PERFORMA & POWERTRAIN -->
+        <!-- ========================================== -->
+        <div class="px-3.5 py-2.5 bg-slate-100/70 dark:bg-slate-950/70 font-extrabold text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          2. Performa & Motor Penggerak
+        </div>
+
+        <!-- Tenaga Maksimum -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Tenaga Maksimum</div>
+          <div id="spec-hp-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.hp}</div>
+          <div id="spec-hp-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.hp}</div>
+        </div>
+
+        <!-- Torsi Maksimum -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Torsi Puncak</div>
+          <div id="spec-torque-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.torque}</div>
+          <div id="spec-torque-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.torque}</div>
+        </div>
+
+        <!-- Akselerasi 0-100 -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Akselerasi 0-100 km/j</div>
+          <div id="spec-acc-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.acc}</div>
+          <div id="spec-acc-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.acc}</div>
+        </div>
+
+        <!-- Kecepatan Puncak -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Kecepatan Maksimum</div>
+          <div id="spec-speed-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.topSpeed}</div>
+          <div id="spec-speed-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.topSpeed}</div>
+        </div>
+
+        <!-- Penggerak Roda -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Sistem Penggerak</div>
+          <div id="spec-drive-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.drivetrain}</div>
+          <div id="spec-drive-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.drivetrain}</div>
+        </div>
+
+        <!-- Transmisi -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Transmisi</div>
+          <div id="spec-trans-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.transmission}</div>
+          <div id="spec-trans-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.transmission}</div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SEKSI 3: BATERAI & PENGISIAN DAYA -->
+        <!-- ========================================== -->
+        <div class="px-3.5 py-2.5 bg-slate-100/70 dark:bg-slate-950/70 font-extrabold text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          3. Baterai & Pengisian Daya
+        </div>
+
+        <!-- Jarak Tempuh (Range) -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Jarak Tempuh (Range)</div>
+          <div id="spec-range-1" class="col-span-4 font-bold text-cyan-600 dark:text-cyan-400">{initialCar1.range}</div>
+          <div id="spec-range-2" class="col-span-4 font-bold text-emerald-600 dark:text-emerald-400">{initialCar2.range}</div>
+        </div>
+
+        <!-- Kapasitas Baterai -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Kapasitas Baterai</div>
+          <div id="spec-battery-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.battery}</div>
+          <div id="spec-battery-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.battery}</div>
+        </div>
+
+        <!-- Tipe Sel Baterai -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Teknologi Sel Baterai</div>
+          <div id="spec-batt-type-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.batteryType}</div>
+          <div id="spec-batt-type-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.batteryType}</div>
+        </div>
+
+        <!-- Fast Charging DC -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Fast Charging DC</div>
+          <div id="spec-chg-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.charging}</div>
+          <div id="spec-chg-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.charging}</div>
+        </div>
+
+        <!-- Fitur V2L -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Dukungan V2L (Output Listrik)</div>
+          <div id="spec-v2l-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.v2l}</div>
+          <div id="spec-v2l-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.v2l}</div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SEKSI 4: DIMENSI & KAPASITAS RUANG -->
+        <!-- ========================================== -->
+        <div class="px-3.5 py-2.5 bg-slate-100/70 dark:bg-slate-950/70 font-extrabold text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          4. Dimensi & Kenyamanan Ruang
+        </div>
+
+        <!-- Dimensi Eksterior -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Dimensi (P × L × T)</div>
+          <div id="spec-dim-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.dimensions}</div>
+          <div id="spec-dim-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.dimensions}</div>
+        </div>
+
+        <!-- Jarak Sumbu Roda -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Jarak Sumbu Roda (Wheelbase)</div>
+          <div id="spec-wheelbase-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.wheelbase}</div>
+          <div id="spec-wheelbase-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.wheelbase}</div>
+        </div>
+
+        <!-- Ground Clearance -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Ground Clearance</div>
+          <div id="spec-gc-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.groundClearance}</div>
+          <div id="spec-gc-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.groundClearance}</div>
+        </div>
+
+        <!-- Kapasitas Kursi -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Kapasitas Tempat Duduk</div>
+          <div id="spec-seat-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.seating}</div>
+          <div id="spec-seat-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.seating}</div>
+        </div>
+
+        <!-- Volume Bagasi -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Volume Bagasi</div>
+          <div id="spec-trunk-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.trunk}</div>
+          <div id="spec-trunk-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.trunk}</div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SEKSI 5: KESELAMATAN & GARANSI RESMI -->
+        <!-- ========================================== -->
+        <div class="px-3.5 py-2.5 bg-slate-100/70 dark:bg-slate-950/70 font-extrabold text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+          5. Keselamatan & Garansi Resmi APM
+        </div>
+
+        <!-- Sistem ADAS -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Fitur Keselamatan ADAS</div>
+          <div id="spec-adas-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.adas}</div>
+          <div id="spec-adas-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.adas}</div>
+        </div>
+
+        <!-- Jumlah Airbag -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Jumlah Kantung Udara</div>
+          <div id="spec-airbags-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.airbags}</div>
+          <div id="spec-airbags-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.airbags}</div>
+        </div>
+
+        <!-- Garansi Baterai -->
+        <div class="grid grid-cols-12 p-3 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Garansi Baterai Traksi</div>
+          <div id="spec-gar-batt-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.batteryWarranty}</div>
+          <div id="spec-gar-batt-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.batteryWarranty}</div>
+        </div>
+
+        <!-- Garansi Kendaraan -->
+        <div class="grid grid-cols-12 p-3 items-center bg-slate-50/50 dark:bg-slate-950/40">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Garansi Umum Kendaraan</div>
+          <div id="spec-gar-veh-1" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar1.vehicleWarranty}</div>
+          <div id="spec-gar-veh-2" class="col-span-4 font-bold text-slate-900 dark:text-white">{initialCar2.vehicleWarranty}</div>
+        </div>
+
+        <!-- Action Links -->
+        <div class="grid grid-cols-12 p-4 items-center">
+          <div class="col-span-4 font-semibold text-slate-500 dark:text-slate-400">Spesifikasi Detail</div>
+          <div class="col-span-4">
+            <a id="link-detail-1" href={`/mobil/${initialCar1.slug}`} class="px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs inline-flex items-center gap-1 shadow-sm transition">
+              Buka Spek {initialCar1.brand} →
+            </a>
+          </div>
+          <div class="col-span-4">
+            <a id="link-detail-2" href={`/mobil/${initialCar2.slug}`} class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs inline-flex items-center gap-1 shadow-sm transition">
+              Buka Spek {initialCar2.brand} →
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Other Tools -->
+    <div class="pt-6">
+      <h2 class="text-base font-bold text-slate-900 dark:text-white mb-3">Fitur & Tools Otomotif Terkait</h2>
+      <ToolsBentoTiles />
+    </div>
+
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL SEARCHABLE CAR PICKER (MODERN BOTTOM SHEET / DIALOG) -->
+  <!-- ======================================================== -->
+  <!-- ======================================================== -->
+  <!-- MODAL SEARCHABLE CAR PICKER (FROSTED GLASS OVERLAY) -->
+  <!-- ======================================================== -->
+  <div
+    id="car-picker-modal"
+    class="fixed inset-0 z-50 hidden flex-col justify-center items-center p-3 sm:p-6 bg-slate-950/75 backdrop-blur-xl sm:backdrop-blur-2xl transition-all duration-300"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+  >
+    <div
+      id="car-picker-panel"
+      class="w-full max-w-2xl max-h-[85vh] rounded-3xl bg-slate-900/90 dark:bg-slate-950/90 border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.85)] backdrop-blur-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+    >
+      <!-- Modal Header -->
+      <div class="p-3.5 sm:p-4.5 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-md">
+        <div>
+          <h3 id="modal-title" class="text-sm sm:text-base font-black text-white flex items-center gap-2">
+            <span>Pilih Mobil Pembanding</span>
+            <span id="modal-target-badge" class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
+              Kendaraan A
+            </span>
+          </h3>
+          <p class="text-[10px] sm:text-[11px] text-slate-400 mt-0.5">
+            Pilih dari 146 unit mobil listrik & hybrid resmi Indonesia
+          </p>
+        </div>
+        <button
+          type="button"
+          id="btn-close-picker"
+          class="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 hover:text-white bg-white/10 hover:bg-white/20 border border-white/10 transition cursor-pointer active:scale-95"
+          aria-label="Tutup"
+        >
+          ✕
+        </button>
+      </div>
+
+      <!-- Live Search & Powertrain Chips -->
+      <div class="p-3 sm:p-4 border-b border-white/10 space-y-2.5 bg-black/25 backdrop-blur-md">
+        <!-- Search Input -->
+        <div class="relative">
+          <input
+            type="text"
+            id="picker-search-input"
+            placeholder="Ketik nama atau merek mobil (misal: MG S5, Seal, Ioniq, Omoda...)"
+            class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-950/80 border border-white/15 text-xs sm:text-sm text-white placeholder-slate-400 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/30 transition shadow-inner"
+            autocomplete="off"
+          />
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        <!-- Filter Chips: Powertrain & Brands -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-xs">
+          <button type="button" class="picker-filter-btn shrink-0 px-2.5 py-1 rounded-lg font-bold border transition text-[11px] bg-cyan-600 text-white border-cyan-600 shadow-sm" data-filter="all">
+            Semua ({ALL_CARS.length})
+          </button>
+          <button type="button" class="picker-filter-btn shrink-0 px-2.5 py-1 rounded-lg font-bold border transition text-[11px] bg-white/5 text-slate-300 border-white/10 hover:border-cyan-500" data-filter="bev">
+            ⚡ BEV (Murni Listrik)
+          </button>
+          <button type="button" class="picker-filter-btn shrink-0 px-2.5 py-1 rounded-lg font-bold border transition text-[11px] bg-white/5 text-slate-300 border-white/10 hover:border-cyan-500" data-filter="hev">
+            🍃 Hybrid (HEV)
+          </button>
+          <button type="button" class="picker-filter-btn shrink-0 px-2.5 py-1 rounded-lg font-bold border transition text-[11px] bg-white/5 text-slate-300 border-white/10 hover:border-cyan-500" data-filter="phev">
+            🔌 PHEV
+          </button>
+        </div>
+
+        <!-- Popular Brand Pills with Official Logos -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 text-[11px]">
+          <span class="text-slate-400 font-bold shrink-0 text-[10px] mr-0.5">Merek:</span>
+          <button
+            type="button"
+            class="brand-filter-pill shrink-0 px-2.5 py-1 rounded-xl font-bold bg-cyan-500/25 text-cyan-300 border border-cyan-400/50 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+            data-brand="all"
+          >
+            <span>Semua</span>
+          </button>
+          {UNIQUE_BRANDS.map(b => (
+            <button
+              type="button"
+              class="brand-filter-pill shrink-0 px-2 py-1 rounded-xl font-bold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 hover:border-cyan-400/50 transition-all flex items-center gap-1.5 cursor-pointer"
+              data-brand={b.name.toLowerCase()}
+            >
+              <div class="w-4 h-4 rounded-full bg-white p-0.5 flex items-center justify-center shrink-0 shadow-xs border border-slate-200">
+                <img src={b.logo} alt={b.name} class="w-full h-full object-contain" loading="lazy" />
+              </div>
+              <span>{b.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Car Grid List (Scrollable Glass Cards) -->
+      <div
+        id="picker-cars-container"
+        class="flex-1 overflow-y-auto p-3 sm:p-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[55vh]"
+      >
+        {ALL_CARS.map((car) => (
+          <div
+            class="picker-car-item group p-2.5 rounded-2xl border border-white/10 bg-slate-900/60 hover:bg-slate-800/80 hover:border-cyan-400/60 transition-all duration-200 cursor-pointer flex items-center gap-3 shadow-xs"
+            data-slug={car.slug}
+            data-name={car.name.toLowerCase()}
+            data-brand={car.brand.toLowerCase()}
+            data-engine={car.engineType.toLowerCase()}
+          >
+            <!-- Car Image Box -->
+            <div class="w-18 h-13 rounded-xl bg-slate-950/80 p-1 flex items-center justify-center shrink-0 border border-white/10 relative overflow-hidden">
+              <img src={car.image} alt={car.name} class="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform" loading="lazy" />
+            </div>
+
+            <!-- Car Info with Official Brand Logo Pill -->
+            <div class="overflow-hidden min-w-0 flex-1 space-y-1">
+              <div class="flex items-center gap-1.5">
+                <div class="w-4.5 h-4.5 rounded-full bg-white p-0.5 flex items-center justify-center shrink-0 shadow-xs border border-slate-200">
+                  <img src={car.brandLogo} alt={`Logo ${car.brand}`} class="w-full h-full object-contain" />
+                </div>
+                <span class="text-[10px] font-black uppercase text-cyan-400 truncate tracking-wide">{car.brand}</span>
+                <span class="text-[8px] font-extrabold px-1.5 py-0.2 rounded-full bg-white/10 text-slate-300 uppercase shrink-0 border border-white/5">{car.engineType}</span>
+              </div>
+              <h4 class="text-xs sm:text-sm font-bold text-white truncate group-hover:text-cyan-300 transition-colors">
+                {car.name}
+              </h4>
+              <div class="flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400 font-mono">
+                <span class="font-bold text-emerald-400">{car.price}</span>
+                <span class="text-slate-400">{car.range}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- No Results State -->
+      <div id="picker-empty-state" class="hidden p-8 text-center space-y-2">
+        <p class="text-xs font-bold text-slate-400">Tidak ada mobil yang cocok dengan pencarian.</p>
+        <button type="button" id="btn-reset-picker-search" class="text-xs text-cyan-400 font-bold underline cursor-pointer">
+          Reset Filter & Pencarian
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</BaseLayout>
+
+<script is:inline define:vars={{ ALL_CARS, initialCar1Slug: initialCar1.slug, initialCar2Slug: initialCar2.slug }}>
+  function initComparator() {
+    const carMap = new Map(ALL_CARS.map(c => [c.slug, c]));
+    
+    // State mobil yang sedang aktif
+    let currentCar1 = initialCar1Slug;
+    let currentCar2 = initialCar2Slug;
+
+    // Check query params dynamically in browser
+    const urlParams = new URLSearchParams(window.location.search);
+    const q1 = urlParams.get('car1') || urlParams.get('car_a') || urlParams.get('slug');
+    const q2 = urlParams.get('car2') || urlParams.get('car_b');
+    if (q1 && carMap.has(q1)) currentCar1 = q1;
+    if (q2 && carMap.has(q2)) currentCar2 = q2;
+
+    // Target modal aktif (1 = Kendaraan A, 2 = Kendaraan B)
+    let activeModalTarget = 1;
+
+    // Elements
+    const modal = document.getElementById('car-picker-modal');
+    const modalTitle = document.getElementById('modal-target-badge');
+    const btnClose = document.getElementById('btn-close-picker');
+    const searchInput = document.getElementById('picker-search-input');
+    const carsContainer = document.getElementById('picker-cars-container');
+    const emptyState = document.getElementById('picker-empty-state');
+    const resetSearchBtn = document.getElementById('btn-reset-picker-search');
+
+    function updateUrlState() {
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.set('car1', currentCar1);
+        u.searchParams.set('car2', currentCar2);
+        window.history.replaceState({}, '', u.toString());
+      } catch {}
+    }
+
+    function updateCarDisplay(num, slug) {
+      const car = carMap.get(slug);
+      if (!car) return;
+
+      if (num === 1) currentCar1 = slug;
+      if (num === 2) currentCar2 = slug;
+
+      // Update Card Preview
+      const imgEl = document.getElementById(`img-car-${num}`);
+      if (imgEl) {
+        imgEl.src = car.image;
+        imgEl.alt = car.name;
+      }
+      const nameEl = document.getElementById(`name-car-${num}`);
+      if (nameEl) nameEl.textContent = car.name;
+      const stickyNameEl = document.getElementById(`sticky-name-car-${num}`);
+      if (stickyNameEl) stickyNameEl.textContent = car.name;
+      const priceEl = document.getElementById(`price-car-${num}`);
+      if (priceEl) priceEl.textContent = car.price;
+      const badgeEl = document.getElementById(`badge-engine-${num}`);
+      if (badgeEl) badgeEl.textContent = car.engineType;
+
+      // Update Technical Table
+      const setTxt = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val || "-";
+      };
+
+      setTxt(`spec-engine-${num}`, car.engineLabel);
+      setTxt(`spec-price-${num}`, car.price);
+      setTxt(`spec-body-${num}`, car.bodyType);
+      setTxt(`spec-assembly-${num}`, car.assembly);
+      setTxt(`spec-tax-${num}`, car.annualTax);
+
+      setTxt(`spec-hp-${num}`, car.hp);
+      setTxt(`spec-torque-${num}`, car.torque);
+      setTxt(`spec-acc-${num}`, car.acc);
+      setTxt(`spec-speed-${num}`, car.topSpeed);
+      setTxt(`spec-drive-${num}`, car.drivetrain);
+      setTxt(`spec-trans-${num}`, car.transmission);
+
+      setTxt(`spec-range-${num}`, car.range);
+      setTxt(`spec-battery-${num}`, car.battery);
+      setTxt(`spec-batt-type-${num}`, car.batteryType);
+      setTxt(`spec-chg-${num}`, car.charging);
+      setTxt(`spec-v2l-${num}`, car.v2l);
+
+      setTxt(`spec-dim-${num}`, car.dimensions);
+      setTxt(`spec-wheelbase-${num}`, car.wheelbase);
+      setTxt(`spec-gc-${num}`, car.groundClearance);
+      setTxt(`spec-seat-${num}`, car.seating);
+      setTxt(`spec-trunk-${num}`, car.trunk);
+
+      setTxt(`spec-adas-${num}`, car.adas);
+      setTxt(`spec-airbags-${num}`, car.airbags);
+      setTxt(`spec-gar-batt-${num}`, car.batteryWarranty);
+      setTxt(`spec-gar-veh-${num}`, car.vehicleWarranty);
+
+      const linkEl = document.getElementById(`link-detail-${num}`);
+      if (linkEl) {
+        linkEl.href = `/mobil/${car.slug}`;
+        linkEl.textContent = `Buka Spek ${car.brand} →`;
+      }
+
+      updateUrlState();
+    }
+
+    // Modal Handlers
+    function openPicker(targetNum) {
+      activeModalTarget = targetNum;
+      if (modalTitle) {
+        modalTitle.textContent = targetNum === 1 ? 'Kendaraan A' : 'Kendaraan B';
+        modalTitle.className = targetNum === 1
+          ? 'px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
+          : 'px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/15 text-emerald-600 dark:text-emerald-400';
+      }
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+      }
+      if (searchInput) {
+        searchInput.value = '';
+        setTimeout(() => searchInput.focus(), 100);
+      }
+      filterCars();
+    }
+
+    function closePicker() {
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = '';
+      }
+    }
+
+    // Attach Open Trigger Buttons
+    const btnOpen1 = document.getElementById('btn-open-picker-1');
+    const btnOpen2 = document.getElementById('btn-open-picker-2');
+    if (btnOpen1) btnOpen1.addEventListener('click', () => openPicker(1));
+    if (btnOpen2) btnOpen2.addEventListener('click', () => openPicker(2));
+
+    if (btnClose) btnClose.addEventListener('click', closePicker);
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closePicker();
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePicker();
+    });
+
+    // Filtering logic
+    let activeEngineFilter = 'all';
+    let activeBrandFilter = 'all';
+
+    function filterCars() {
+      const query = (searchInput?.value || '').toLowerCase().trim();
+      const items = document.querySelectorAll('.picker-car-item');
+      let visibleCount = 0;
+
+      items.forEach((item) => {
+        const name = item.dataset.name || '';
+        const brand = item.dataset.brand || '';
+        const engine = item.dataset.engine || '';
+
+        const matchQuery = !query || name.includes(query) || brand.includes(query);
+        const matchEngine = activeEngineFilter === 'all' || engine.includes(activeEngineFilter);
+        const matchBrand = activeBrandFilter === 'all' || brand === activeBrandFilter;
+
+        if (matchQuery && matchEngine && matchBrand) {
+          item.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      if (emptyState) {
+        if (visibleCount === 0) {
+          emptyState.classList.remove('hidden');
+        } else {
+          emptyState.classList.add('hidden');
+        }
+      }
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', filterCars);
+    }
+
+    // Filter Buttons (Powertrain)
+    document.querySelectorAll('.picker-filter-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.picker-filter-btn').forEach(b => {
+          b.className = 'picker-filter-btn shrink-0 px-2.5 py-1 rounded-lg font-bold border transition text-[11px] bg-white/5 text-slate-300 border-white/10 hover:border-cyan-500';
+        });
+        e.currentTarget.className = 'picker-filter-btn shrink-0 px-2.5 py-1 rounded-lg font-bold border transition text-[11px] bg-cyan-600 text-white border-cyan-600 shadow-sm';
+        activeEngineFilter = e.currentTarget.dataset.filter || 'all';
+        filterCars();
+      });
+    });
+
+    // Brand Pills
+    document.querySelectorAll('.brand-filter-pill').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.brand-filter-pill').forEach(b => {
+          b.className = 'brand-filter-pill shrink-0 px-2 py-1 rounded-xl font-bold bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 hover:border-cyan-400/50 transition-all flex items-center gap-1.5 cursor-pointer';
+        });
+        e.currentTarget.className = 'brand-filter-pill shrink-0 px-2.5 py-1 rounded-xl font-bold bg-cyan-500/25 text-cyan-300 border border-cyan-400/50 transition-all flex items-center gap-1.5 cursor-pointer shadow-xs';
+        activeBrandFilter = e.currentTarget.dataset.brand || 'all';
+        filterCars();
+      });
+    });
+
+    if (resetSearchBtn) {
+      resetSearchBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        activeEngineFilter = 'all';
+        activeBrandFilter = 'all';
+        filterCars();
+      });
+    }
+
+    // Car Item Click inside Picker
+    document.querySelectorAll('.picker-car-item').forEach((item) => {
+      item.addEventListener('click', (e) => {
+        const slug = e.currentTarget.dataset.slug;
+        if (!slug) return;
+        updateCarDisplay(activeModalTarget, slug);
+        closePicker();
+      });
+    });
+
+    // Quick Presets
+    document.querySelectorAll('.preset-compare-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const c1 = e.currentTarget.dataset.car1;
+        const c2 = e.currentTarget.dataset.car2;
+        if (c1) updateCarDisplay(1, c1);
+        if (c2) updateCarDisplay(2, c2);
+      });
+    });
+
+    // Initial render from resolved cars
+    updateCarDisplay(1, currentCar1);
+    updateCarDisplay(2, currentCar2);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initComparator);
+  } else {
+    initComparator();
+  }
+  document.addEventListener('astro:after-swap', initComparator);
+</script>

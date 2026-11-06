@@ -1,0 +1,80 @@
+---
+// NewsRail.astro — 1-Row Compact News Rail (Elevated Modern Editorial Style)
+interface Props {
+  articles?: any[];
+}
+
+const { articles = [] } = Astro.props;
+const displayArticles = articles.slice(0, 6);
+---
+
+<section class="my-4 sm:my-6" aria-label="Berita Pilihan">
+  <div class="mb-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-1.5">
+      <span class="w-1.5 h-3.5 rounded-full bg-sky-500 dark:bg-sky-400"></span>
+      <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
+        Berita & Ulasan Terbaru
+      </h2>
+    </div>
+    <a href="/kategori/berita" class="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-500 transition-colors flex items-center gap-1">
+      <span>Portal Berita</span>
+      <span>→</span>
+    </a>
+  </div>
+
+  <div class="rail py-1">
+    {displayArticles.map((art: any) => {
+      const catSlug = art.category?.slug || (typeof art.category === 'string' ? art.category.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'berita');
+      const catName = art.category?.name || art.category || "Berita";
+      const artHref = `/${catSlug}/${art.slug || art.id}`;
+      const imgUrl = art.cover || art.image || art.cover_image || "/images/cars/default-car.png";
+      const pubDate = art.publishedAt || art.published_at;
+      const formattedDate = pubDate 
+        ? new Date(pubDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+        : "Terkini";
+
+      return (
+        <a
+          href={artHref}
+          class="snap-start shrink-0 w-[min(76%,280px)] sm:w-72 rounded-2xl p-2.5 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/10 hover:border-sky-400/60 dark:hover:border-sky-400/60 shadow-xs hover:shadow-md dark:shadow-none active:scale-97 transition-all flex flex-col justify-between group"
+        >
+          <div class="w-full aspect-video rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 border border-slate-100 dark:border-white/5 relative mb-2.5">
+            <img
+              src={imgUrl}
+              alt={art.title}
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              loading="lazy"
+              onerror="this.onerror=null; this.src='/images/cars/default-car.png';"
+            />
+            
+            <div class="absolute top-2 left-2 flex items-center gap-1">
+              <span class="px-2 py-0.5 rounded-full bg-white/95 dark:bg-slate-950/85 backdrop-blur-md text-[9px] font-bold text-sky-700 dark:text-sky-300 border border-slate-200/60 dark:border-white/15 shadow-xs">
+                {catName}
+              </span>
+            </div>
+
+            <span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[9px] font-mono text-white/90">
+              {art.readingTime || 3} mnt baca
+            </span>
+          </div>
+          
+          <div class="space-y-2 flex-1 flex flex-col justify-between">
+            <h3 class="text-xs sm:text-[13px] font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors line-clamp-2 leading-snug">
+              {art.title}
+            </h3>
+
+            <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-white/5">
+              <span class="truncate max-w-32.5 font-medium text-slate-600 dark:text-slate-300">
+                {art.author?.name || "Redaksi EVHub.id"}
+              </span>
+              <span class="font-mono text-slate-400 dark:text-slate-500 shrink-0">
+                {formattedDate}
+              </span>
+            </div>
+          </div>
+        </a>
+      );
+    })}
+  </div>
+</section>
+

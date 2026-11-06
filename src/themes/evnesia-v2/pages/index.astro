@@ -1,0 +1,110 @@
+---
+// index.astro — EVnesia V2 Mobile-First Homepage (Section 5.1 of UI_DESIGN_SPEC_EVNESIA_V2_MOBILE_FIRST.md)
+const { request } = Astro.props as any;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import EvHeroCalculator from "../components/EvHeroCalculator.astro";
+import QuickRecommendations from "../components/QuickRecommendations.astro";
+import BrandStripRow from "../components/BrandStripRow.astro";
+import CarCardRail from "../components/CarCardRail.astro";
+import NewsRail from "../components/NewsRail.astro";
+import ToolsBentoTiles from "../components/ToolsBentoTiles.astro";
+
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+import { fetchAllArticlesFromApi, fetchCategoriesFromApi, fetchSiteConfigFromApi, isFallbackDataEnabled } from "@/lib/api";
+import { getLatest } from "@/data";
+
+const [apiArticles, apiCategories, siteConfig] = await Promise.all([
+  fetchAllArticlesFromApi(10, request),
+  fetchCategoriesFromApi(request),
+  fetchSiteConfigFromApi(request),
+]);
+
+const allowFallback = isFallbackDataEnabled();
+const sourceArticles = apiArticles.length ? apiArticles : allowFallback ? getLatest(10) : [];
+
+// Curated newest hot electric cars in Indonesia (2024-2026 releases)
+const newestSlugs = [
+  "wuling-air-ev",
+  "wuling-aira-ev",
+  "byd-sealion-7",
+  "byd-m6",
+  "chery-j6",
+  "aletra-l8",
+  "geely-ex5",
+  "wuling-cloud-ev",
+  "wuling-binguo-ev",
+  "hyundai-ioniq-5n",
+  "denza-d9",
+  "changan-lumin",
+  "zeekr-009",
+  "gac-aion-y-plus",
+];
+
+const newestCars = newestSlugs
+  .map((slug) => ELECTRIFIED_CARS_DATA.find((c: any) => c.slug === slug || (c.slug || "").includes(slug)))
+  .filter(Boolean);
+---
+
+<BaseLayout
+  title="EVHub.id — Portal & Database Mobil Listrik Indonesia (Mobile-First)"
+  description="Kalkulator hemat energi EV, rekomendasi instan, lineup mobil listrik terlengkap, dan direktori pengisian SPKLU Indonesia."
+  siteConfig={siteConfig}
+  navCategories={apiCategories}
+>
+  <!-- ① KALKULATOR EV HERO (LANGSUNG DI BAWAH NAVBAR, <= 440px TINGGI) -->
+  <section class="mx-auto max-w-5xl px-3 sm:px-6 pt-20 sm:pt-24 pb-2 animate-fade-up stagger-1" aria-label="Kalkulator Hemat Mobil Listrik">
+    <EvHeroCalculator />
+  </section>
+
+  <!-- ② JELAJAHI MEREK (STRIP LOGO BULAT DENGAN URUTAN A-Z) — langsung di bawah kalkulator -->
+  <section class="mx-auto max-w-5xl px-3 sm:px-6 animate-fade-up stagger-2" aria-label="Pabrikan Mobil Listrik Resmi">
+    <BrandStripRow />
+  </section>
+
+  <!-- ③ REKOMENDASI CEPAT (CHIP FILTER + RAIL DENGAN PEEK) -->
+  <section class="mx-auto max-w-5xl px-3 sm:px-6 animate-fade-up stagger-3" aria-label="Rekomendasi Cepat">
+    <QuickRecommendations />
+  </section>
+
+  <!-- ④ MOBIL LISTRIK TERBARU & UNGGULAN (RAIL RINGKAS) -->
+  <section class="mx-auto max-w-5xl px-3 sm:px-6 my-4 sm:my-6 animate-fade-up stagger-4" aria-label="Mobil Listrik Terbaru">
+    <div class="mb-2.5 flex items-center justify-between">
+      <div class="flex items-center gap-1.5">
+        <span class="w-1.5 h-3.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+        <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
+          Mobil Listrik Peluncuran Terbaru
+        </h2>
+      </div>
+      <a href="/katalog-mobil" class="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-500 transition-colors">
+        Semua Mobil →
+      </a>
+    </div>
+
+    <div class="rail py-1">
+      {newestCars.map((car: any) => (
+        <CarCardRail
+          slug={car.slug}
+          brand={car.brand}
+          name={car.name}
+          category={car.bodyType?.toUpperCase() || "SUV"}
+          engineType={car.engineType || "BEV"}
+          price={car.price}
+          range={car.consumption || `${car.specs?.electric_range_km || 450} km`}
+          img={car.img}
+          badge="Terbaru"
+        />
+      ))}
+    </div>
+  </section>
+
+  <!-- ⑤ BERITA PILIHAN (RAIL 1 BARIS) -->
+  <section class="mx-auto max-w-5xl px-3 sm:px-6 my-4 sm:my-6 animate-fade-up stagger-5" aria-label="Berita & Ulasan">
+    <NewsRail articles={sourceArticles} />
+  </section>
+
+  <!-- ⑥ TOOLS LAIN (4 UBIN KECIL) -->
+  <section class="mx-auto max-w-5xl px-3 sm:px-6 my-4 sm:my-6 animate-fade-up stagger-6" aria-label="Fitur & Alat">
+    <ToolsBentoTiles />
+  </section>
+</BaseLayout>

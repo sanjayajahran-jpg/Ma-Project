@@ -1,0 +1,24 @@
+---
+// komparasi.astro — Halaman Komparasi Spesifikasi Kendaraan (Theme: Automotive)
+const { request } = Astro.props as any;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SpecComparator from "../components/SpecComparator.astro";
+import { SITE } from "@/site";
+import { fetchCategoriesFromApi, fetchSiteConfigFromApi } from "@/lib/api";
+
+const [apiCategories, siteConfig] = await Promise.all([
+  fetchCategoriesFromApi(request),
+  fetchSiteConfigFromApi(request),
+]);
+---
+
+<BaseLayout
+  title={`Komparasi Spesifikasi Mobil Listrik & Hybrid | ${SITE.name}`}
+  description="Bandingkan spesifikasi teknis, harga OTR, akselerasi, kapasitas baterai, jarak tempuh, dan fitur keselamatan ADAS antar kendaraan secara berdampingan."
+  siteConfig={siteConfig}
+  navCategories={apiCategories}
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <SpecComparator />
+  </div>
+</BaseLayout>

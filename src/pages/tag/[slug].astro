@@ -1,0 +1,16 @@
+---
+import { resolveThemePage } from "@/lib/theme-resolver";
+import { allArticles, tags } from "@/data";
+import { fetchTagsFromApi, isFallbackDataEnabled } from "@/lib/api";
+
+const slug = Astro.params.slug ?? "";
+const apiTags = await fetchTagsFromApi(Astro.request);
+const fallbackTags = isFallbackDataEnabled()
+  ? new Set(allArticles.flatMap((article) => article.tags.map((tag) => tag.slug)))
+  : new Set<string>();
+const tagExists = apiTags.some((tag) => tag.slug === slug) || (fallbackTags.has(slug) && Boolean(tags[slug]));
+const pageName = tagExists ? "tag" : "notFound";
+if (!tagExists) Astro.response.status = 404;
+const { default: Page, siteConfig } = await resolveThemePage(Astro.request, pageName);
+---
+<Page request={Astro.request} params={Astro.params} url={Astro.url} siteConfig={siteConfig} />

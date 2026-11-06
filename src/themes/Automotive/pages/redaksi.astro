@@ -1,0 +1,98 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import StaticPage from "@/components/StaticPage.astro";
+import { fetchSiteConfigFromApi, portalDomainFromScope } from "@/lib/api";
+import { portalIdentityForDomain } from "@/site";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, params, url } = Astro.props;
+
+const portalDomain = portalDomainFromScope(request);
+const siteConfig = await fetchSiteConfigFromApi(request);
+const identity = portalIdentityForDomain(portalDomain, siteConfig?.portal?.name);
+const siteName = identity.name;
+const siteEmail = identity.email;
+---
+
+<PageLayout
+  title="Redaksi"
+  lead={`Susunan redaksi ${siteName} dan komitmen kami terhadap jurnalisme bertanggung jawab.`}
+>
+  <StaticPage request={request} slug="redaksi">
+  <h2 id="susunan">Susunan Redaksi</h2>
+  <p>
+    Redaksi {siteName} bekerja secara kolektif melalui proses perencanaan,
+    peliputan, penyuntingan, verifikasi, dan publikasi. Setiap naskah yang
+    tayang berada di bawah tanggung jawab redaksi sesuai standar kerja
+    jurnalistik.
+  </p>
+
+  <h3>Penanggung Jawab Editorial</h3>
+  <ul>
+    <li><strong>Pemimpin Umum:</strong> bertanggung jawab atas arah umum pengelolaan media.</li>
+    <li><strong>Pemimpin Redaksi:</strong> bertanggung jawab atas kebijakan editorial dan keputusan akhir penerbitan.</li>
+    <li><strong>Redaktur Pelaksana:</strong> mengoordinasikan agenda liputan, penyuntingan, dan alur produksi harian.</li>
+  </ul>
+
+  <h3>Bidang Redaksi</h3>
+  <ul>
+    <li><strong>Politik &amp; Hukum:</strong> memantau isu kebijakan publik, pemerintahan, hukum, dan demokrasi.</li>
+    <li><strong>Ekonomi &amp; Bisnis:</strong> mengelola liputan ekonomi, usaha, keuangan, dan dampaknya bagi masyarakat.</li>
+    <li><strong>Daerah &amp; Publik:</strong> mengawal isu pelayanan publik, komunitas, dan dinamika daerah.</li>
+    <li><strong>Teknologi &amp; Inovasi:</strong> mengulas transformasi digital, sains, dan perkembangan teknologi.</li>
+    <li><strong>Gaya Hidup &amp; Humaniora:</strong> menangani topik budaya, pendidikan, kesehatan, keluarga, dan gaya hidup.</li>
+  </ul>
+
+  <h3>Reporter, Kontributor, dan Produksi Digital</h3>
+  <ul>
+    <li><strong>Reporter:</strong> melakukan peliputan, wawancara, dan pengumpulan data di lapangan.</li>
+    <li><strong>Kontributor:</strong> mengirimkan laporan atau tulisan sesuai penugasan dan standar redaksi.</li>
+    <li><strong>Editor Foto &amp; Multimedia:</strong> memastikan materi visual relevan, layak tayang, dan menghormati hak cipta.</li>
+    <li><strong>Tim Digital:</strong> mengelola publikasi, distribusi konten, optimasi teknis, dan kanal media sosial.</li>
+  </ul>
+
+  <p>
+    Untuk korespondensi redaksi, koreksi berita, hak jawab, atau permintaan
+    informasi resmi, hubungi <a href={`mailto:${siteEmail}`}>{siteEmail}</a>.
+  </p>
+
+  <hr />
+
+  <h2 id="pedoman">Pedoman Pemberitaan Media Siber</h2>
+  <p>
+    {siteName} tunduk pada <strong>Pedoman Pemberitaan Media Siber</strong>
+    yang ditetapkan oleh Dewan Pers pada 3 Februari 2012. Pedoman lengkap dapat
+    dibaca di halaman <a href="/pedoman-pemberitaan">Pedoman Pemberitaan</a>.
+  </p>
+  <p>Secara ringkas, kami berkomitmen pada:</p>
+  <ul>
+    <li><strong>Verifikasi:</strong> Setiap berita harus melalui proses verifikasi sebelum terbit.</li>
+    <li><strong>Keberimbangan:</strong> Berita yang berpotensi merugikan pihak lain wajib memuat konfirmasi dan klarifikasi.</li>
+    <li><strong>Ralat &amp; Koreksi:</strong> Kekeliruan diperbaiki secara transparan dengan mencantumkan waktu koreksi.</li>
+    <li><strong>Hak Jawab:</strong> Kami membuka ruang hak jawab yang layak bagi pihak yang merasa dirugikan.</li>
+    <li><strong>Konten Berbayar:</strong> Iklan dan konten bersponsor ditandai jelas, terpisah dari konten editorial.</li>
+    <li><strong>Hak Cipta:</strong> Kami menghormati hak cipta sesuai peraturan yang berlaku.</li>
+  </ul>
+
+  <h2 id="koreksi">Mekanisme Koreksi &amp; Hak Jawab</h2>
+  <p>Kami menyambut koreksi atas kekeliruan faktual dalam pemberitaan kami. Untuk mengajukan koreksi atau hak jawab:</p>
+  <ol>
+    <li>Kirim surel ke <a href={`mailto:${siteEmail}`}>{siteEmail}</a></li>
+    <li>Sertakan tautan (URL) artikel yang bersangkutan</li>
+    <li>Jelaskan kekeliruan yang ditemukan beserta bukti atau sumber yang relevan</li>
+    <li>Redaksi akan merespons dalam 1×24 jam kerja</li>
+  </ol>
+  <p>Koreksi yang terverifikasi akan dimuat pada artikel yang sama dengan keterangan waktu pembaruan.</p>
+
+  <h2 id="kode-etik">Kode Etik Jurnalistik</h2>
+  <p>
+    Seluruh jurnalis {siteName} terikat pada <strong>Kode Etik Jurnalistik</strong>
+    yang ditetapkan Dewan Pers. Pelanggaran kode etik dapat dilaporkan kepada Dewan Pers melalui laman resmi
+    <a href="https://dewanpers.or.id" target="_blank" rel="noopener noreferrer">dewanpers.or.id</a>.
+  </p>
+  </StaticPage>
+</PageLayout>

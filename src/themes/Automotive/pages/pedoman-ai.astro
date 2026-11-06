@@ -1,0 +1,21 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import { fetchPageBySlugFromApi } from "@/lib/api";
+
+interface Props {
+  request: Request;
+}
+
+const { request } = Astro.props;
+const page = await fetchPageBySlugFromApi("pedoman-ai", request);
+
+if (!page) return Astro.redirect("/404", 302);
+---
+
+<PageLayout
+  title={page.title}
+  lead={page.excerpt ?? undefined}
+  description={page.seo_description ?? page.excerpt ?? undefined}
+>
+  <div set:html={page.body_html} />
+</PageLayout>

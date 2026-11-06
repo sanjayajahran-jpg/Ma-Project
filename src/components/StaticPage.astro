@@ -1,0 +1,16 @@
+---
+import { fetchPageBySlugFromApi } from "@/lib/api";
+
+interface Props {
+  request: Request;
+  slug: string;
+}
+const { request, slug } = Astro.props;
+const page = await fetchPageBySlugFromApi(slug, request);
+const hasDbContent = page?.body_html && page.body_html.length > 60 && !page.body_html.includes("Tulis ");
+---
+{hasDbContent ? (
+  <div class="static-page-content" set:html={page!.body_html} />
+) : (
+  <slot />
+)}

@@ -1,0 +1,156 @@
+---
+// Edmunds Style Buying Guides Section with Category Tabs
+const BUYING_TABS = [
+  { id: "all", label: "Semua Kategori" },
+  { id: "sedan", label: "Sedan Terbaik" },
+  { id: "suv", label: "Best SUVs" },
+  { id: "hybrid", label: "Best Hybrids" },
+  { id: "ev", label: "Mobil Listrik / EV" },
+];
+
+const GUIDES_DATA = [
+  {
+    id: "suv",
+    title: "SUV Buying Guide 2026",
+    dek: "SUV untuk semua kebutuhan keluarga Indonesia. Temukan rekomendasi ground clearance tinggi & kenyamanan suspensi.",
+    img: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=800&auto=format&fit=crop",
+    link: "/kategori/ulasan-test-drive"
+  },
+  {
+    id: "hybrid",
+    title: "Hybrid Buying Guide 2026",
+    dek: "Semua hybrid tidak sama. Pelajari perbedaan Seri vs Paralel Hybrid serta mana yang paling irit BBM.",
+    img: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=800&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    id: "family",
+    title: "Family Buying Guide 2026",
+    dek: "Mencari MPV keluarga 7-seater terbaik? Dapatkan tips kekedapan kabin & fitur keselamatan ISOFIX anak.",
+    img: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=800&auto=format&fit=crop",
+    link: "/kategori/ulasan-test-drive"
+  }
+];
+---
+
+<div class="suede-texture rounded-2xl border border-line p-6 sm:p-10 space-y-8 text-ink shadow-2xl transition-colors duration-300">
+  <!-- Top Category Filter Tabs (Edmunds Style) -->
+  <div class="flex items-center justify-center sm:justify-start gap-4 border-b border-line pb-4 overflow-x-auto scrollbar-none">
+    {BUYING_TABS.map((tab, idx) => (
+      <button
+        type="button"
+        data-guide-tab={tab.id}
+        data-active={idx === 0 ? "true" : "false"}
+        class="guide-tab shrink-0 font-headline text-sm font-bold text-soft transition hover:text-brand border-b-2 border-transparent pb-2 uppercase tracking-wider cursor-pointer"
+      >
+        {tab.label}
+      </button>
+    ))}
+  </div>
+
+  <!-- Featured Buying Guide Grid Header (Edmunds Style) -->
+  <div class="grid gap-8 lg:grid-cols-[1fr_1.4fr] items-center">
+    <!-- Left Intro Box -->
+    <div class="space-y-4">
+      <div>
+        <span class="text-xs font-black text-brand uppercase tracking-widest block">Panduan Komprehensif</span>
+        <h2 class="font-headline text-3xl sm:text-4xl font-black uppercase tracking-tight text-ink mt-1">
+          BUYING GUIDES
+        </h2>
+      </div>
+
+      <p class="text-sm text-soft leading-relaxed font-medium">
+        Tentukan pilihan pembelian kendaraan Anda dengan <strong class="text-ink">percaya diri</strong>, didukung oleh ulasan teruji redaksi independen.
+      </p>
+
+      <ul class="space-y-2 text-xs font-bold text-soft">
+        <li class="flex items-center gap-2">
+          <span class="text-brand font-black">✓</span> Rating & Skor Pengujian Jalan Riil
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="text-brand font-black">✓</span> Berita Komparasi Harga & Fitur ADAS
+        </li>
+        <li class="flex items-center gap-2">
+          <span class="text-brand font-black">✓</span> Ulasan Video Test Drive 0-100 km/j
+        </li>
+      </ul>
+    </div>
+
+    <!-- Main Featured Banner Guide Card -->
+    <div class="relative overflow-hidden rounded-2xl border border-line shadow-2xl min-h-75 flex items-center group">
+      <img
+        src="https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1200&auto=format&fit=crop"
+        alt="Sedan Buying Guide"
+        class="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition duration-700"
+        loading="lazy"
+      />
+      <div class="absolute inset-0 bg-linear-to-r from-black/85 via-black/50 to-transparent"></div>
+
+      <div class="relative z-10 p-6 sm:p-8 space-y-3 max-w-md text-white">
+        <span class="text-[10px] font-extrabold bg-brand/80 px-2 py-0.5 rounded uppercase tracking-wider">
+          PANDUAN UTAMA 2026
+        </span>
+        <h3 class="font-headline text-2xl sm:text-3xl font-extrabold leading-snug">
+          Sedan & Liftback Buying Guide
+        </h3>
+        <p class="text-xs text-slate-200 line-clamp-2 leading-relaxed">
+          Temukan pilihan sedan bensin, hybrid, dan EV dalam satu panduan lengkap tanpa ragu.
+        </p>
+
+        <div class="pt-2">
+          <a
+            href="/kategori/ulasan-test-drive"
+            class="inline-flex items-center gap-2 rounded-full border border-white px-5 py-2 text-xs font-extrabold text-white hover:bg-brand hover:border-brand transition shadow-lg"
+          >
+            <span>Lihat Panduan Pembeli</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3-Column Buying Guides Cards (Edmunds Style) -->
+  <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 pt-4">
+    {GUIDES_DATA.map((guide) => (
+      <a href={guide.link} class="group rounded-2xl border border-line bg-paper p-4 space-y-3 shadow-lg hover:border-brand/50 transition">
+        <div class="overflow-hidden rounded-xl aspect-video relative">
+          <img
+            src={guide.img}
+            alt={guide.title}
+            class="h-full w-full object-cover group-hover:scale-105 transition duration-500"
+            loading="lazy"
+          />
+        </div>
+        <div class="space-y-1">
+          <h4 class="font-headline text-base font-extrabold text-ink group-hover:text-brand transition">
+            {guide.title}
+          </h4>
+          <p class="text-xs text-soft line-clamp-2 leading-relaxed font-medium">
+            {guide.dek}
+          </p>
+        </div>
+      </a>
+    ))}
+  </div>
+</div>
+
+<style>
+  .guide-tab[data-active="true"] {
+    border-color: var(--color-brand, #002b49);
+    color: var(--color-brand, #002b49);
+  }
+</style>
+
+<script>
+  function initBuyingGuides() {
+    const tabs = document.querySelectorAll<HTMLButtonElement>('[data-guide-tab]');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.setAttribute('data-active', String(t === tab)));
+      });
+    });
+  }
+  initBuyingGuides();
+  document.addEventListener('astro:page-load', initBuyingGuides);
+</script>

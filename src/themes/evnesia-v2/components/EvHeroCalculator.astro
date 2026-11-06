@@ -1,0 +1,723 @@
+---
+// EvHeroCalculator.astro — V2 Hero EV Calculator Hub
+// Dual Tabs: 1. Simulasi Hemat BBM vs EV & 2. Simulasi Biaya Pengisian SPKLU & Home Charging
+// Zero unnecessary emojis, clean SVG icons, responsive mobile-first layout with instant reactive calculation
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+import FUEL_PRICES_DATA from "@/data/fuel-prices.json";
+
+// Default pricing determined directly from backend database (fuel_prices table)
+const pertamaxObj = FUEL_PRICES_DATA.find((p: any) => p.fuel_type.toLowerCase().includes("pertamax") && !p.fuel_type.toLowerCase().includes("turbo"));
+const plnRegulerObj = FUEL_PRICES_DATA.find((p: any) => p.fuel_type.toLowerCase().includes("reguler") || (p.fuel_type.toLowerCase().includes("pln") && !p.fuel_type.toLowerCase().includes("malam")));
+const plnMalamObj = FUEL_PRICES_DATA.find((p: any) => p.fuel_type.toLowerCase().includes("malam"));
+const spkluFastObj = FUEL_PRICES_DATA.find((p: any) => p.fuel_type.toLowerCase().includes("fast") && !p.fuel_type.toLowerCase().includes("ultra"));
+const spkluUltraObj = FUEL_PRICES_DATA.find((p: any) => p.fuel_type.toLowerCase().includes("ultra"));
+
+const defaultFuelPrice = pertamaxObj ? Math.round(pertamaxObj.price_per_unit) : 13700;
+const defaultHomeRate = plnRegulerObj ? Math.round(plnRegulerObj.price_per_unit) : 1699;
+const defaultNightRate = plnMalamObj ? Math.round(plnMalamObj.price_per_unit) : 1189;
+const defaultFastRate = spkluFastObj ? Math.round(spkluFastObj.price_per_unit) : 2466;
+const defaultUltraRate = spkluUltraObj ? Math.round(spkluUltraObj.price_per_unit) : 2900;
+
+const totalCars = ELECTRIFIED_CARS_DATA.length;
+
+// Filter 10 popular authentic Indonesian EV models with actual brochure battery & range specs
+const POPULAR_KEYS = [
+  "byd-seal", "byd-m6", "byd-atto", "byd-dolphin", 
+  "hyundai-ioniq-5", "chery-omoda-e5", "wuling-binguo", 
+  "wuling-air-ev", "aletra-l8", "mg-4-ev", "vinfast-vf-5"
+];
+
+const SELECTABLE_CARS = ELECTRIFIED_CARS_DATA.filter((c: any) =>
+  POPULAR_KEYS.some(k => (c.slug || "").toLowerCase().includes(k))
+).slice(0, 10).map((c: any) => {
+  const kwh = Number(c.specs?.battery_capacity_kwh) || 55;
+  const range = Number(c.specs?.electric_range_km) || 400;
+  const kwhPerKm = Number((kwh / range).toFixed(4)) || 0.15;
+  const kmPerKwh = Number((range / kwh).toFixed(2)) || 6.5;
+  return {
+    slug: c.slug,
+    name: c.name,
+    brand: c.brand,
+    batteryKwh: kwh,
+    rangeKm: range,
+    kwhPerKm,
+    kmPerKwh,
+    price: c.price || `Rp ${c.priceVal || 400} Juta`,
+    priceVal: c.priceVal || 400,
+    maxDcKw: c.specs?.dc_charging_time_min ? (kwh > 60 ? 150 : 80) : 50,
+  };
+});
+---
+
+<div class="rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-3.5 sm:p-5 lg:p-6 shadow-xl text-slate-900 dark:text-white transition-all duration-300 relative overflow-hidden">
+  
+  <!-- Subtle Ambient Glow -->
+  <div class="absolute -top-16 -right-16 w-56 h-56 bg-cyan-500/10 dark:bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Header Bar: Title + Dual Switcher Tabs -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200/70 dark:border-white/10 pb-3">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse shrink-0"></span>
+      <div>
+        <h2 class="text-sm sm:text-base lg:text-lg font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+          Kalkulator & Simulasi Energi Kendaraan Listrik
+        </h2>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+          Estimasi biaya operasional riil, komparasi efisiensi BBM, dan simulasi tarif pengisian daya di Indonesia.
+        </p>
+      </div>
+    </div>
+
+    <!-- Dual Tab Selector -->
+    <div class="inline-flex p-1 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200/80 dark:border-white/10 shadow-inner self-start sm:self-auto shrink-0" role="tablist">
+      <button
+        type="button"
+        id="v2-tab-btn-savings"
+        role="tab"
+        aria-selected="true"
+        class="v2-calc-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer bg-cyan-600 text-white shadow-xs inline-flex items-center gap-1.5"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        <span>Hemat BBM vs EV</span>
+      </button>
+      <button
+        type="button"
+        id="v2-tab-btn-charging"
+        role="tab"
+        aria-selected="false"
+        class="v2-calc-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-cyan-500 inline-flex items-center gap-1.5"
+      >
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <span>Biaya SPKLU & Rumah</span>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- TAB 1: KALKULATOR KEHEMATAN BBM VS EV -->
+  <!-- ========================================================================= -->
+  <div id="v2-panel-savings" class="pt-2 space-y-3 block">
+
+    <!-- Grid Layout: Left Controls (8 cols) & Right Output (4 cols) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+      
+      <!-- Left Controls (8 cols on desktop) -->
+      <div class="lg:col-span-8 space-y-2.5 flex flex-col justify-between">
+        
+        <!-- Jarak Tempuh Harian Slider & Input -->
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-white/10 space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold">
+            <label for="v2-sav-km-slider" class="text-slate-700 dark:text-slate-300">
+              Jarak Tempuh Harian:
+            </label>
+            <div class="flex items-center gap-1.5">
+              <input
+                id="v2-sav-km-input"
+                type="number"
+                min="5"
+                max="300"
+                value="50"
+                class="w-16 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-0.5 text-right text-xs font-black text-cyan-600 dark:text-cyan-400 outline-none focus:ring-2 focus:ring-cyan-500 tabular-nums"
+              />
+              <span class="text-xs text-slate-500 font-semibold">km / hari</span>
+            </div>
+          </div>
+          <input
+            type="range"
+            id="v2-sav-km-slider"
+            min="5"
+            max="200"
+            step="5"
+            value="50"
+            class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+          />
+          <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+            <span>5 km (Dalam Kota)</span>
+            <span>50 km (Komuter)</span>
+            <span>120 km</span>
+            <span>200 km (Antar Kota)</span>
+          </div>
+        </div>
+
+        <!-- Customizable Input Parameters -->
+        <div id="v2-sav-params-wrapper" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <!-- 1. Harga BBM -->
+          <div class="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-rose-200/60 dark:border-rose-900/30">
+            <label for="v2-sav-fuel-price" class="block text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase leading-tight">
+              Harga BBM (Rp/L)
+            </label>
+            <input
+              type="number"
+              id="v2-sav-fuel-price"
+              value={defaultFuelPrice}
+              step="100"
+              class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 tabular-nums"
+            />
+          </div>
+
+          <!-- 2. Efisiensi BBM -->
+          <div class="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-rose-200/60 dark:border-rose-900/30">
+            <label for="v2-sav-fuel-eff" class="block text-[9px] font-bold text-rose-600 dark:text-rose-400 uppercase leading-tight">
+              Konsumsi BBM (km/L)
+            </label>
+            <input
+              type="number"
+              id="v2-sav-fuel-eff"
+              value="11"
+              step="0.5"
+              min="3"
+              max="35"
+              class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-rose-500 tabular-nums"
+            />
+          </div>
+
+          <!-- 3. Tarif Listrik -->
+          <div class="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-cyan-200/60 dark:border-cyan-900/30">
+            <label for="v2-sav-ev-price" class="block text-[9px] font-bold text-cyan-600 dark:text-cyan-400 uppercase leading-tight">
+              Tarif EV (Rp/kWh)
+            </label>
+            <input
+              type="number"
+              id="v2-sav-ev-price"
+              value={defaultHomeRate}
+              step="50"
+              class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500 tabular-nums"
+            />
+          </div>
+
+          <!-- 4. Efisiensi EV -->
+          <div class="p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-cyan-200/60 dark:border-cyan-900/30">
+            <label for="v2-sav-ev-eff" class="block text-[9px] font-bold text-cyan-600 dark:text-cyan-400 uppercase leading-tight">
+              Efisiensi EV (km/kWh)
+            </label>
+            <input
+              type="number"
+              id="v2-sav-ev-eff"
+              value="6.2"
+              step="0.1"
+              min="2"
+              max="15"
+              class="w-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500 tabular-nums"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Output Card (4 cols on desktop - more slender and focused) -->
+      <div class="lg:col-span-4 p-3 sm:p-3.5 rounded-2xl bg-linear-to-br from-cyan-50/90 via-white to-sky-50/90 dark:from-cyan-950/40 dark:via-slate-900/80 dark:to-slate-950 border border-cyan-200/80 dark:border-cyan-500/30 text-slate-900 dark:text-white flex flex-col justify-between gap-2.5 shadow-md dark:shadow-lg">
+        
+        <!-- Big Number Savings Header -->
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[9px] sm:text-[10px] font-extrabold uppercase text-cyan-600 dark:text-cyan-400 tracking-wider">
+              Estimasi Penghematan Anda
+            </span>
+            <span id="v2-sav-badge-percent" class="px-2 py-0.5 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 border border-emerald-500/30 dark:border-emerald-400/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-black">
+              Hemat ~75%
+            </span>
+          </div>
+
+          <div class="mt-1 flex items-baseline justify-between sm:block">
+            <div id="v2-sav-annual-result" class="text-lg sm:text-xl lg:text-2xl font-black text-cyan-600 dark:text-cyan-300 tracking-tight tabular-nums">
+              Rp 17.500.000
+            </div>
+            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+              / tahun vs mobil bensin konvensional
+            </span>
+          </div>
+        </div>
+
+        <!-- Monthly Breakdown Grid -->
+        <div class="grid grid-cols-3 gap-1 border-t border-slate-200/80 dark:border-white/10 pt-2 text-[10px]">
+          <div class="p-1 rounded-lg bg-slate-100/80 dark:bg-white/5 flex flex-col">
+            <span class="text-[8.5px] text-slate-500 dark:text-slate-400">BBM / bln:</span>
+            <span id="v2-sav-fuel-monthly" class="font-bold text-rose-600 dark:text-rose-300 tabular-nums mt-0.5">Rp 1.868.000</span>
+          </div>
+          <div class="p-1 rounded-lg bg-slate-100/80 dark:bg-white/5 flex flex-col">
+            <span class="text-[8.5px] text-slate-500 dark:text-slate-400">Listrik / bln:</span>
+            <span id="v2-sav-ev-monthly" class="font-bold text-cyan-600 dark:text-cyan-300 tabular-nums mt-0.5">Rp 411.000</span>
+          </div>
+          <div class="p-1 rounded-lg bg-emerald-500/15 border border-emerald-500/20 flex flex-col font-bold text-emerald-700 dark:text-emerald-300">
+            <span class="text-[8.5px] text-emerald-600 dark:text-emerald-400">Hemat / bln:</span>
+            <span id="v2-sav-monthly-result" class="font-black tabular-nums mt-0.5">Rp 1.457.000</span>
+          </div>
+        </div>
+
+        <!-- Ecological Metric -->
+        <div class="pt-1.5 border-t border-slate-200/80 dark:border-white/10 text-center">
+          <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+            Reduksi emisi: <strong id="v2-sav-co2" class="text-slate-900 dark:text-white font-bold">2.4 Ton CO2</strong> / thn
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- TAB 2: KALKULATOR BIAYA PENGISIAN (SPKLU & HOME CHARGING) -->
+  <!-- ========================================================================= -->
+  <div id="v2-panel-charging" class="pt-3 space-y-3 hidden">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+      
+      <!-- Left Controls (8 cols on desktop) -->
+      <div class="lg:col-span-8 space-y-2.5 flex flex-col justify-between">
+        
+        <!-- 1. Pilihan Model Mobil EV -->
+        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <label for="v2-chg-car-select" class="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
+              Pilihan Model Mobil EV:
+            </label>
+            <span id="v2-chg-car-badge" class="text-[11px] font-bold text-cyan-600 dark:text-cyan-400">
+              Baterai 82.5 kWh · Range 570 km
+            </span>
+          </div>
+          <select
+            id="v2-chg-car-select"
+            class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-900 dark:text-white cursor-pointer focus:border-cyan-500 outline-none w-full sm:w-56 truncate"
+          >
+            {SELECTABLE_CARS.map((car, idx) => (
+              <option
+                value={idx}
+                data-kwh={car.batteryKwh}
+                data-range={car.rangeKm}
+                data-km-per-kwh={car.kmPerKwh}
+                data-slug={car.slug}
+              >
+                {car.brand} {car.name} ({car.batteryKwh} kWh)
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <!-- 2. Pilihan Lokasi / Metode Pengisian Daya -->
+        <div class="space-y-1.5">
+          <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+            Pilihan Tarif & Metode Charging:
+          </span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+            <button
+              type="button"
+              class="v2-chg-rate-btn active-rate p-2 rounded-xl border text-left transition-all cursor-pointer bg-cyan-500/15 border-cyan-500 text-cyan-900 dark:text-cyan-200"
+              data-rate={defaultHomeRate}
+              data-type="home"
+              data-power="7"
+            >
+              <div class="text-[11px] font-black leading-tight">Rumah Reguler</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Rp {defaultHomeRate.toLocaleString('id-ID')} / kWh</div>
+              <div class="text-[9px] text-cyan-600 dark:text-cyan-400 font-medium">PLN R-1/R-2 (7 kW)</div>
+            </button>
+
+            <button
+              type="button"
+              class="v2-chg-rate-btn p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition-all cursor-pointer hover:border-cyan-400 text-slate-700 dark:text-slate-300"
+              data-rate={defaultNightRate}
+              data-type="home-night"
+              data-power="7"
+            >
+              <div class="text-[11px] font-black leading-tight">Diskon Malam</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Rp {defaultNightRate.toLocaleString('id-ID')} / kWh</div>
+              <div class="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium">Hemat 30% (22-05)</div>
+            </button>
+
+            <button
+              type="button"
+              class="v2-chg-rate-btn p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition-all cursor-pointer hover:border-cyan-400 text-slate-700 dark:text-slate-300"
+              data-rate={defaultFastRate}
+              data-type="spklu-fast"
+              data-power="50"
+            >
+              <div class="text-[11px] font-black leading-tight">SPKLU Fast</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Rp {defaultFastRate.toLocaleString('id-ID')} / kWh</div>
+              <div class="text-[9px] text-sky-600 dark:text-sky-400 font-medium">DC 50 kW</div>
+            </button>
+
+            <button
+              type="button"
+              class="v2-chg-rate-btn p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition-all cursor-pointer hover:border-cyan-400 text-slate-700 dark:text-slate-300"
+              data-rate={defaultUltraRate}
+              data-type="spklu-ultra"
+              data-power="150"
+            >
+              <div class="text-[11px] font-black leading-tight">SPKLU Ultra Fast</div>
+              <div class="text-[10px] text-slate-500 dark:text-slate-400">Rp {defaultUltraRate.toLocaleString('id-ID')} / kWh</div>
+              <div class="text-[9px] text-amber-600 dark:text-amber-400 font-medium">DC 150-200 kW</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. State of Charge (SoC) Slider: Dari % ke % -->
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-white/10 space-y-1.5">
+          <div class="flex items-center justify-between text-xs font-bold">
+            <span class="text-slate-700 dark:text-slate-300">Level Pengisian Baterai:</span>
+            <span id="v2-chg-soc-label" class="font-black text-cyan-600 dark:text-cyan-400 tabular-nums">
+              Dari 20% ke 80% (+60%)
+            </span>
+          </div>
+          <div class="grid grid-cols-2 gap-3 pt-1">
+            <div>
+              <label for="v2-chg-start-soc" class="text-[10px] text-slate-400 block mb-0.5">Mulai dari (%):</label>
+              <input
+                type="range"
+                id="v2-chg-start-soc"
+                min="0"
+                max="80"
+                step="5"
+                value="20"
+                class="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              />
+            </div>
+            <div>
+              <label for="v2-chg-end-soc" class="text-[10px] text-slate-400 block mb-0.5">Target isi (%):</label>
+              <input
+                type="range"
+                id="v2-chg-end-soc"
+                min="30"
+                max="100"
+                step="5"
+                value="80"
+                class="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Output Card (4 cols on desktop) -->
+      <div class="lg:col-span-4 p-3 sm:p-3.5 rounded-2xl bg-linear-to-br from-cyan-50/90 via-white to-sky-50/90 dark:from-cyan-950/40 dark:via-slate-900/80 dark:to-slate-950 border border-cyan-200/80 dark:border-cyan-500/30 text-slate-900 dark:text-white flex flex-col justify-between gap-2.5 shadow-md dark:shadow-lg">
+        
+        <!-- Big Cost Metric -->
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-extrabold uppercase text-cyan-600 dark:text-cyan-400 tracking-wider">
+              Total Biaya Pengisian Daya
+            </span>
+            <span id="v2-chg-kwh-badge" class="px-2 py-0.5 rounded-full bg-cyan-500/15 dark:bg-cyan-500/20 border border-cyan-500/30 dark:border-cyan-400/40 text-cyan-700 dark:text-cyan-300 text-[10px] font-black">
+              +49.5 kWh
+            </span>
+          </div>
+
+          <div class="mt-1 flex items-baseline justify-between sm:block">
+            <div id="v2-chg-total-cost" class="text-xl sm:text-2xl lg:text-3xl font-black text-cyan-600 dark:text-cyan-300 tracking-tight tabular-nums">
+              Rp 84.100
+            </div>
+            <span id="v2-chg-cost-per-km" class="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Setara Rp 245 / km
+            </span>
+          </div>
+        </div>
+
+        <!-- Metric Details Grid -->
+        <div class="grid grid-cols-2 gap-2 border-t border-slate-200/80 dark:border-white/10 pt-2 text-xs">
+          <div class="p-2 rounded-lg bg-slate-100/80 dark:bg-white/5 flex flex-col">
+            <span class="text-[9px] text-slate-500 dark:text-slate-400">Tambahan Jarak:</span>
+            <span id="v2-chg-added-range" class="text-sm font-black text-slate-900 dark:text-white tabular-nums mt-0.5">+342 km</span>
+          </div>
+          <div class="p-2 rounded-lg bg-slate-100/80 dark:bg-white/5 flex flex-col">
+            <span class="text-[9px] text-slate-500 dark:text-slate-400">Estimasi Waktu:</span>
+            <span id="v2-chg-time-est" class="text-sm font-black text-amber-600 dark:text-amber-300 tabular-nums mt-0.5">~7.0 Jam (AC 7 kW)</span>
+          </div>
+        </div>
+
+        <!-- SPKLU & Detail Link Action -->
+        <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/80 dark:border-white/10">
+          <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+            Tarif resmi SNI & ESDM RI
+          </span>
+          <a
+            id="v2-chg-car-link"
+            href="/mobil/byd-seal"
+            class="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[11px] transition-all shadow-sm shrink-0 inline-flex items-center gap-1"
+          >
+            <span>Lihat Spek Mobil</span>
+            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+
+<script>
+  function initV2HeroCalculator() {
+    // -------------------------------------------------------------
+    // TABS SWITCHER
+    // -------------------------------------------------------------
+    const btnSavings = document.getElementById('v2-tab-btn-savings');
+    const btnCharging = document.getElementById('v2-tab-btn-charging');
+    const panelSavings = document.getElementById('v2-panel-savings');
+    const panelCharging = document.getElementById('v2-panel-charging');
+
+    if (btnSavings && btnCharging && panelSavings && panelCharging) {
+      btnSavings.addEventListener('click', () => {
+        btnSavings.setAttribute('aria-selected', 'true');
+        btnSavings.className = "v2-calc-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer bg-cyan-600 text-white shadow-xs inline-flex items-center gap-1.5";
+        
+        btnCharging.setAttribute('aria-selected', 'false');
+        btnCharging.className = "v2-calc-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-cyan-500 inline-flex items-center gap-1.5";
+        
+        panelSavings.classList.remove('hidden');
+        panelSavings.classList.add('block');
+        panelCharging.classList.remove('block');
+        panelCharging.classList.add('hidden');
+      });
+
+      btnCharging.addEventListener('click', () => {
+        btnCharging.setAttribute('aria-selected', 'true');
+        btnCharging.className = "v2-calc-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer bg-cyan-600 text-white shadow-xs inline-flex items-center gap-1.5";
+        
+        btnSavings.setAttribute('aria-selected', 'false');
+        btnSavings.className = "v2-calc-tab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer text-slate-600 dark:text-slate-400 hover:text-cyan-500 inline-flex items-center gap-1.5";
+        
+        panelCharging.classList.remove('hidden');
+        panelCharging.classList.add('block');
+        panelSavings.classList.remove('block');
+        panelSavings.classList.add('hidden');
+      });
+    }
+
+    // -------------------------------------------------------------
+    // TAB 1: FUEL SAVINGS CALCULATION LOGIC
+    // -------------------------------------------------------------
+    const savKmSlider = document.getElementById('v2-sav-km-slider') as HTMLInputElement | null;
+    const savKmInput = document.getElementById('v2-sav-km-input') as HTMLInputElement | null;
+    const savFuelPrice = document.getElementById('v2-sav-fuel-price') as HTMLInputElement | null;
+    const savFuelEff = document.getElementById('v2-sav-fuel-eff') as HTMLInputElement | null;
+    const savEvPrice = document.getElementById('v2-sav-ev-price') as HTMLInputElement | null;
+    const savEvEff = document.getElementById('v2-sav-ev-eff') as HTMLInputElement | null;
+
+    const savAnnualResult = document.getElementById('v2-sav-annual-result');
+    const savBadgePercent = document.getElementById('v2-sav-badge-percent');
+    const savFuelMonthly = document.getElementById('v2-sav-fuel-monthly');
+    const savEvMonthly = document.getElementById('v2-sav-ev-monthly');
+    const savMonthlyResult = document.getElementById('v2-sav-monthly-result');
+    const savCo2 = document.getElementById('v2-sav-co2');
+
+    // Animated number counter utility
+    const activeTweens = new Map<HTMLElement, number>();
+    function animateTextNumber(targetEl: HTMLElement | null, targetVal: number, prefix = "Rp ", suffix = "") {
+      if (!targetEl) return;
+      const el: HTMLElement = targetEl;
+      const currentText = el.textContent || "";
+      const numMatch = currentText.replace(/[^0-9]/g, "");
+      const startVal = numMatch ? parseInt(numMatch, 10) : targetVal;
+      
+      if (Math.abs(startVal - targetVal) < 10) {
+        el.textContent = `${prefix}${Math.round(targetVal).toLocaleString('id-ID')}${suffix}`;
+        return;
+      }
+
+      if (activeTweens.has(el)) {
+        cancelAnimationFrame(activeTweens.get(el)!);
+      }
+
+      const startTime = performance.now();
+      const duration = 280; // ms fluid duration
+
+      function frame(now: number) {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        // easeOutExpo curve
+        const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        const current = startVal + (targetVal - startVal) * ease;
+        
+        el.textContent = `${prefix}${Math.round(current).toLocaleString('id-ID')}${suffix}`;
+
+        if (progress < 1) {
+          const reqId = requestAnimationFrame(frame);
+          activeTweens.set(el, reqId);
+        } else {
+          activeTweens.delete(el);
+          el.textContent = `${prefix}${Math.round(targetVal).toLocaleString('id-ID')}${suffix}`;
+        }
+      }
+
+      const reqId = requestAnimationFrame(frame);
+      activeTweens.set(el, reqId);
+    }
+
+    function calculateSavings(isInitial = false) {
+      if (!savKmSlider || !savKmInput || !savFuelPrice || !savFuelEff || !savEvPrice || !savEvEff) return;
+
+      const kmDay = parseFloat(savKmInput.value) || 50;
+      const fuelPrice = parseFloat(savFuelPrice.value) || 13700;
+      const fuelEff = parseFloat(savFuelEff.value) || 11;
+      const evPrice = parseFloat(savEvPrice.value) || 1699;
+      const evEff = parseFloat(savEvEff.value) || 6.2;
+
+      const kmMonth = kmDay * 30;
+      const kmYear = kmDay * 365;
+
+      const monthlyFuelCost = (kmMonth / Math.max(1, fuelEff)) * fuelPrice;
+      const monthlyEvCost = (kmMonth / Math.max(1, evEff)) * evPrice;
+      const monthlySavings = Math.max(0, monthlyFuelCost - monthlyEvCost);
+      const annualSavings = monthlySavings * 12;
+
+      const percent = monthlyFuelCost > 0 ? Math.round((monthlySavings / monthlyFuelCost) * 100) : 75;
+      const co2Reduction = ((kmYear / Math.max(1, fuelEff)) * 2.31 * 0.001).toFixed(1);
+
+      if (isInitial) {
+        if (savAnnualResult) savAnnualResult.textContent = `Rp ${Math.round(annualSavings).toLocaleString('id-ID')}`;
+        if (savMonthlyResult) savMonthlyResult.textContent = `Rp ${Math.round(monthlySavings).toLocaleString('id-ID')}`;
+        if (savFuelMonthly) savFuelMonthly.textContent = `Rp ${Math.round(monthlyFuelCost).toLocaleString('id-ID')}`;
+        if (savEvMonthly) savEvMonthly.textContent = `Rp ${Math.round(monthlyEvCost).toLocaleString('id-ID')}`;
+      } else {
+        animateTextNumber(savAnnualResult, annualSavings);
+        animateTextNumber(savMonthlyResult, monthlySavings);
+        animateTextNumber(savFuelMonthly, monthlyFuelCost);
+        animateTextNumber(savEvMonthly, monthlyEvCost);
+      }
+
+      if (savBadgePercent) savBadgePercent.textContent = `Hemat ~${percent}%`;
+      if (savCo2) savCo2.textContent = `${co2Reduction} Ton CO2`;
+    }
+
+    if (savKmSlider && savKmInput) {
+      savKmSlider.addEventListener('input', () => {
+        savKmInput.value = savKmSlider.value;
+        calculateSavings();
+      });
+      savKmInput.addEventListener('input', () => {
+        savKmSlider.value = savKmInput.value;
+        calculateSavings();
+      });
+    }
+
+    [savFuelPrice, savFuelEff, savEvPrice, savEvEff].forEach(el => {
+      el?.addEventListener('input', () => calculateSavings());
+    });
+
+    // Preset Buttons
+    document.querySelectorAll('.v2-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        document.querySelectorAll('.v2-preset-btn').forEach(b => {
+          b.className = "v2-preset-btn touch-spring shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-semibold border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-cyan-400 transition-all cursor-pointer";
+        });
+        target.className = "v2-preset-btn touch-spring active-preset shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all cursor-pointer bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.25)]";
+
+        const fuelKml = target.dataset.fuelKml;
+        const evKwh = target.dataset.evKwh;
+        const km = target.dataset.km;
+        const fPrice = target.dataset.fuelPrice;
+
+        if (fuelKml && savFuelEff) savFuelEff.value = fuelKml;
+        if (evKwh && savEvEff) savEvEff.value = evKwh;
+        if (km && savKmInput && savKmSlider) {
+          savKmInput.value = km;
+          savKmSlider.value = km;
+        }
+        if (fPrice && savFuelPrice) savFuelPrice.value = fPrice;
+
+        calculateSavings();
+      });
+    });
+
+    // Initial calculation without tween animation
+    calculateSavings(true);
+
+
+    // -------------------------------------------------------------
+    // TAB 2: SPKLU & CHARGING CALCULATION LOGIC
+    // -------------------------------------------------------------
+    const carSelect = document.getElementById('v2-chg-car-select') as HTMLSelectElement | null;
+    const carBadge = document.getElementById('v2-chg-car-badge');
+    const startSocSlider = document.getElementById('v2-chg-start-soc') as HTMLInputElement | null;
+    const endSocSlider = document.getElementById('v2-chg-end-soc') as HTMLInputElement | null;
+    const socLabel = document.getElementById('v2-chg-soc-label');
+
+    const totalCostEl = document.getElementById('v2-chg-total-cost');
+    const costPerKmEl = document.getElementById('v2-chg-cost-per-km');
+    const kwhBadgeEl = document.getElementById('v2-chg-kwh-badge');
+    const addedRangeEl = document.getElementById('v2-chg-added-range');
+    const timeEstEl = document.getElementById('v2-chg-time-est');
+    const carLinkEl = document.getElementById('v2-chg-car-link') as HTMLAnchorElement | null;
+
+    let selectedRate = 1699;
+    let selectedPower = 7;
+    let selectedType = 'home';
+
+    function calculateCharging() {
+      if (!carSelect || !startSocSlider || !endSocSlider) return;
+
+      const opt = carSelect.selectedOptions[0];
+      const batteryKwh = parseFloat(opt?.dataset.kwh || '82.5');
+      const totalRange = parseFloat(opt?.dataset.range || '570');
+      const kmPerKwh = parseFloat(opt?.dataset.kmPerKwh || '6.9');
+      const carSlug = opt?.dataset.slug || 'byd-seal';
+
+      let startSoc = parseInt(startSocSlider.value, 10);
+      let endSoc = parseInt(endSocSlider.value, 10);
+
+      if (startSoc >= endSoc) {
+        endSoc = Math.min(100, startSoc + 10);
+        endSocSlider.value = endSoc.toString();
+      }
+
+      const deltaPercent = endSoc - startSoc;
+      const deltaKwh = (deltaPercent / 100) * batteryKwh;
+      const totalCost = deltaKwh * selectedRate;
+      const addedKm = Math.round((deltaPercent / 100) * totalRange);
+      const costPerKm = addedKm > 0 ? Math.round(totalCost / addedKm) : 0;
+
+      // Time estimate calculation
+      let timeStr = "";
+      if (selectedPower <= 11) {
+        const hours = (deltaKwh / selectedPower).toFixed(1);
+        timeStr = `~${hours} Jam (AC ${selectedPower} kW)`;
+      } else {
+        const mins = Math.round((deltaKwh / selectedPower) * 60);
+        timeStr = `~${Math.max(15, mins)} Menit (DC ${selectedPower} kW)`;
+      }
+
+      if (carBadge) carBadge.textContent = `Baterai ${batteryKwh} kWh · Range ${totalRange} km`;
+      if (socLabel) socLabel.textContent = `Dari ${startSoc}% ke ${endSoc}% (+${deltaPercent}%)`;
+      animateTextNumber(totalCostEl, totalCost);
+      if (costPerKmEl) costPerKmEl.textContent = `Setara Rp ${costPerKm} / km`;
+      if (kwhBadgeEl) kwhBadgeEl.textContent = `+${deltaKwh.toFixed(1)} kWh`;
+      if (addedRangeEl) addedRangeEl.textContent = `+${addedKm} km`;
+      if (timeEstEl) timeEstEl.textContent = timeStr;
+      if (carLinkEl) carLinkEl.href = `/mobil/${carSlug}`;
+    }
+
+    if (carSelect) carSelect.addEventListener('change', calculateCharging);
+    if (startSocSlider) startSocSlider.addEventListener('input', calculateCharging);
+    if (endSocSlider) endSocSlider.addEventListener('input', calculateCharging);
+
+    document.querySelectorAll('.v2-chg-rate-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        document.querySelectorAll('.v2-chg-rate-btn').forEach(b => {
+          b.className = "v2-chg-rate-btn p-2 rounded-xl border border-slate-200 dark:border-slate-800 text-left transition-all cursor-pointer hover:border-cyan-400 text-slate-700 dark:text-slate-300";
+        });
+        target.className = "v2-chg-rate-btn active-rate p-2 rounded-xl border text-left transition-all cursor-pointer bg-cyan-500/15 border-cyan-500 text-cyan-900 dark:text-cyan-200";
+
+        selectedRate = parseFloat(target.dataset.rate || '1699');
+        selectedPower = parseFloat(target.dataset.power || '7');
+        selectedType = target.dataset.type || 'home';
+
+        calculateCharging();
+      });
+    });
+
+    // Initial calculation
+    calculateCharging();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initV2HeroCalculator);
+  } else {
+    initV2HeroCalculator();
+  }
+  document.addEventListener('astro:after-swap', initV2HeroCalculator);
+</script>

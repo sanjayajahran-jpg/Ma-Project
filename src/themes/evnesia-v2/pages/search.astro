@@ -1,0 +1,200 @@
+---
+// search.astro — EVnesia V2 Unified Search (Cars & News Articles)
+const { request, params } = Astro.props as any;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CarCardRail from "../components/CarCardRail.astro";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+import { allArticles } from "@/data";
+import {
+  fetchAllArticlesFromApi,
+  fetchCategoriesFromApi,
+  fetchSiteConfigFromApi,
+  isFallbackDataEnabled,
+} from "@/lib/api";
+
+const q = (Astro.url.searchParams.get("q") || "").trim();
+const qLower = q.toLowerCase();
+
+const [sourceArticles, sourceCategories, siteConfig] = await Promise.all([
+  fetchAllArticlesFromApi(60, request),
+  fetchCategoriesFromApi(request),
+  fetchSiteConfigFromApi(request),
+]);
+
+const allowFallback = isFallbackDataEnabled();
+const articles = sourceArticles.length ? sourceArticles : allowFallback ? allArticles : [];
+
+// Filter cars
+const matchedCars = q
+  ? ELECTRIFIED_CARS_DATA.filter((c: any) =>
+      (c.name || "").toLowerCase().includes(qLower) ||
+      (c.brand || "").toLowerCase().includes(qLower) ||
+      (c.bodyType || "").toLowerCase().includes(qLower) ||
+      (c.engineType || "").toLowerCase().includes(qLower)
+    )
+  : [];
+
+// Filter articles
+const matchedArticles = q
+  ? articles.filter((a: any) =>
+      (a.title || "").toLowerCase().includes(qLower) ||
+      (a.dek || "").toLowerCase().includes(qLower) ||
+      (a.category?.name || "").toLowerCase().includes(qLower)
+    )
+  : [];
+---
+
+<BaseLayout
+  title={q ? `Hasil Pencarian: "${q}" — EVHub.id` : "Pencarian Mobil & Berita — EVHub.id"}
+  description="Cari database spesifikasi mobil listrik dan berita otomotif terlengkap di EVHub.id."
+  siteConfig={siteConfig}
+  navCategories={sourceCategories}
+>
+  <div class="pt-14 sm:pt-16 pb-28 sm:pb-20">
+    <div class="mx-auto max-w-5xl px-3 sm:px-6">
+      
+      <!-- Search Input Hero -->
+      <div class="py-6 text-center max-w-xl mx-auto space-y-3">
+        <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">
+          Pencarian Mobil & Berita
+        </h1>
+        <p class="text-xs text-slate-300">
+          Temukan spesifikasi mobil listrik, trim resmi APM, ulasan performa, dan artikel terkini.
+        </p>
+
+        <form action="/cari" method="GET" class="relative mt-4">
+          <input
+            type="search"
+            name="q"
+            value={q}
+            placeholder="Ketik model mobil (cth: Seal, Ioniq 5, Air EV) atau topik berita..."
+            class="w-full h-12 pl-11 pr-24 rounded-full bg-slate-900/90 border border-white/20 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-500/20 backdrop-blur-md transition-all shadow-lg"
+            autofocus
+          />
+          <svg class="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <button
+            type="submit"
+            class="absolute right-1.5 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all cursor-pointer shadow-md"
+          >
+            Cari
+          </button>
+        </form>
+      </div>
+
+      {q && (
+        <div class="space-y-8 mt-4">
+          
+          <!-- Bagian 1: Hasil Kendaraan Listrik -->
+          <section>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 rounded-full bg-emerald-400"></span>
+                <h2 class="text-xs sm:text-sm font-extrabold text-white tracking-tight">
+                  Mobil Listrik ({matchedCars.length})
+                </h2>
+              </div>
+              {matchedCars.length > 0 && (
+                <a href="/katalog-mobil" class="text-[11px] font-semibold text-sky-400 hover:text-sky-300">
+                  Lihat Katalog →
+                </a>
+              )}
+            </div>
+
+            {matchedCars.length > 0 ? (
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {matchedCars.map((car: any) => (
+                  <CarCardRail
+                    slug={car.slug}
+                    brand={car.brand}
+                    name={car.name}
+                    category={car.bodyType?.toUpperCase() || "SUV"}
+                    engineType={car.engineType || "BEV"}
+                    price={car.price}
+                    range={car.consumption || `${car.specs?.electric_range_km || 450} km`}
+                    img={car.img}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div class="p-6 rounded-2xl glass border border-white/5 text-center text-xs text-slate-400">
+                Tidak ada mobil yang cocok dengan kata kunci "{q}".
+              </div>
+            )}
+          </section>
+
+          <!-- Bagian 2: Hasil Artikel Berita -->
+          <section>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-1.5">
+                <span class="w-1.5 h-3.5 rounded-full bg-sky-400"></span>
+                <h2 class="text-xs sm:text-sm font-extrabold text-white tracking-tight">
+                  Artikel & Liputan Berita ({matchedArticles.length})
+                </h2>
+              </div>
+              <a href="/kategori/berita" class="text-[11px] font-semibold text-sky-400 hover:text-sky-300">
+                Semua Berita →
+              </a>
+            </div>
+
+            {matchedArticles.length > 0 ? (
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {matchedArticles.map((art: any) => {
+                  const catSlug = art.category?.slug || "berita";
+                  const artHref = `/${catSlug}/${art.slug || art.id}`;
+                  const imgUrl = art.cover || art.image || "/images/cars/default-car.png";
+
+                  return (
+                    <a
+                      href={artHref}
+                      class="group glass-card rounded-2xl p-3 border border-white/10 hover:border-sky-400/40 active:scale-98 transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div class="w-full h-32 rounded-xl overflow-hidden bg-slate-900 border border-white/10 relative mb-2.5">
+                          <img
+                            src={imgUrl}
+                            alt={art.title}
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                          />
+                          <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[9px] font-bold text-sky-300 border border-white/15">
+                            {art.category?.name || "Berita"}
+                          </span>
+                        </div>
+
+                        <h3 class="text-xs font-bold text-white group-hover:text-sky-300 transition-colors line-clamp-2 leading-snug">
+                          {art.title}
+                        </h3>
+
+                        <p class="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                          {art.dek || art.excerpt || ""}
+                        </p>
+                      </div>
+
+                      <div class="pt-2 mt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400">
+                        <span class="font-medium text-slate-300 truncate max-w-35">
+                          {art.author?.name || "Redaksi"}
+                        </span>
+                        <span class="font-mono text-slate-500">
+                          {art.readingTime || 3} mnt baca
+                        </span>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            ) : (
+              <div class="p-6 rounded-2xl glass border border-white/5 text-center text-xs text-slate-400">
+                Tidak ada artikel berita yang cocok dengan kata kunci "{q}".
+              </div>
+            )}
+          </section>
+
+        </div>
+      )}
+
+    </div>
+  </div>
+</BaseLayout>

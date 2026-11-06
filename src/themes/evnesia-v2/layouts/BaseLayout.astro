@@ -1,0 +1,96 @@
+---
+// BaseLayout.astro — Root layout for EVnesia V2 Mobile-First Theme
+import "../styles/theme.css";
+import "@fontsource-variable/inter";
+
+import Header from "../components/Header.astro";
+import MobileDock from "../components/MobileDock.astro";
+import Footer from "../components/Footer.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  siteConfig?: any;
+  navCategories?: any[];
+  currentPath?: string;
+}
+
+const {
+  title = "EVHub.id — Portal & Database Mobil Listrik Indonesia (Mobile-First)",
+  description = "Portal media, spesifikasi lengkap, kalkulator hemat BBM vs EV, komparasi mobil listrik resmi Indonesia (BEV, PHEV, HEV).",
+  image = "/og-default.svg",
+  currentPath: propCurrentPath,
+} = Astro.props;
+
+const currentPath = propCurrentPath || Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="id" class="dark theme-evnesia-v2" data-template="evnesia-v2">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta name="theme-color" content="#04060c" />
+
+    <script is:inline>
+      (function() {
+        try {
+          var saved = localStorage.getItem('color_theme');
+          if (!saved) {
+            var match = document.cookie.match(/color_theme=([^;]+)/);
+            if (match) saved = match[1];
+          }
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+            document.documentElement.setAttribute('data-color-scheme', 'light');
+          } else {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+            document.documentElement.setAttribute('data-color-scheme', 'dark');
+          }
+        } catch(e) {}
+      })();
+    </script>
+  </head>
+  <body class="selection:bg-blue-600 selection:text-white transition-colors duration-200">
+    <Header currentPath={currentPath} />
+
+    <main id="main" class="min-h-screen">
+      <slot />
+    </main>
+
+    <Footer />
+    <MobileDock currentPath={currentPath} />
+
+    <script is:inline>
+      // 1. Maintain cookie session for V2
+      document.cookie = "theme_preview=evnesia-v2; path=/; max-age=31536000; SameSite=Lax";
+
+      // 2. Automatically propagate ?theme_preview=evnesia-v2 on all internal links
+      document.addEventListener('click', (e) => {
+        const anchor = e.target.closest('a');
+        if (!anchor || !anchor.href) return;
+        try {
+          const u = new URL(anchor.href, window.location.origin);
+          // Respect explicit theme switch to Automotive
+          if (u.searchParams.get('theme_preview') === 'Automotive' || u.searchParams.get('theme_preview') === 'clear') return;
+          if (!u.searchParams.has('theme_preview')) {
+            u.searchParams.set('theme_preview', 'evnesia-v2');
+            anchor.href = u.pathname + u.search + u.hash;
+          }
+        } catch {}
+      }, true);
+    </script>
+  </body>
+</html>

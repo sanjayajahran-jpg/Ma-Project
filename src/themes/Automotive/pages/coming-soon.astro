@@ -1,0 +1,13 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<PageLayout title={title} lead="Akan segera hadir">
+  <p>Konten {title.toLowerCase()} sedang kami siapkan.</p>
+</PageLayout>

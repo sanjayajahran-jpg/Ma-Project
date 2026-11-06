@@ -1,0 +1,271 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ArticleCard from "../components/ArticleCard.astro";
+import Pagination from "../components/Pagination.astro";
+import { articleUrl } from "@/types";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+import {
+  fetchArticlesPaginated,
+  fetchCategoriesFromApi,
+  fetchSiteConfigFromApi,
+  siteUrlFromScope
+} from "@/lib/api";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, url } = Astro.props;
+const query = url.searchParams.get("q")?.trim() ?? "";
+const requestedPage = Math.max(
+  1,
+  Number.parseInt(url.searchParams.get("page") ?? "1", 10) || 1,
+);
+const PER_PAGE = 10;
+
+const [apiCategories, siteConfig, result] = await Promise.all([
+  fetchCategoriesFromApi(request),
+  fetchSiteConfigFromApi(request),
+  fetchArticlesPaginated(
+    { ...(query ? { q: query } : {}), page: requestedPage, limit: PER_PAGE },
+    request,
+  )
+]);
+
+const items = result.items;
+const totalResults = result.total;
+const totalPages = Math.max(1, Math.ceil(totalResults / PER_PAGE));
+const paginationBase = query ? `/cari?q=${encodeURIComponent(query)}` : "/cari";
+
+if (requestedPage > totalPages && totalResults > 0) {
+  return Astro.redirect(
+    `${paginationBase}${paginationBase.includes("?") ? "&" : "?"}page=${totalPages}`,
+    302,
+  );
+}
+
+// Matching cars from database
+const matchingCars = query
+  ? ELECTRIFIED_CARS_DATA.filter((c: any) => {
+      const q = query.toLowerCase();
+      const n = (c.name || "").toLowerCase();
+      const b = (c.brand || "").toLowerCase();
+      const t = (c.tagline || "").toLowerCase();
+      const eng = (c.engineType || "").toLowerCase();
+      const bdy = (c.bodyType || "").toLowerCase();
+      return n.includes(q) || b.includes(q) || t.includes(q) || eng.includes(q) || bdy.includes(q);
+    }).slice(0, 3)
+  : [];
+
+const siteUrl = siteUrlFromScope(request);
+const itemListLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: query ? `Hasil pencarian ${query}` : "Pencarian artikel",
+  numberOfItems: totalResults,
+  itemListElement: items.map((article, index) => ({
+    "@type": "ListItem",
+    position: (requestedPage - 1) * PER_PAGE + index + 1,
+    url: `${siteUrl}${articleUrl(article)}`,
+    name: article.title,
+  })),
+};
+---
+
+<BaseLayout
+  title={query ? `Pencarian: “${query}” - EVnesia` : "Pencarian Berita & Riset EV - EVnesia"}
+  description="Temukan spesifikasi mobil listrik, perbandingan trim, ekosistem SPKLU, dan berita otomotif terkini."
+  siteConfig={siteConfig}
+  navCategories={apiCategories}
+  noindex
+  jsonLd={itemListLd}
+>
+  <div class="mx-auto max-w-5xl px-4 pt-4 pb-16 space-y-8">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="Breadcrumb" class="text-xs font-semibold text-slate-400">
+      <ol class="flex items-center gap-2">
+        <li><a href="/" class="hover:text-cyan-500 transition">Beranda</a></li>
+        <li aria-hidden="true">/</li>
+        <li class="text-slate-900 dark:text-white font-bold">Pencarian</li>
+      </ol>
+    </nav>
+
+    <!-- Header & Search Hero (Apple Liquid Glass Capsule) -->
+    <header class="figma-liquid-glass rounded-3xl border border-slate-200/90 dark:border-white/20 p-6 sm:p-10 backdrop-blur-2xl shadow-xl relative overflow-hidden space-y-6">
+      <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+
+      <div class="space-y-2 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-[11px] font-bold uppercase tracking-wider">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+          Pencarian Pintar EVnesia
+        </div>
+        <h1 class="font-headline font-black text-3xl sm:text-4xl text-slate-900 dark:text-white tracking-tight">
+          Pencarian Berita & Database Mobil Listrik
+        </h1>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal">
+          Temukan ulasan uji jalan, komparasi spesifikasi, baterai LFP, fast charging DC, dan perkembangan ekosistem EV di Indonesia.
+        </p>
+      </div>
+
+      <!-- Modern Search Box -->
+      <form action="/cari" method="get" role="search" class="relative z-10">
+        <label for="search-input" class="sr-only">Cari artikel atau model mobil</label>
+        <div class="flex items-center rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700 shadow-sm focus-within:ring-2 focus-within:ring-cyan-500 transition p-1.5 sm:p-2 text-slate-900 dark:text-white">
+          <span class="pl-3 sm:pl-4 text-slate-400 flex items-center justify-center" aria-hidden="true">
+            <img src="/icons/search.svg" alt="" class="w-4 h-4 opacity-60 dark:invert shrink-0" />
+          </span>
+          <input
+            id="search-input"
+            type="search"
+            name="q"
+            value={query}
+            placeholder="Cari mobil listrik (contoh: Ioniq 5, BYD Seal), SPKLU, tips baterai, regulasi..."
+            autocomplete="off"
+            class="w-full bg-transparent px-3 py-2 text-xs sm:text-sm outline-none font-medium placeholder-slate-400"
+          />
+          <button
+            type="submit"
+            class="rounded-xl bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-cyan-600/20 transition shrink-0 cursor-pointer"
+          >
+            Cari
+          </button>
+        </div>
+      </form>
+
+      <!-- Quick Search Suggestion Pills -->
+      <div class="flex flex-wrap items-center gap-2 pt-1 text-xs text-slate-400 relative z-10">
+        <span class="font-bold text-slate-500 dark:text-slate-400">Pencarian Populer:</span>
+        {["BYD Seal", "Hyundai Ioniq 5", "Wuling Binguo", "Innova Zenix", "Omoda E5", "Baterai LFP"].map((term) => (
+          <a
+            href={`/cari?q=${encodeURIComponent(term)}`}
+            class="rounded-lg px-2.5 py-1 bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 border border-slate-200/60 dark:border-white/5 transition text-[11px] font-medium"
+          >
+            {term}
+          </a>
+        ))}
+      </div>
+    </header>
+
+    <!-- MATCHING CAR CATALOG RESULTS (If query matches any EV models) -->
+    {matchingCars.length > 0 && (
+      <section class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <img src="/icons/car.svg" alt="" class="w-4 h-4 opacity-80 dark:invert shrink-0" />
+            <h2 class="font-headline font-extrabold text-lg text-slate-900 dark:text-white">
+              Model Mobil Listrik Terkait ({matchingCars.length})
+            </h2>
+          </div>
+          <a
+            href={`/katalog-mobil?q=${encodeURIComponent(query)}`}
+            class="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+          >
+            <span>Buka di Katalog Lengkap</span>
+            <span>→</span>
+          </a>
+        </div>
+
+        <div class="grid gap-4 sm:grid-cols-3">
+          {matchingCars.map((car: any) => (
+            <div class="rounded-2xl bg-white dark:bg-slate-900/60 p-4 border border-slate-200/80 dark:border-white/10 shadow-xs hover:shadow-md transition space-y-3 flex flex-col justify-between">
+              <div class="space-y-2">
+                <a
+                  href={`/mobil/${car.slug}`}
+                  class="block aspect-video max-h-36 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 p-2 relative group"
+                >
+                  <img
+                    src={car.img}
+                    alt={car.name}
+                    class="w-full h-full object-contain group-hover:scale-105 transition"
+                    loading="lazy"
+                  />
+                  <span class="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-950/90 text-cyan-300 text-[9px] font-bold uppercase tracking-wider">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                    <span>{car.engineType ? car.engineType.toUpperCase() : 'EV'}</span>
+                  </span>
+                </a>
+                <div>
+                  <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{car.brand}</span>
+                  <h3 class="font-headline font-bold text-sm text-slate-900 dark:text-white line-clamp-1">
+                    <a href={`/mobil/${car.slug}`} class="hover:text-cyan-500 transition">
+                      {car.name}
+                    </a>
+                  </h3>
+                </div>
+                <div class="flex items-center justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <span>Jarak: <strong class="text-slate-900 dark:text-white">{car.specs?.electric_range_km ? `${car.specs.electric_range_km} km` : '-'}</strong></span>
+                  <span>Tenaga: <strong class="text-slate-900 dark:text-white">{car.specs?.horsepower ? `${car.specs.horsepower} HP` : '-'}</strong></span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span class="font-headline font-black text-xs text-slate-900 dark:text-white">
+                  {car.price || 'Hubungi APM'}
+                </span>
+                <div class="flex items-center gap-1">
+                  <a
+                    href={`/komparasi?cars=${encodeURIComponent(car.slug)}`}
+                    class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-cyan-500 text-xs font-bold transition"
+                    title="Bandingkan"
+                  >
+                    <img src="/icons/scale.svg" alt="Bandingkan" class="w-3.5 h-3.5 opacity-70 dark:invert" />
+                  </a>
+                  <a
+                    href={`/mobil/${car.slug}`}
+                    class="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-[10px] font-bold transition"
+                  >
+                    Detail →
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Results Status Meta -->
+    <div class="flex items-center justify-between gap-4 px-1 border-t border-slate-200/60 dark:border-white/10 pt-6">
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+        Menampilkan <strong class="font-bold text-slate-900 dark:text-white">{totalResults}</strong> artikel
+        {query ? <span>untuk kata kunci <span class="font-bold text-cyan-600 dark:text-cyan-400">“{query}”</span></span> : "terbaru"}
+      </p>
+    </div>
+
+    <!-- Article List -->
+    <div class="space-y-4">
+      {
+        items.map((a) => (
+          <ArticleCard article={a} variant="horizontal" />
+        ))
+      }
+    </div>
+
+    {
+      items.length === 0 && (
+        <div class="figma-liquid-glass rounded-3xl border border-slate-200/90 dark:border-white/20 p-12 text-center backdrop-blur-2xl space-y-3">
+          <p class="text-xs font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400">Hasil Tidak Ditemukan</p>
+          <p class="font-headline font-black text-2xl text-slate-900 dark:text-white">Tidak ada artikel yang cocok</p>
+          <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            Coba gunakan kata kunci lain, singkatan umum, atau jelajahi katalog lengkap spesifikasi mobil listrik kami.
+          </p>
+          <div class="pt-2 flex flex-wrap justify-center gap-3">
+            <a href="/katalog-mobil" class="inline-flex items-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-cyan-600/20 transition">
+              Buka Katalog Mobil →
+            </a>
+            <a href="/" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-200 hover:border-cyan-500/50 transition">
+              Ke Beranda
+            </a>
+          </div>
+        </div>
+      )
+    }
+
+    <Pagination
+      current={requestedPage}
+      total={totalPages}
+      base={paginationBase}
+    />
+  </div>
+</BaseLayout>

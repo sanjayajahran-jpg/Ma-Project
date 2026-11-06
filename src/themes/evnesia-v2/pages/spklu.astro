@@ -1,0 +1,228 @@
+---
+// spklu.astro — Halaman Simulasi SPKLU & Pengisian Daya (Theme: evnesia-v2)
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ToolsBentoTiles from "../components/ToolsBentoTiles.astro";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+
+const POPULAR_MODELS = ELECTRIFIED_CARS_DATA.slice(0, 8).map((c: any) => ({
+  name: c.name,
+  brand: c.brand,
+  slug: c.slug,
+  kwh: c.specs?.battery_capacity_kwh || 55,
+  range: c.specs?.electric_range_km || 400,
+  dcTime: c.specs?.dc_charging_time_min || 30,
+}));
+---
+
+<BaseLayout
+  title="Simulasi Tarif SPKLU & Home Charging EV Indonesia | EVHub.id"
+  description="Kalkulator durasi dan biaya pengisian baterai mobil listrik di SPKLU Fast Charging dan Home Charging PLN."
+  currentPath="/spklu"
+>
+  <div class="max-w-5xl mx-auto px-3.5 sm:px-6 pt-14 sm:pt-16 pb-28 sm:pb-16 space-y-8">
+    
+    <!-- Hero Header -->
+    <div class="text-center space-y-2 max-w-2xl mx-auto">
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider">
+        <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+        Infrastruktur Pengisian Daya
+      </div>
+      <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+        Simulasi Biaya & Waktu Isi Daya SPKLU
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+        Ketahui perkiraan durasi pengisian daya dan total biaya pengisian baterai kendaraan listrik Anda di rumah maupun stasiun pengisian umum (SPKLU).
+      </p>
+    </div>
+
+    <!-- Simulator Box -->
+    <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-lg space-y-5">
+      
+      <!-- Top Grid: Model & Slider -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <!-- Model Select -->
+        <div class="space-y-2">
+          <label for="spklu-model-select" class="text-xs font-bold text-slate-700 dark:text-slate-300">Pilih Model Mobil:</label>
+          <select
+            id="spklu-model-select"
+            class="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-cyan-500"
+          >
+            {POPULAR_MODELS.map((m) => (
+              <option value={m.kwh} data-range={m.range} data-slug={m.slug}>
+                {m.brand} {m.name} ({m.kwh} kWh · {m.range} km)
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <!-- Battery Capacity Slider -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-bold">
+            <span class="text-slate-700 dark:text-slate-300">Kapasitas Baterai:</span>
+            <span id="battery-kwh-val" class="text-cyan-600 dark:text-cyan-400 font-black">60 kWh</span>
+          </div>
+          <input
+            type="range"
+            id="battery-slider"
+            min="15"
+            max="120"
+            step="1"
+            value="60"
+            class="w-full h-2 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+          />
+        </div>
+
+      </div>
+
+      <!-- Charger Type Selection Cards -->
+      <div class="space-y-2">
+        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Pilih Tipe Charger:</span>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          
+          <button
+            type="button"
+            class="charger-card active p-3 rounded-xl border text-left bg-cyan-500/10 border-cyan-500 text-slate-900 dark:text-white transition-all cursor-pointer"
+            data-rate="1699"
+            data-power="7"
+            data-name="Home Charger AC (7 kW)"
+          >
+            <div class="text-xs font-black">Home Charging AC</div>
+            <div class="text-[11px] text-cyan-600 dark:text-cyan-400 font-bold">Rp 1.699 / kWh · 7 kW</div>
+            <div class="text-[10px] text-slate-400 mt-1">Ideal untuk pengisian semalaman di rumah</div>
+          </button>
+
+          <button
+            type="button"
+            class="charger-card p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-left bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white hover:border-cyan-500 transition-all cursor-pointer"
+            data-rate="2466"
+            data-power="50"
+            data-name="SPKLU Fast DC (50 kW)"
+          >
+            <div class="text-xs font-black">SPKLU Fast DC</div>
+            <div class="text-[11px] text-cyan-600 dark:text-cyan-400 font-bold">Rp 2.466 / kWh · 50 kW</div>
+            <div class="text-[10px] text-slate-400 mt-1">Stasiun umum mall & rest area</div>
+          </button>
+
+          <button
+            type="button"
+            class="charger-card p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-left bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white hover:border-cyan-500 transition-all cursor-pointer"
+            data-rate="2900"
+            data-power="150"
+            data-name="SPKLU Ultra Fast DC (150 kW)"
+          >
+            <div class="text-xs font-black">SPKLU Ultra Fast DC</div>
+            <div class="text-[11px] text-cyan-600 dark:text-cyan-400 font-bold">Rp 2.900 / kWh · 150 kW</div>
+            <div class="text-[10px] text-slate-400 mt-1">Pengisian ekspres di jalan tol trans</div>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Result Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100 dark:border-white/10">
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 text-center">
+          <span class="text-[10px] text-slate-400 uppercase font-bold block">Biaya 0% ke 100%</span>
+          <span id="full-cost-val" class="text-lg sm:text-xl font-black text-cyan-600 dark:text-cyan-400 block mt-1">Rp 101.940</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 text-center">
+          <span class="text-[10px] text-slate-400 uppercase font-bold block">Biaya 20% ke 80% (Harian)</span>
+          <span id="daily-cost-val" class="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 block mt-1">Rp 61.164</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-950 text-center">
+          <span class="text-[10px] text-slate-400 uppercase font-bold block">Estimasi Durasi (20-80%)</span>
+          <span id="duration-val" class="text-lg sm:text-xl font-black text-amber-500 block mt-1">~5.1 Jam</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SPKLU Network Guide -->
+    <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-sm space-y-3">
+      <h2 class="text-sm font-bold text-slate-900 dark:text-white">Panduan Pengisian SPKLU di Indonesia</h2>
+      <ul class="text-xs text-slate-500 dark:text-slate-400 space-y-2 list-disc list-inside">
+        <li>Aplikasi Resmi: Gunakan aplikasi <strong>PLN Mobile</strong> untuk menemukan stasiun SPKLU terdekat, mengecek ketersediaan port CCS2 / Type 2, dan membayar via dompet digital.</li>
+        <li>Protokol Konektor: Standar konektor di Indonesia adalah <strong>Type 2 (AC)</strong> dan <strong>CCS2 (DC Fast Charging)</strong>. Beberapa model tertentu seperti Nissan Leaf menggunakan CHAdeMO dan Wuling Air ev standar menggunakan GB/T AC.</li>
+        <li>Diskon Tambah Daya: Pemilik mobil listrik baru berhak mendapatkan promo pasang baru atau tambah daya khusus home charging dari PLN.</li>
+      </ul>
+    </div>
+
+    <!-- Other Tools -->
+    <div class="pt-6">
+      <h2 class="text-base font-bold text-slate-900 dark:text-white mb-3">Tools Otomotif Lainnya</h2>
+      <ToolsBentoTiles />
+    </div>
+
+  </div>
+</BaseLayout>
+
+<script>
+  function initSpkluSim() {
+    const modelSelect = document.getElementById('spklu-model-select') as HTMLSelectElement | null;
+    const batterySlider = document.getElementById('battery-slider') as HTMLInputElement | null;
+    const kwhLabel = document.getElementById('battery-kwh-val');
+    const fullCostVal = document.getElementById('full-cost-val');
+    const dailyCostVal = document.getElementById('daily-cost-val');
+    const durationVal = document.getElementById('duration-val');
+
+    let currentRate = 1699;
+    let currentPower = 7;
+
+    function calculate() {
+      const kwh = parseFloat(batterySlider?.value || '60');
+      if (kwhLabel) kwhLabel.textContent = `${kwh} kWh`;
+
+      const fullCost = kwh * currentRate;
+      const dailyCost = (kwh * 0.6) * currentRate;
+      
+      let durationStr = "";
+      if (currentPower <= 11) {
+        const h = ((kwh * 0.6) / currentPower).toFixed(1);
+        durationStr = `~${h} Jam (AC)`;
+      } else {
+        const m = Math.round(((kwh * 0.6) / currentPower) * 60);
+        durationStr = `~${Math.max(15, m)} Menit (DC)`;
+      }
+
+      if (fullCostVal) fullCostVal.textContent = `Rp ${Math.round(fullCost).toLocaleString('id-ID')}`;
+      if (dailyCostVal) dailyCostVal.textContent = `Rp ${Math.round(dailyCost).toLocaleString('id-ID')}`;
+      if (durationVal) durationVal.textContent = durationStr;
+    }
+
+    if (modelSelect) {
+      modelSelect.addEventListener('change', () => {
+        if (batterySlider) {
+          batterySlider.value = modelSelect.value;
+          calculate();
+        }
+      });
+    }
+
+    if (batterySlider) {
+      batterySlider.addEventListener('input', calculate);
+    }
+
+    document.querySelectorAll('.charger-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        document.querySelectorAll('.charger-card').forEach(c => {
+          c.className = "charger-card p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-left bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white hover:border-cyan-500 transition-all cursor-pointer";
+        });
+        target.className = "charger-card active p-3 rounded-xl border text-left bg-cyan-500/10 border-cyan-500 text-slate-900 dark:text-white transition-all cursor-pointer";
+
+        currentRate = parseFloat(target.dataset.rate || '1699');
+        currentPower = parseFloat(target.dataset.power || '7');
+        calculate();
+      });
+    });
+
+    calculate();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSpkluSim);
+  } else {
+    initSpkluSim();
+  }
+  document.addEventListener('astro:after-swap', initSpkluSim);
+</script>

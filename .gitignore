@@ -1,0 +1,51 @@
+# build output
+dist/
+.output/
+
+# astro
+.astro/
+
+# deps
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# env
+.env
+.env.production
+.env.local
+
+# os/editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# python / backend
+backend/venv/
+backend/.env
+backend/brosur/
+backend/uploads/
+public/brosur/
+*.pyc
+__pycache__/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite3
+*.bak
+
+# rust
+backend-rust/target/
+target/
+
+# scratch & agent temporary files
+backend/scratch/
+.cursor/
+.claude/
+.devin/
+
+.neon

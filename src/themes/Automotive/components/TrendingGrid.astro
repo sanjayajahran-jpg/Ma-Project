@@ -1,0 +1,55 @@
+---
+import type { Article } from "@/types";
+import { articleUrl } from "@/types";
+
+interface Props {
+  articles?: Article[];
+}
+
+const { articles = [] } = Astro.props;
+
+// Mock fallback articles if needed to match TopGear style (Jaguar, Renault, Alfa Romeo, Porsche, Dodge...)
+const displayArticles = articles.length >= 6 ? articles.slice(0, 6) : articles;
+---
+
+<div class="suede-texture rounded-2xl border border-line p-6 sm:p-8 space-y-6 text-ink shadow-2xl transition-colors duration-300">
+  <div class="flex items-center justify-between border-b border-line pb-4">
+    <div class="flex items-center gap-3">
+      <span class="grid h-8 w-8 place-items-center rounded-xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 font-black text-sm">
+        <img src="/icons/zap.svg" class="w-4 h-4 opacity-80" alt="" />
+      </span>
+      <h3 class="font-headline text-2xl sm:text-3xl font-black uppercase tracking-tight text-ink">
+        TRENDING THIS WEEK
+      </h3>
+    </div>
+    <a href="/indeks-berita" class="text-xs font-extrabold text-cyan-600 dark:text-cyan-400 hover:underline uppercase tracking-wider hidden sm:inline">
+      Lihat Semua Trending →
+    </a>
+  </div>
+
+  <div class="grid gap-x-8 gap-y-6 sm:grid-cols-2">
+    {displayArticles.map((article, idx) => {
+      const numStr = String(idx + 1).padStart(2, "0");
+      const url = articleUrl(article);
+      const catName = article.category?.name ?? "TERKINI";
+      
+      return (
+        <a href={url} class="group flex gap-4 items-start p-3 rounded-xl hover:bg-paper/70 transition border border-transparent hover:border-line">
+          <!-- TopGear Hollow Outline Number -->
+          <span class="font-outline-num shrink-0">
+            {numStr}
+          </span>
+
+          <div class="min-w-0 flex-1 space-y-1">
+            <span class="text-[11px] font-extrabold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest block">
+              {catName}
+            </span>
+            <h4 class="font-headline text-sm font-bold text-ink leading-snug line-clamp-2 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition">
+              {article.title}
+            </h4>
+          </div>
+        </a>
+      );
+    })}
+  </div>
+</div>

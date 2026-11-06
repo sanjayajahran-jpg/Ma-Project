@@ -1,0 +1,18 @@
+{
+  "name": "EVNESIA ID - Portal Mobil Listrik & Hybrid",
+  "short_name": "EVNESIA",
+  "description": "Media informasi, panduan beli, dan komparasi spesifikasi mobil listrik & hybrid terlengkap di Indonesia.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#090b10",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

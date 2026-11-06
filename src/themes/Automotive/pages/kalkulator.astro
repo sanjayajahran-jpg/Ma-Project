@@ -1,0 +1,43 @@
+---
+// kalkulator.astro — Halaman Dedicated Kalkulator Hemat BBM vs EV (Theme: Automotive)
+import BaseLayout from "../layouts/BaseLayout.astro";
+import FuelCalculator from "../components/FuelCalculator.astro";
+import SpkluChargingHub from "../components/SpkluChargingHub.astro";
+import BuyingGuides from "../components/BuyingGuides.astro";
+---
+
+<BaseLayout
+  title="Kalkulator Hemat Mobil Listrik vs Bensin | EVnesia"
+  description="Kalkulator komparasi efisiensi BBM vs daya listrik mobil di Indonesia. Bandingkan pengeluaran harian, bulanan, dan tahunan."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+    
+    <!-- Hero Header -->
+    <div class="text-center space-y-3 max-w-3xl mx-auto">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+        Simulasi Finansial & Pengisian Energi
+      </div>
+      <h1 class="font-headline text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        Kalkulator Hemat Mobil Listrik vs Bensin
+      </h1>
+      <p class="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+        Simulasikan selisih pengeluaran operasional antara mobil berbahan bakar minyak (BBM) dengan mobil listrik berbasis baterai (BEV) secara akurat.
+      </p>
+    </div>
+
+    <!-- Fuel Calculator Component -->
+    <FuelCalculator />
+
+    <!-- SPKLU & Charging Section -->
+    <div class="pt-8">
+      <SpkluChargingHub />
+    </div>
+
+    <!-- Buying Guides -->
+    <div class="pt-8">
+      <BuyingGuides />
+    </div>
+
+  </div>
+</BaseLayout>

@@ -1,0 +1,103 @@
+---
+// CarCardRail.astro — Compact 4:3 Rail Card with Peek (Section 3.1 & 4.3 of UI_DESIGN_SPEC_EVNESIA_V2_MOBILE_FIRST.md)
+import { getBrandLogo, getOptimizedCarImg } from "../lib/brand-utils";
+
+interface Props {
+  slug: string;
+  brand: string;
+  name: string;
+  category?: string;
+  engineType?: string;
+  price: string;
+  range?: string;
+  img: string;
+  badge?: string;
+  matchScore?: number;
+}
+
+const {
+  slug,
+  brand,
+  name,
+  category = "SUV",
+  engineType = "BEV",
+  price,
+  range = "450 km",
+  img,
+  badge,
+  matchScore,
+} = Astro.props;
+
+const carLink = `/mobil/${slug}?theme_preview=evnesia-v2`;
+const isBev = (engineType || "BEV").toLowerCase().includes("bev");
+const brandLogo = getBrandLogo(brand);
+---
+
+<div class="snap-start shrink-0 w-full group">
+  <a
+    href={carLink}
+    class="card-hover-lift touch-spring block w-full rounded-2xl glass-card p-3 sm:p-3.5 border border-slate-200/90 dark:border-white/10 hover:border-sky-400/60 bg-white dark:bg-linear-to-b dark:from-slate-900/95 dark:via-slate-950 dark:to-[#030712] relative overflow-hidden shadow-xs dark:shadow-none"
+    aria-label={`${brand} ${name} - ${price}`}
+  >
+    <!-- Top Row inside card with Brand SVG Logo -->
+    <div class="flex items-center justify-between gap-1 relative z-10">
+      <div class="flex items-center gap-1.5 min-w-0">
+        <div class="w-4 h-4 rounded-full bg-white p-0.5 shrink-0 flex items-center justify-center shadow-xs">
+          <img src={brandLogo} alt="" class="w-full h-full object-contain" />
+        </div>
+        <span class="text-[9px] font-black text-sky-700 dark:text-sky-300 uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-sky-50 dark:bg-sky-500/15 border border-sky-200 dark:border-sky-400/25 truncate max-w-28">
+          {badge || `${brand} · ${category}`}
+        </span>
+      </div>
+
+      <div class="flex items-center gap-1 shrink-0">
+        {matchScore && (
+          <span class="text-[9px] font-extrabold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/20 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-400/30">
+            {matchScore}% Cocok
+          </span>
+        )}
+        <span class={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border ${
+          isBev
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-400/30'
+            : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-400/30'
+        }`}>
+          {engineType}
+        </span>
+      </div>
+    </div>
+
+    <!-- Center: Studio Car Cutout with Floor Glow -->
+    <div class="w-full h-24 sm:h-28 relative flex items-center justify-center my-1.5">
+      <div class="absolute bottom-2 w-3/4 h-6 rounded-full bg-sky-500/10 dark:bg-sky-500/20 blur-md"></div>
+      <img
+        src={getOptimizedCarImg(img)}
+        alt={`${brand} ${name}`}
+        loading="lazy"
+        decoding="async"
+        width="280"
+        height="140"
+        class="w-full h-full max-h-24 sm:max-h-28 object-contain object-center drop-shadow-xl transform transition-transform duration-300 group-hover:scale-105 relative z-10"
+        onerror={`this.onerror=null; this.src='${img || "/images/cars/default-car.png"}';`}
+      />
+    </div>
+
+    <!-- Bottom Row: Title, Price & Range -->
+    <div class="pt-2 border-t border-slate-200/80 dark:border-white/10 relative z-10 space-y-1">
+      <h3 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors truncate leading-tight">
+        {name}
+      </h3>
+
+      <div class="flex items-center justify-between gap-1 pt-0.5">
+        <span class="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-metric truncate">
+          {price}
+        </span>
+        <div class="flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-500/25 shrink-0 text-[10px] font-metric">
+          <svg class="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+          <span>{range}</span>
+        </div>
+      </div>
+    </div>
+  </a>
+</div>

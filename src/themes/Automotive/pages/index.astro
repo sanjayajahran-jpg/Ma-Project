@@ -1,0 +1,108 @@
+---
+const { request } = Astro.props as any;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CompactHeroCalculators from "../components/CompactHeroCalculators.astro";
+import BrandLogoGrid from "../components/BrandLogoGrid.astro";
+import ResearchByTypeHero from "../components/ResearchByTypeHero.astro";
+import SponsoredShowcase from "../components/SponsoredShowcase.astro";
+import AsymmetricNewsGrid from "../components/AsymmetricNewsGrid.astro";
+import EvPolicyGuideSection from "../components/EvPolicyGuideSection.astro";
+import AdSlot from "../components/AdSlot.astro";
+import { SITE } from "@/site";
+import {
+  fetchAllArticlesFromApi,
+  fetchCategoriesFromApi,
+  fetchSiteConfigFromApi,
+  isFallbackDataEnabled,
+} from "@/lib/api";
+import { getLatest } from "@/data";
+
+const [apiArticles, apiCategories, siteConfig] = await Promise.all([
+  fetchAllArticlesFromApi(100, request),
+  fetchCategoriesFromApi(request),
+  fetchSiteConfigFromApi(request),
+]);
+
+const allowFallback = isFallbackDataEnabled();
+const sourceArticles = apiArticles.length ? apiArticles : allowFallback ? getLatest(100) : [];
+---
+
+<BaseLayout title={SITE.name} description={SITE.description} siteConfig={siteConfig} navCategories={apiCategories}>
+  <!-- SECTION 0: COMPACT HERO EV CALCULATOR (Biaya Pengisian SPKLU & Kehematan BBM vs EV) -->
+  <section class="mx-auto max-w-7xl px-3 sm:px-4 pt-1 sm:pt-4 pb-2.5 sm:pb-3 reveal-scale">
+    <CompactHeroCalculators />
+  </section>
+
+  <!-- SECTION 1: PABRIKAN MOBIL / BRAND DIRECTORY (Tampil langsung di homepage, tidak perlu hamburger bar) -->
+  <section class="mx-auto max-w-7xl px-3 sm:px-4 py-2 sm:py-5 reveal-on-scroll">
+    <BrandLogoGrid />
+  </section>
+
+  <!-- SECTION 2: CARI BERDASARKAN KATEGORI ELEKTRIFIKASI (Ringkas & Sederhana) -->
+  <section class="mx-auto max-w-7xl px-3 sm:px-4 py-2 sm:py-3 reveal-on-scroll">
+    <ResearchByTypeHero />
+  </section>
+
+  <!-- SECTION 3: REKOMENDASI MOBIL UNGGULAN (Sederhana & Ringkas) -->
+  <section class="mx-auto max-w-7xl px-3 sm:px-4 py-2.5 sm:py-4 reveal-on-scroll">
+    <SponsoredShowcase />
+  </section>
+
+  <!-- ADSLOT LEADERBOARD -->
+  <section class="mx-auto max-w-7xl px-3 sm:px-4 py-2 sm:py-3 reveal-on-scroll">
+    <AdSlot
+      format="leaderboard"
+      title="Slot Promosi Peluncuran Kendaraan APM & Mitra Brands EV"
+      description="Tampil di area strategis portal EVnesia dengan keterbacaan tinggi."
+    />
+  </section>
+
+  <!-- SECTION 4: BERITA & LIPUTAN OTOMOTIF TERKINI -->
+  <section class="mx-auto max-w-7xl px-3 sm:px-4 py-3 sm:py-6 reveal-on-scroll">
+    <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-white/10 pb-2 sm:pb-3 mb-3 sm:mb-4">
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-cyan-500"></span>
+        <h2 class="font-headline text-base sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+          Berita & Liputan Otomotif Terkini
+        </h2>
+      </div>
+      <a href="/kategori/berita" class="text-[11px] sm:text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline">
+        Lihat Semua Berita →
+      </a>
+    </div>
+    <AsymmetricNewsGrid articles={sourceArticles} />
+  </section>
+
+  <!-- SECTION 5: EV POLICY & INCENTIVE GUIDE -->
+  <section class="mx-auto max-w-7xl px-3 sm:px-4 py-4 sm:py-8 reveal-on-scroll">
+    <EvPolicyGuideSection />
+  </section>
+
+  <!-- Smooth Scroll Reveal Script (Optimized 60FPS with unobserve) -->
+  <script>
+    function initFaishionStyleScrollReveal() {
+      const revealElements = document.querySelectorAll(".reveal-on-scroll:not(.is-revealed), .reveal-scale:not(.is-revealed)");
+      if (!revealElements.length) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-revealed");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        {
+          threshold: 0.08,
+          rootMargin: "0px 0px -30px 0px"
+        }
+      );
+
+      revealElements.forEach((el) => observer.observe(el));
+    }
+
+    initFaishionStyleScrollReveal();
+    document.addEventListener("astro:page-load", initFaishionStyleScrollReveal);
+  </script>
+</BaseLayout>

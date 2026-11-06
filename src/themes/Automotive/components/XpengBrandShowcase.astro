@@ -1,0 +1,1287 @@
+---
+// XPENG-Inspired Ultra-Minimalist Studio Showroom Component
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+
+interface Props {
+  brandName: string;
+  cars: any[];
+  allBrands?: string[];
+  initialModelSlug?: string;
+}
+
+const { brandName, cars, allBrands = [], initialModelSlug = "" } = Astro.props;
+
+const otherBrands = allBrands.filter(b => b && b.toLowerCase() !== brandName.toLowerCase());
+
+function getCleanModelName(fullName: string, bName: string) {
+  return (fullName || '')
+    .replace(new RegExp(`^${bName}\\s*`, 'i'), '')
+    .replace(/\s*CKD\b/gi, '')
+    .replace(/\s*CBU\b/gi, '')
+    .replace(/\s*All\s*Electric\b/gi, '')
+    .trim() || fullName;
+}
+
+// Find initial car index based on initialModelSlug
+const initialIndex = initialModelSlug
+  ? Math.max(0, cars.findIndex((c: any) => c.slug === initialModelSlug || c.slug.toLowerCase().includes(initialModelSlug.toLowerCase())))
+  : 0;
+
+const firstCar = cars[initialIndex] || cars[0] || {};
+const firstSpecs = firstCar.specs || {};
+const firstVariants = firstCar.variants || [];
+const firstRange: string = firstCar.consumption || (firstVariants.length ? firstVariants[firstVariants.length - 1].battery_range : '') || (firstSpecs.electric_range_km ? `${firstSpecs.electric_range_km} km` : '');
+const initialRangeStandard: string = firstSpecs.range_standard || (
+  /wltp/i.test(firstRange) ? 'WLTP' :
+  /cltc/i.test(firstRange) ? 'CLTC' :
+  /epa/i.test(firstRange) ? 'EPA' :
+  /nedc/i.test(firstRange) ? 'NEDC' : 'NEDC'
+);
+
+const BRAND_LOGOS: Record<string, string> = {
+  "byd": "/images/brands/byd-logo.svg",
+  "bmw": "/images/brands/bmw-logo.svg",
+  "chery": "/images/brands/chery-logo.svg",
+  "changan": "/images/brands/changan-logo.svg",
+  "baic": "/images/brands/baic-logo.svg",
+  "citroen": "/images/brands/citroen-logo.svg",
+  "citroën": "/images/brands/citroen-logo.svg",
+  "daihatsu": "/images/brands/daihatsu-logo.svg",
+  "denza": "/images/brands/denza-logo.svg",
+  "dfsk": "/images/brands/dfsk-logo.svg",
+  "foton": "/images/brands/foton-logo.svg",
+  "gac": "/images/brands/gac-logo.svg",
+  "gac aion": "/images/brands/gac-logo.svg",
+  "geely": "/images/brands/geely-logo.svg",
+  "gwm": "/images/brands/gwm-logo.svg",
+  "honda": "/images/brands/honda-logo.svg",
+  "hyundai": "/images/brands/hyundai-logo.svg",
+  "icar": "/images/brands/icar-seeklogo.svg",
+  "jaecoo": "/images/brands/jaecoo-logo.svg",
+  "jetour": "/images/brands/jetour-logo.svg",
+  "kia": "/images/brands/kia-logo.svg",
+  "leapmotor": "/images/brands/leapmotor-logo.svg",
+  "lepas": "/images/brands/lepas-logo.svg",
+  "lexus": "/images/brands/lexus-logo.svg",
+  "maxus": "/images/brands/maxus-logo.svg",
+  "mazda": "/images/brands/mazda-logo.svg",
+  "mercedes-benz": "/images/brands/mercedes-benz-logo.svg",
+  "mg": "/images/brands/mg-logo.svg",
+  "mini": "/images/brands/mini-logo.svg",
+  "mitsubishi": "/images/brands/mitsubishi-logo.svg",
+  "nissan": "/images/brands/nissan-logo.svg",
+  "polytron": "/images/brands/polytron-logo.svg",
+  "porsche": "/images/brands/porsche-logo.svg",
+  "seres": "/images/brands/seres-logo.svg",
+  "tesla": "/images/brands/tesla-logo.svg",
+  "toyota": "/images/brands/toyota-logo.svg",
+  "vinfast": "/images/brands/vinfast-logo.svg",
+  "volkswagen": "/images/brands/volkswagen-logo.svg",
+  "volvo": "/images/brands/volvo-logo.svg",
+  "wuling": "/images/brands/wuling-logo.svg",
+  "xpeng": "/images/brands/xpeng-logo.svg",
+  "zeekr": "/images/brands/zeekr-logo.svg",
+};
+
+// Helper normalize brand
+const normBrand = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, "");
+
+const brandLogoUrl = BRAND_LOGOS[brandName.toLowerCase()] || BRAND_LOGOS[normBrand(brandName)] || null;
+
+// Compute all unique brands for the interactive dropdown popover
+const allBrandList = Array.from(new Set(ELECTRIFIED_CARS_DATA.map((c: any) => c.brand))).filter(Boolean).sort().map(b => {
+  const bCars = ELECTRIFIED_CARS_DATA.filter((c: any) => normBrand(c.brand) === normBrand(b));
+  return {
+    name: b,
+    count: bCars.length,
+    logoUrl: BRAND_LOGOS[b.toLowerCase()] || BRAND_LOGOS[normBrand(b)] || null,
+  };
+});
+
+// Rekomendasi mobil dengan harga dan kelas (body/tipe) yang mirip dari merek lain
+function getSimilarCars(targetCar: any, count: number = 4) {
+  if (!targetCar) return [];
+  const targetBrand = normBrand(targetCar.brand);
+  const targetPrice = targetCar.priceVal || 0;
+  const targetBody = (targetCar.bodyType || '').toLowerCase();
+  const targetEngine = (targetCar.engineType || '').toLowerCase();
+
+  const candidates = ELECTRIFIED_CARS_DATA.filter((c: any) => {
+    return normBrand(c.brand) !== targetBrand && c.priceVal > 0;
+  });
+
+  const scored = candidates.map((c: any) => {
+    const pDiff = Math.abs((c.priceVal || 0) - targetPrice);
+    const bodyMatch = (c.bodyType || '').toLowerCase() === targetBody;
+    const engineMatch = (c.engineType || '').toLowerCase() === targetEngine;
+    
+    // Semakin kecil score, semakin mirip
+    let score = pDiff;
+    if (bodyMatch) score -= 35; // Bobot kelas bodi setara
+    if (engineMatch) score -= 15; // Bobot tipe mesin setara
+    
+    return { car: c, score, pDiff, bodyMatch, engineMatch };
+  });
+
+  scored.sort((a, b) => a.score - b.score);
+  return scored.slice(0, count).map(s => s.car);
+}
+
+const initialSimilarCars = getSimilarCars(firstCar, 4);
+---
+
+<div id="brand-showcase-root" class="xpeng-showroom-root space-y-3 sm:space-y-4 pt-0 pb-2" data-brand={brandName} data-cars={JSON.stringify(cars)} data-all-cars={JSON.stringify(ELECTRIFIED_CARS_DATA)} data-initial-index={initialIndex}>
+  <!-- 1. TOP BRAND LOGO & MODEL NAV TABS (COMPACT SINGLE ROW) -->
+  <div class="flex items-center justify-center gap-2 sm:gap-3 py-1 flex-wrap">
+    <!-- INTERACTIVE BRAND DROPDOWN PILL & POPOVER -->
+    <div class="relative inline-block shrink-0" id="showroom-brand-dropdown-wrapper">
+      <button
+        type="button"
+        id="showroom-brand-badge-btn"
+        class="flex items-center gap-2 group/brand-badge cursor-pointer px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 hover:border-cyan-500/50 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/40 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden transition-all transform active:scale-95 shadow-2xs"
+        title="Klik untuk melihat dan beralih ke merek mobil lainnya"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="showroom-brand-dropdown-popover"
+        aria-label={`Buka menu pemilihan merek, merek saat ini ${brandName}`}
+      >
+        {brandLogoUrl && (
+          <div class="w-5 h-5 rounded-md p-0.5 bg-white dark:bg-white border border-slate-200/60 dark:border-white/20 flex items-center justify-center shadow-2xs group-hover/brand-badge:scale-105 transition-transform">
+            <img src={brandLogoUrl} alt={brandName} class="w-full h-full object-contain filter drop-shadow-2xs" />
+          </div>
+        )}
+        <span class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+          <span>{brandName}</span>
+          <span id="showroom-brand-arrow" class="text-[9px] text-cyan-500 transition-transform duration-200" aria-hidden="true">▼</span>
+        </span>
+      </button>
+
+      <!-- POP-UP DROPDOWN MEREK (Liquid Glass Brand Hub Modal) -->
+      <div 
+        id="showroom-brand-dropdown-popover" 
+        role="dialog"
+        aria-modal="true"
+        aria-label="Pilih Merek Mobil"
+        class="showroom-brand-popover hidden absolute top-full mt-2.5 left-1/2 -translate-x-1/2 w-85 sm:w-120 md:w-140 rounded-3xl figma-liquid-glass border border-slate-200/90 dark:border-white/20 shadow-2xl p-4 sm:p-5 backdrop-blur-2xl z-50 flex-col gap-3 text-left animate-in fade-in zoom-in-95 duration-150"
+      >
+        <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/80 pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white font-headline">Pilih Merek Mobil</span>
+            <span class="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800 px-2 py-0.5 rounded-full">
+              {allBrandList.length} Merek Resmi
+            </span>
+          </div>
+          <button 
+            type="button" 
+            id="showroom-brand-dropdown-close" 
+            class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-base leading-none p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden cursor-pointer"
+            title="Tutup menu merek (Esc)"
+            aria-label="Tutup jendela pemilihan merek"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Quick Search Input -->
+        <div class="relative">
+          <input 
+            type="text" 
+            id="showroom-brand-search-input" 
+            placeholder="Cari merek (e.g. BYD, Chery, Hyundai, Wuling)..." 
+            aria-label="Cari merek mobil di showroom"
+            class="w-full text-xs py-2 px-3 pl-8 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-cyan-500/40"
+          />
+          <img src="/icons/search.svg" class="w-3.5 h-3.5 opacity-40 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" alt="" />
+        </div>
+
+        <!-- Scrollable Grid of Brands -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-70 overflow-y-auto pr-1 no-scrollbar" id="showroom-brand-grid" role="list">
+          {allBrandList.map((b) => {
+            const isCurrent = b.name.toLowerCase() === brandName.toLowerCase();
+            return (
+              <a
+                href={`/katalog-mobil?brand=${encodeURIComponent(b.name)}`}
+                data-brand-name={b.name.toLowerCase()}
+                role="listitem"
+                aria-label={`Lihat katalog mobil ${b.name}, ${b.count} model tersedia`}
+                class:list={[
+                  "showroom-brand-card flex items-center gap-2.5 p-2 rounded-xl border transition-all text-xs group/bcard focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden",
+                  isCurrent
+                    ? "bg-cyan-500/15 border-cyan-500 text-cyan-700 dark:text-cyan-300 font-bold shadow-2xs"
+                    : "bg-white/60 dark:bg-slate-900/60 border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-cyan-500/50 hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20 font-medium"
+                ]}
+              >
+                <div class="w-6 h-6 rounded-lg bg-white dark:bg-white border border-slate-200/60 dark:border-white/20 p-0.5 flex items-center justify-center shrink-0 group-hover/bcard:scale-110 transition-transform">
+                  {b.logoUrl ? (
+                    <img src={b.logoUrl} alt={b.name} class="w-full h-full object-contain filter drop-shadow-2xs" />
+                  ) : (
+                    <span class="text-[9px] font-bold text-slate-800">{b.name.slice(0, 2).toUpperCase()}</span>
+                  )}
+                </div>
+                <div class="truncate">
+                  <span class="block truncate leading-tight">{b.name}</span>
+                  <span class="block text-[10px] text-slate-400 leading-tight">{b.count} Model</span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+
+    <!-- Vertical separator on wider screens -->
+    <div class="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-700/80" aria-hidden="true"></div>
+
+    <!-- Horizontal Model Selector Tabs (Hidden on mobile as requested, clean navigation on desktop) -->
+    <div 
+      class="hidden sm:flex items-center gap-1.5 sm:gap-2 overflow-x-auto py-1 px-1 no-scrollbar scroll-smooth"
+      role="tablist"
+      aria-label={`Daftar model mobil ${brandName}`}
+      id="model-nav-tablist"
+    >
+      {cars.map((car, idx) => (
+        <button
+          type="button"
+          data-car-index={idx}
+          role="tab"
+          id={`model-tab-${idx}`}
+          aria-selected={idx === initialIndex ? "true" : "false"}
+          tabindex={idx === initialIndex ? 0 : -1}
+          aria-controls="stage-car-presentation"
+          aria-label={`Pilih model ${getCleanModelName(car.name, brandName)}`}
+          class:list={[
+            "model-nav-tab shrink-0 transition-all duration-200 whitespace-nowrap cursor-pointer text-xs sm:text-sm font-bold tracking-tight rounded-xl px-3 py-1.5 border focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden",
+            idx === initialIndex
+              ? "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-400/40 shadow-xs"
+              : "text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60"
+          ]}
+        >
+          {getCleanModelName(car.name, brandName)}
+        </button>
+      ))}
+    </div>
+  </div>
+
+  <!-- 2. SEAMLESS COMPACT STUDIO SHOWCASE (Foto Mobil di Kiri + 8 Spesifikasi Vital di Kanan) -->
+  <div id="stage-car-presentation" class="relative w-full max-w-6xl mx-auto my-1 sm:my-2 p-2.5 sm:p-4.5 lg:p-5 rounded-2xl sm:rounded-3xl bg-linear-to-b from-white/95 via-sky-50/30 to-cyan-50/20 dark:from-slate-900/95 dark:via-slate-900/60 dark:to-slate-950/80 border border-slate-200/90 dark:border-white/10 shadow-md sm:shadow-lg shadow-cyan-950/5 dark:shadow-black/40 backdrop-blur-md" role="region" aria-label="Tampilan Utama Model Mobil dan Spesifikasi">
+    
+    <!-- Model Header & OTR Pricing (Clean: Nama, Body Type, Engine Type) -->
+    <div class="flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-1.5 mb-1.5 sm:mb-3">
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
+        <h2 id="stage-car-title" class="font-headline text-sm sm:text-xl font-black text-slate-900 dark:text-white tracking-tight truncate">
+          {getCleanModelName(firstCar.name, brandName)}
+        </h2>
+        <span id="stage-car-body-badge" class="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase tracking-wider">
+          {(firstCar.bodyType || firstCar.body_type?.name || firstCar.body_type || 'SUV').toUpperCase()}
+        </span>
+        <span id="stage-car-engine-badge" class="px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-bold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800 uppercase tracking-wider">
+          {(firstCar.engineType || firstCar.engine_type?.name || firstCar.engine_type || 'BEV').toUpperCase()}
+        </span>
+      </div>
+      <div class="text-right bg-white/70 dark:bg-slate-800/50 py-1 px-2 sm:px-3 rounded-lg sm:rounded-xl border border-slate-200/60 dark:border-white/5 shadow-2xs shrink-0">
+        <span class="text-[8px] sm:text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">Estimasi OTR</span>
+        <span id="stage-car-price" class="font-headline font-black text-xs sm:text-base text-cyan-600 dark:text-cyan-400 block tracking-tight tabular-nums">
+          {firstCar.price && firstCar.price !== "0" && firstCar.price !== "Rp 0" ? firstCar.price : "Belum Tersedia"}
+        </span>
+      </div>
+    </div>
+
+    <!-- Seamless Compact Split Grid: Left Car Photo + Right 8-Micro Specs Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-4 lg:gap-6 items-center">
+      
+      <!-- Left Column: Vehicle Studio Image with Previous/Next Arrows -->
+      <div class="lg:col-span-5 relative flex flex-col items-center justify-center">
+        <!-- Radial Ambient Halo behind car -->
+        <div class="absolute inset-0 max-w-xs mx-auto h-28 sm:h-36 bg-linear-to-r from-cyan-400/20 via-sky-300/10 to-transparent blur-2xl rounded-full pointer-events-none -z-10"></div>
+
+        <!-- Slender Nav Arrows -->
+        <button
+          type="button"
+          id="prev-car-btn"
+          class="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-md border border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-cyan-50 dark:hover:bg-slate-700 hover:text-cyan-600 hover:scale-105 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden transition cursor-pointer"
+          aria-label="Model mobil sebelumnya"
+          title="Model Sebelumnya (←)"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          id="next-car-btn"
+          class="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-md border border-slate-200/80 dark:border-white/10 text-slate-600 dark:text-slate-300 flex items-center justify-center hover:bg-cyan-50 dark:hover:bg-slate-700 hover:text-cyan-600 hover:scale-105 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden transition cursor-pointer"
+          aria-label="Model mobil berikutnya"
+          title="Model Berikutnya (→)"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        <!-- Car Image Container -->
+        <div id="car-image-wrapper" class="w-full aspect-16/10 max-h-28 sm:max-h-44 lg:max-h-48 flex items-center justify-center transition-all duration-300 transform relative px-6">
+          <img
+            id="stage-car-image"
+            src={firstCar.img}
+            alt={firstCar.name}
+            class={`max-h-full max-w-full object-contain select-none transition-all duration-300 drop-shadow-md ${firstCar.img ? '' : 'hidden'}`}
+            onerror="this.classList.add('hidden'); const fb = document.getElementById('stage-car-fallback'); if(fb) fb.classList.remove('hidden');"
+          />
+          <div id="stage-car-fallback" class={`flex flex-col items-center justify-center gap-1.5 text-center p-3 rounded-xl bg-slate-100/60 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/40 w-full aspect-16/10 select-none ${firstCar.img ? 'hidden' : ''}`}>
+            <span class="text-[10px] text-slate-400 font-medium">Foto Belum Tersedia</span>
+          </div>
+        </div>
+
+        <!-- Studio Floor Shadow Reflection -->
+        <div class="w-3/4 h-1 rounded-[100%] bg-linear-to-r from-transparent via-slate-900/20 dark:via-black/60 to-transparent blur-xs -mt-0.5"></div>
+
+        <!-- Tombol Aksi Beralih ke Halaman Detail Spesifikasi Lengkap Mobil -->
+        <div class="mt-2 w-full flex items-center justify-center px-1">
+          <a
+            id="stage-view-specs-btn"
+            href={`/mobil/${firstCar.slug}`}
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-linear-to-r from-cyan-600 via-cyan-500 to-sky-500 hover:from-cyan-500 hover:to-sky-400 text-white font-headline font-bold text-[11px] sm:text-xs tracking-wide shadow-sm hover:shadow-md transition-all cursor-pointer group border border-white/20"
+            aria-label="Lihat Detail Spesifikasi Lengkap"
+          >
+            <svg class="w-3.5 h-3.5 text-cyan-100 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span id="btn-specs-text">Lihat Detail Spesifikasi Lengkap</span>
+            <span class="group-hover:translate-x-1 transition-transform">→</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Right Column: 8 Micro-Spec Cards (Super Compact & Clean) -->
+      <div class="lg:col-span-7">
+        <div class="grid grid-cols-2 gap-1.5 sm:gap-2.5 text-left">
+          
+          <!-- 1. Jarak Tempuh -->
+          <div class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/85 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-2xs">
+            <div class="flex items-center justify-between gap-1 mb-0.5 sm:mb-1">
+              <span class="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1 truncate">
+                <img src="/icons/route.svg" class="w-3.5 h-3.5 opacity-70 inline-block" alt="" />
+                <span>Jarak Tempuh</span>
+              </span>
+              <span id="spec-range-standard-badge" class="px-1 py-0.2 rounded text-[7px] sm:text-[8px] font-black uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                {initialRangeStandard}
+              </span>
+            </div>
+            <span id="spec-electric-range" class="font-headline font-bold text-[11px] sm:text-sm text-slate-900 dark:text-white block truncate tabular-nums">
+              {firstRange && firstRange !== 'Sesuai Standar Uji' && firstRange !== 'Belum Tersedia' && firstRange !== '-' ? firstRange : (firstSpecs.electric_range_km ? `${firstSpecs.electric_range_km} km` : "N/A")}
+            </span>
+          </div>
+
+          <!-- 2. Akselerasi 0-100 -->
+          <div class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/85 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-2xs">
+            <span class="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate mb-0.5 sm:mb-1">
+              ⏱️ Akselerasi 0–100
+            </span>
+            <span id="spec-acc" class="font-headline font-bold text-[11px] sm:text-sm text-slate-900 dark:text-white block truncate tabular-nums">
+              {firstCar.acc && firstCar.acc !== '-' ? firstCar.acc : "N/A"}
+            </span>
+          </div>
+
+          <!-- 3. Dimensi P x L x T -->
+          <div class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/85 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-2xs">
+            <span class="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate mb-0.5 sm:mb-1">
+              Dimensi (P×L×T)
+            </span>
+            <span id="spec-dim-lwh" class="font-headline font-bold text-[10px] sm:text-sm text-slate-900 dark:text-white block truncate tabular-nums">
+              {firstSpecs.length_mm && firstSpecs.width_mm && firstSpecs.height_mm ? `${firstSpecs.length_mm}×${firstSpecs.width_mm}×${firstSpecs.height_mm}` : "-"}
+            </span>
+          </div>
+
+          <!-- 4. Jarak Sumbu Roda -->
+          <div class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/85 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-2xs">
+            <span class="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate mb-0.5 sm:mb-1">
+              Sumbu Roda
+            </span>
+            <span id="spec-wheelbase" class="font-headline font-bold text-[11px] sm:text-sm text-slate-900 dark:text-white block truncate tabular-nums">
+              {firstSpecs.wheelbase_mm ? `${firstSpecs.wheelbase_mm} mm` : "-"}
+            </span>
+          </div>
+
+          <!-- 5. Sistem Penggerak -->
+          <div class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/85 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-2xs">
+            <span class="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate mb-0.5 sm:mb-1">
+              Penggerak
+            </span>
+            <span id="spec-drivetrain" class="font-headline font-bold text-[11px] sm:text-sm text-slate-900 dark:text-white block truncate">
+              {firstSpecs.drivetrain || "FWD"}
+            </span>
+          </div>
+
+          <!-- 6. Jumlah Kursi -->
+          <div class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/85 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-2xs">
+            <span class="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate mb-0.5 sm:mb-1">
+              Kapasitas
+            </span>
+            <span id="spec-seating" class="font-headline font-bold text-[11px] sm:text-sm text-slate-900 dark:text-white block truncate tabular-nums">
+              {firstSpecs.seating_capacity ? `${firstSpecs.seating_capacity} Kursi` : "5 Kursi"}
+            </span>
+          </div>
+
+          <!-- 7. Kapasitas Bagasi -->
+          <div class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/85 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-2xs">
+            <span class="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate mb-0.5 sm:mb-1">
+              Bagasi (L)
+            </span>
+            <span id="spec-trunk" class="font-headline font-bold text-[11px] sm:text-sm text-slate-900 dark:text-white block truncate tabular-nums">
+              {firstSpecs.trunk_volume_liters ? `${firstSpecs.trunk_volume_liters} L` : "N/A"}
+            </span>
+          </div>
+
+          <!-- 8. Layar Infotainmen -->
+          <div class="p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl bg-white/85 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 shadow-2xs">
+            <span class="text-[8px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate mb-0.5 sm:mb-1">
+              Layar
+            </span>
+            <span id="spec-infotainment" class="font-headline font-bold text-[11px] sm:text-sm text-slate-900 dark:text-white block truncate">
+              {firstSpecs.cluster_display || firstSpecs.head_unit_infotainment || "Touchscreen"}
+            </span>
+          </div>
+        </div>
+
+        <!-- Mini Specs Strip (Daya Pengisian, Trim & Garansi Baterai) -->
+        <div class="mt-2 pt-1.5 border-t border-slate-200/70 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[9px] sm:text-[10px] text-slate-500 dark:text-slate-400">
+          <div class="flex items-center gap-1.5 truncate">
+            <img src="/icons/zap.svg" alt="" class="w-3 h-3 opacity-70 dark:invert shrink-0" />
+            <span>Fast Charge:</span>
+            <strong id="spec-charging-speed" class="text-slate-800 dark:text-slate-200 font-semibold">{firstSpecs.charging_time_dc_quick || "AC / DC Fast Charge"}</strong>
+          </div>
+          <div class="flex items-center gap-1.5 truncate">
+            <img src="/icons/shield-check.svg" alt="" class="w-3 h-3 opacity-70 dark:invert shrink-0" />
+            <span>Garansi:</span>
+            <strong id="spec-warranty-battery" class="text-slate-800 dark:text-slate-200 font-semibold">{firstSpecs.warranty_battery || "8 Thn / 160.000 km"}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. REKOMENDASI MOBIL KELAS & HARGA SERUPA (HORIZONTAL SWIPEABLE CAROUSEL ON MOBILE) -->
+  <div id="similar-cars-section" class="max-w-6xl mx-auto space-y-3 mt-4 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-200/80 dark:border-slate-800" role="region" aria-label="Rekomendasi Mobil di Kelas & Harga Serupa">
+    <div class="flex items-center justify-between gap-2">
+      <div>
+        <div class="flex items-center gap-1.5">
+          <span class="px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-black uppercase tracking-wider bg-cyan-100 dark:bg-cyan-950/80 text-cyan-700 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800 flex items-center gap-1">
+            <img src="/icons/swap.svg" class="w-3 h-3 opacity-80 inline-block" alt="" />
+            <span>ALTERNATIF SELEVEL</span>
+          </span>
+          <h3 class="font-headline font-bold text-xs sm:text-base text-slate-900 dark:text-white" id="similar-cars-heading">
+            Rekomendasi Mobil Serupa
+          </h3>
+        </div>
+        <p class="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+          Pilihan alternatif mobil listrik & hybrid sebanding untuk <span id="similar-reference-car" class="font-bold text-cyan-600 dark:text-cyan-400">{firstCar.name}</span>
+        </p>
+      </div>
+      <a href="/katalog-mobil" class="text-[11px] sm:text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-0.5 shrink-0">
+        <span>Semua Mobil</span>
+        <span>→</span>
+      </a>
+    </div>
+
+    <!-- Horizontal Swipeable Snap Carousel on Mobile / 4-Col Grid on Desktop -->
+    <div class="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 overflow-x-auto sm:overflow-visible snap-x snap-mandatory no-scrollbar pb-2" id="similar-cars-grid">
+      {initialSimilarCars.map((sc) => {
+        const scLogo = BRAND_LOGOS[sc.brand.toLowerCase()] || BRAND_LOGOS[normBrand(sc.brand)] || null;
+        return (
+          <div class="similar-car-card group flex flex-col justify-between w-52.5 sm:w-auto shrink-0 snap-start p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 hover:border-cyan-400 hover:shadow-lg transition-all">
+            <div class="space-y-1.5">
+              <!-- Header Brand, Body Type & Engine Tag -->
+              <div class="flex items-center justify-between text-[9px] font-bold">
+                <div class="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                  {scLogo && <img src={scLogo} alt={sc.brand} class="h-3 w-auto object-contain" />}
+                  <span class="uppercase tracking-wider">{sc.brand}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="px-1 py-0.2 rounded text-[8px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase">
+                    {(sc.bodyType || 'SUV').toUpperCase()}
+                  </span>
+                  <span class="px-1 py-0.2 rounded text-[8px] font-bold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800 uppercase">
+                    {(sc.engineType || 'BEV').toUpperCase()}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Car Thumbnail: Tanpa background kotak, posisikan di tengah card -->
+              <a href={`/mobil/${sc.slug}`} class="w-full h-20 sm:h-28 flex items-center justify-center p-1 relative group-hover:scale-105 transition-transform">
+                <img src={sc.img} alt={sc.name} class="max-h-full max-w-full object-contain drop-shadow-sm mx-auto" loading="lazy" />
+              </a>
+
+              <!-- Name & Price -->
+              <div>
+                <a href={`/mobil/${sc.slug}`} class="font-headline font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition line-clamp-1">
+                  {sc.name}
+                </a>
+                <div class="text-[11px] sm:text-xs font-black text-cyan-600 dark:text-cyan-400 mt-0.5">
+                  {sc.price || "Rp -"}
+                </div>
+              </div>
+
+              <!-- Micro metrics -->
+              <div class="grid grid-cols-2 gap-1 text-[9px] text-slate-500 dark:text-slate-400 py-0.5 border-t border-slate-100 dark:border-slate-800">
+                <div class="truncate flex items-center gap-1"><img src="/icons/zap.svg" class="w-3 h-3 opacity-60 inline-block" alt="" /> {sc.hp || "-"}</div>
+                <div class="text-right truncate flex items-center justify-end gap-1"><img src="/icons/battery.svg" class="w-3 h-3 opacity-60 inline-block" alt="" /> {sc.consumption || "-"}</div>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-1 pt-1.5 mt-1.5 border-t border-slate-100 dark:border-slate-800">
+              <a href={`/mobil/${sc.slug}`} class="px-2 py-1 rounded-lg text-center text-[10px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                Detail
+              </a>
+              <a href={`/komparasi?car1=${firstCar.slug}&car2=${sc.slug}`} class="similar-compare-btn px-2 py-1 rounded-lg text-center text-[10px] font-bold bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/25 border border-cyan-400/30 transition flex items-center justify-center gap-1">
+                <span>Bandingkan</span>
+                <img src="/icons/scale.svg" class="w-3 h-3 opacity-80 inline-block" alt="" />
+              </a>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <!-- Quick Brand Switcher Chips -->
+    <div class="pt-2 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+      <span class="text-[9px] font-bold text-slate-400 shrink-0 uppercase tracking-wider">Merek Lain:</span>
+      <div class="flex items-center gap-1 flex-nowrap overflow-x-auto no-scrollbar">
+        {otherBrands.slice(0, 10).map((b) => (
+          <a
+            href={`/katalog-mobil?brand=${encodeURIComponent(b)}`}
+            class="shrink-0 px-2 py-0.5 rounded-lg border border-slate-200/80 dark:border-slate-800 text-[10px] text-slate-600 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:border-cyan-400 transition"
+          >
+            {b}
+          </a>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. MOBILE STICKY FLOATING QUICK ACTION DOCK (Solid High-Contrast Background) -->
+  <div id="mobile-sticky-dock" class="sm:hidden fixed bottom-3 inset-x-3 z-50 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-white/15 p-2 px-2.5 flex items-center justify-between shadow-2xl" role="toolbar" aria-label="Aksi Cepat Mobile">
+    <div class="flex items-center gap-2 overflow-hidden pr-2">
+      <div class="w-9 h-7 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center p-0.5 border border-slate-200 dark:border-white/10">
+        <img id="dock-car-img" src={firstCar.img || "/images/cars/byd-seal.png"} alt={firstCar.name || "Mobil"} class="w-full h-full object-contain filter drop-shadow-2xs" />
+      </div>
+      <div class="truncate">
+        <span id="dock-car-name" class="font-headline font-bold text-[11px] text-slate-900 dark:text-white block truncate leading-tight">
+          {firstCar.name}
+        </span>
+        <span id="dock-car-price" class="text-[10px] font-extrabold text-cyan-600 dark:text-cyan-400 block leading-tight">
+          {firstCar.price}
+        </span>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      <a 
+        id="dock-compare-btn" 
+        href={`/komparasi?car1=${firstCar.slug}`}
+        aria-label={`Bandingkan ${firstCar.name} dengan mobil lain`}
+        class="px-2.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden text-white font-bold text-[10px] uppercase tracking-wider transition shadow-xs"
+      >
+        Bandingkan
+      </a>
+      <a 
+        id="dock-specs-btn" 
+        href={`/mobil/${firstCar.slug}`}
+        aria-label="Buka detail spesifikasi lengkap mobil"
+        class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-[10px] font-bold focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center gap-1"
+        title="Detail Spesifikasi"
+      >
+        <img src="/icons/file-text.svg" class="w-3.5 h-3.5 opacity-70 inline-block" alt="" />
+        <span>Spek</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<style>
+  .showroom-brand-popover:not(.hidden) {
+    display: flex;
+  }
+</style>
+
+<script>
+  function initXpengShowroom() {
+    const root = document.querySelector('.xpeng-showroom-root') as HTMLElement | null;
+    if (!root) return;
+
+    let cars: any[] = [];
+    try {
+      cars = JSON.parse(root.dataset.cars || '[]');
+    } catch (e) {}
+
+    if (!cars || cars.length === 0) return;
+
+    let currentIndex = parseInt(root.dataset.initialIndex || '0', 10);
+    if (isNaN(currentIndex) || currentIndex < 0 || currentIndex >= cars.length) {
+      currentIndex = 0;
+    }
+
+    const navTabs = document.querySelectorAll<HTMLButtonElement>('.model-nav-tab');
+    const prevBtn = document.getElementById('prev-car-btn');
+    const nextBtn = document.getElementById('next-car-btn');
+    const carImage = document.getElementById('stage-car-image') as HTMLImageElement | null;
+    const carImageWrapper = document.getElementById('car-image-wrapper');
+    const carTitle = document.getElementById('stage-car-title');
+    const carTagline = document.getElementById('stage-car-tagline');
+    const stageCarPrice = document.getElementById('stage-car-price');
+
+    const brand = (document.getElementById('brand-showcase-root')?.dataset?.brand || '').trim();
+    function cleanModelName(fullName: string): string {
+      return (fullName || '')
+        .replace(new RegExp(`^${brand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`, 'i'), '')
+        .replace(/\s*(CKD|CBU|All\s*Electric)\b/gi, '')
+        .trim() || fullName;
+    }
+
+    const trimHeading = document.getElementById('trim-table-heading');
+    const verticalThead = document.getElementById('vertical-trim-thead');
+    const verticalTbody = document.getElementById('vertical-trim-tbody');
+
+    const techSpecsHeading = document.getElementById('tech-specs-heading');
+    const specSplitCarImg = document.getElementById('spec-split-car-img') as HTMLImageElement | null;
+    const specWheelbase = document.getElementById('spec-wheelbase');
+    const specDimLwh = document.getElementById('spec-dim-lwh');
+    const specSeating = document.getElementById('spec-seating');
+    const specAcc = document.getElementById('spec-acc');
+    const specElectricRange = document.getElementById('spec-electric-range');
+    const specDrivetrain = document.getElementById('spec-drivetrain');
+    const specTrunk = document.getElementById('spec-trunk');
+    const specInfotainment = document.getElementById('spec-infotainment');
+    const specDcPower = document.getElementById('spec-dc-power');
+    const specChargingSpeed = document.getElementById('spec-charging-speed');
+    const specInteriorTrim = document.getElementById('spec-interior-trim');
+    const specWarrantyBattery = document.getElementById('spec-warranty-battery');
+
+    function updateShowroom(index: number, direction: 'left' | 'right' | 'none' = 'none') {
+      if (index < 0) index = cars.length - 1;
+      if (index >= cars.length) index = 0;
+      currentIndex = index;
+
+      const currentCar = cars[currentIndex];
+      if (!currentCar) return;
+      const specs = currentCar.specs || {};
+      const variants = currentCar.variants || [];
+
+      // Update Nav Tabs Active State & Accessibility attributes
+      navTabs.forEach((tab, idx) => {
+        if (idx === currentIndex) {
+          tab.className = "model-nav-tab shrink-0 transition-all duration-200 whitespace-nowrap cursor-pointer text-xs sm:text-sm font-bold tracking-tight rounded-xl px-3 py-1.5 border focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-400/40 shadow-xs";
+          tab.setAttribute('aria-selected', 'true');
+          tab.setAttribute('tabindex', '0');
+        } else {
+          tab.className = "model-nav-tab shrink-0 transition-all duration-200 whitespace-nowrap cursor-pointer text-xs sm:text-sm font-bold tracking-tight rounded-xl px-3 py-1.5 border focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:outline-hidden text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60";
+          tab.setAttribute('aria-selected', 'false');
+          tab.setAttribute('tabindex', '-1');
+        }
+      });
+
+      // Animate Car Image Transition
+      if (carImageWrapper && carImage) {
+        const carFallback = document.getElementById('stage-car-fallback');
+        carImageWrapper.style.opacity = '0';
+        carImageWrapper.style.transform = direction === 'right' ? 'translateX(30px) scale(0.97)' : direction === 'left' ? 'translateX(-30px) scale(0.97)' : 'scale(0.97)';
+
+        setTimeout(() => {
+          if (currentCar.img) {
+            carImage.src = currentCar.img;
+            carImage.alt = currentCar.name;
+            carImage.classList.remove('hidden');
+            if (carFallback) carFallback.classList.add('hidden');
+          } else {
+            carImage.classList.add('hidden');
+            if (carFallback) carFallback.classList.remove('hidden');
+          }
+          carImageWrapper.style.opacity = '1';
+          carImageWrapper.style.transform = 'translateX(0) scale(1)';
+        }, 160);
+      }
+
+      // Update Stage Text, Badges & Pricing
+      if (carTitle) carTitle.textContent = cleanModelName(currentCar.name);
+      const stageCarBodyBadge = document.getElementById('stage-car-body-badge');
+      const stageCarEngineBadge = document.getElementById('stage-car-engine-badge');
+      if (stageCarBodyBadge) {
+        stageCarBodyBadge.textContent = (currentCar.bodyType || currentCar.body_type?.name || currentCar.body_type || 'SUV').toUpperCase();
+      }
+      if (stageCarEngineBadge) {
+        stageCarEngineBadge.textContent = (currentCar.engineType || currentCar.engine_type?.name || currentCar.engine_type || 'BEV').toUpperCase();
+      }
+      if (stageCarPrice) stageCarPrice.textContent = (currentCar.price && currentCar.price !== "0" && currentCar.price !== "Rp 0") ? currentCar.price : "Belum Tersedia";
+
+      // Update Vertical Trim Matrix Table (No duplicate price in TH)
+      if (trimHeading) trimHeading.textContent = `Perbandingan Varian & Trim ${cleanModelName(currentCar.name)}`;
+
+      if (verticalThead && verticalTbody) {
+        if (variants.length > 0) {
+          verticalThead.innerHTML = `
+            <tr class="border-b border-slate-200 dark:border-slate-800">
+              <th class="py-3.5 px-4 font-bold text-slate-500 uppercase tracking-wider text-[11px] w-52 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10">
+                Parameter Spesifikasi
+              </th>
+              ${variants.map((v: any, idx: number) => `
+                <th class="py-3.5 px-4 font-headline font-bold text-slate-900 dark:text-white text-xs sm:text-sm min-w-[170px] border-l border-slate-100 dark:border-slate-800/60">
+                  <div class="flex items-center justify-between gap-1">
+                    <span>${v.name.replace(/\s*CKD\b/gi, '').trim()}</span>
+                    ${idx === 0 && variants.length > 1 ? '<span class="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full font-semibold border border-slate-200 dark:border-slate-700">Entry</span>' : ''}
+                    ${idx === variants.length - 1 && variants.length > 1 ? '<span class="text-[9px] bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 px-2 py-0.5 rounded-full font-bold border border-cyan-500/30">Top</span>' : ''}
+                  </div>
+                  <div class="text-xs font-extrabold text-cyan-600 dark:text-cyan-400 mt-1">${v.priceLabel || currentCar.price || '-'}</div>
+                </th>
+              `).join('')}
+            </tr>
+          `;
+
+          verticalTbody.innerHTML = `
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/wallet.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Harga OTR Jakarta</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4 font-headline font-black text-slate-900 dark:text-white text-xs sm:text-sm">${v.priceLabel || currentCar.price || '-'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/gauge.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Daya & Torsi Motor</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">${v.power_output || currentCar.hp || '-'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/battery-bolt.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Kapasitas Baterai & Jarak</span>
+              </td>
+              ${variants.map((v: any) => `
+                <td class="py-3 px-4 font-bold text-emerald-600 dark:text-emerald-400">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                    ${v.battery_range || currentCar.consumption || '-'}
+                  </span>
+                </td>
+              `).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/settings.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Spesifikasi Velg & Ban</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4">${v.wheel_spec || '-'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/users.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Material & Konfigurasi Jok</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4">${v.interior_spec || '-'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/cpu.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Sistem Infotainment & Audio</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4">${v.audio_display || '-'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/sparkles.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Tipe Atap</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4">${v.sunroof || 'Solid Roof'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/shield-check.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Fitur Keselamatan ADAS</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">${v.safety_adas || specs.safety_adas_full || '-'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/zap.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Dukungan V2L</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4">${v.v2l_support || specs.v2l_support || 'Ya'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/plug.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Waktu Pengisian Daya</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4">${v.charging_time || 'DC Fast Charging'}</td>`).join('')}
+            </tr>
+            <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2">
+                <img src="/icons/factory.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+                <span>Fasilitas Home Charger</span>
+              </td>
+              ${variants.map((v: any) => `<td class="py-3 px-4">${v.wall_charger_info || 'Termasuk Wallbox AC 7 kW'}</td>`).join('')}
+            </tr>
+          `;
+        } else {
+          verticalThead.innerHTML = `
+            <tr class="border-b border-slate-200 dark:border-slate-800">
+              <th class="py-3.5 px-4 font-bold text-slate-500 uppercase tracking-wider text-[11px] w-52 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10">Parameter</th>
+              <th class="py-3.5 px-4 font-headline font-bold text-slate-900 dark:text-white text-sm">Standar Indonesia</th>
+            </tr>
+          `;
+          verticalTbody.innerHTML = `
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10">Harga OTR Jakarta</td>
+              <td class="py-3 px-4 font-headline font-black text-cyan-600 dark:text-cyan-400">${currentCar.price || "Belum Tersedia"}</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10">Jarak Tempuh</td>
+              <td class="py-3 px-4 font-bold text-emerald-600 dark:text-emerald-400">${currentCar.consumption || "Belum Tersedia"}</td>
+            </tr>
+            <tr>
+              <td class="py-3 px-4 font-semibold text-slate-500 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10">Tenaga Maksimum</td>
+              <td class="py-3 px-4 font-bold">${currentCar.hp || "Belum Tersedia"}</td>
+            </tr>
+          `;
+        }
+      }
+
+      // Update Dedicated ADAS Matrix Table
+      updateAdasMatrix(currentCar);
+
+      // Update Technical Specs Split Studio Layout
+      if (techSpecsHeading) techSpecsHeading.textContent = `Spesifikasi Utama ${cleanModelName(currentCar.name)}`;
+
+      if (specSplitCarImg && currentCar.img) {
+        specSplitCarImg.src = currentCar.img;
+        specSplitCarImg.alt = currentCar.name || "Mobil";
+      }
+
+      if (specWheelbase) specWheelbase.textContent = specs.wheelbase_mm ? `${specs.wheelbase_mm} mm` : "-";
+      if (specDimLwh) {
+        if (specs.length_mm && specs.width_mm && specs.height_mm) {
+          specDimLwh.textContent = `${specs.length_mm} × ${specs.width_mm} × ${specs.height_mm} mm`;
+        } else {
+          specDimLwh.textContent = "-";
+        }
+      }
+      if (specSeating) specSeating.textContent = specs.seating_capacity ? `${specs.seating_capacity} Kursi` : "-";
+      if (specAcc) specAcc.textContent = (currentCar.acc && currentCar.acc !== '-' && currentCar.acc !== '0s') ? currentCar.acc : "N/A";
+      if (specElectricRange) {
+        const validRange = (currentCar.consumption && currentCar.consumption !== '-' && currentCar.consumption !== '0 km' && currentCar.consumption !== 'Sesuai Standar Uji' && currentCar.consumption !== 'Belum Tersedia') ? currentCar.consumption : (specs.electric_range_km ? `${specs.electric_range_km} km` : "N/A");
+        specElectricRange.textContent = validRange;
+      }
+      const rangeStdBadge = document.getElementById('spec-range-standard-badge');
+      if (rangeStdBadge) {
+        let std = specs.range_standard || '';
+        const consumptionText = (currentCar.consumption || '') + ' ' + (currentCar.variants?.[0]?.battery_range || '');
+        if (!std && consumptionText) {
+          if (/wltp/i.test(consumptionText)) std = 'WLTP';
+          else if (/cltc/i.test(consumptionText)) std = 'CLTC';
+          else if (/epa/i.test(consumptionText)) std = 'EPA';
+          else if (/nedc/i.test(consumptionText)) std = 'NEDC';
+        }
+        rangeStdBadge.textContent = std || 'WLTP';
+      }
+      if (specDrivetrain) specDrivetrain.textContent = specs.drivetrain || "N/A";
+      if (specTrunk) {
+        specTrunk.textContent = specs.trunk_volume_liters ? `${specs.trunk_volume_liters} L` : "N/A";
+      }
+      if (specInfotainment) {
+        specInfotainment.textContent = specs.head_unit_infotainment || specs.cockpit_instrument_cluster || "Touchscreen Multimedia";
+      }
+      if (specDcPower) {
+        specDcPower.textContent = specs.max_dc_charging_kw ? `${specs.max_dc_charging_kw} kW` : (specs.charging_time_dc_quick || "AC / DC Fast Charge");
+      }
+      if (specChargingSpeed) {
+        specChargingSpeed.textContent = specs.charging_time_dc_quick || (specs.battery_capacity_kwh ? `Kapasitas ${specs.battery_capacity_kwh} kWh` : "Fast Charging");
+      }
+      if (specInteriorTrim) {
+        specInteriorTrim.textContent = specs.interior_material || "Premium Interior";
+      }
+      if (specWarrantyBattery) {
+        specWarrantyBattery.textContent = specs.warranty_battery || "8 Tahun / 160.000 km";
+      }
+
+      // Update Specs Button Link to Navigate Directly to Car Detail Page
+      const specsBtn = document.getElementById('stage-view-specs-btn') as HTMLAnchorElement | null;
+      if (specsBtn) specsBtn.href = `/mobil/${currentCar.slug || ''}`;
+
+      // Update Mobile Floating Dock
+      const dockCarImg = document.getElementById('dock-car-img') as HTMLImageElement | null;
+      const dockCarName = document.getElementById('dock-car-name');
+      const dockCarPrice = document.getElementById('dock-car-price');
+      const dockCompareBtn = document.getElementById('dock-compare-btn') as HTMLAnchorElement | null;
+      const dockSpecsBtn = document.getElementById('dock-specs-btn') as HTMLAnchorElement | null;
+
+      if (dockCarImg && currentCar.img) dockCarImg.src = currentCar.img;
+      if (dockCarName) dockCarName.textContent = cleanModelName(currentCar.name);
+      if (dockCarPrice) dockCarPrice.textContent = (currentCar.price && currentCar.price !== "0" && currentCar.price !== "Rp 0") ? currentCar.price : "Belum Tersedia";
+      if (dockCompareBtn) dockCompareBtn.href = `/komparasi?car1=${currentCar.slug || ''}`;
+      if (dockSpecsBtn) dockSpecsBtn.href = `/mobil/${currentCar.slug || ''}`;
+
+      // Update Rekomendasi Mobil Serupa Secara Dinamis
+      updateSimilarCars(currentCar);
+    }
+
+    function updateSimilarCars(currentCar: any) {
+      const headingRef = document.getElementById('similar-reference-car');
+      if (headingRef) headingRef.textContent = currentCar.name;
+
+      const grid = document.getElementById('similar-cars-grid');
+      if (!grid) return;
+
+      let allCars: any[] = [];
+      try {
+        allCars = JSON.parse(root?.dataset?.allCars || '[]');
+      } catch (e) {}
+      if (!allCars || allCars.length === 0) return;
+
+      const targetBrand = (currentCar.brand || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+      const targetPrice = currentCar.priceVal || 0;
+      const targetBody = (currentCar.bodyType || '').toLowerCase();
+      const targetEngine = (currentCar.engineType || '').toLowerCase();
+
+      const candidates = allCars.filter((c: any) => {
+        const cb = (c.brand || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+        return cb !== targetBrand && c.priceVal > 0;
+      });
+
+      const scored = candidates.map((c: any) => {
+        const pDiff = Math.abs((c.priceVal || 0) - targetPrice);
+        const bodyMatch = (c.bodyType || '').toLowerCase() === targetBody;
+        const engineMatch = (c.engineType || '').toLowerCase() === targetEngine;
+        let score = pDiff;
+        if (bodyMatch) score -= 35;
+        if (engineMatch) score -= 15;
+        return { car: c, score };
+      });
+
+      scored.sort((a: any, b: any) => a.score - b.score);
+      const topCars = scored.slice(0, 4).map((s: any) => s.car);
+
+      grid.innerHTML = topCars.map((sc: any) => `
+        <div class="similar-car-card group flex flex-col justify-between w-[210px] sm:w-auto shrink-0 snap-start p-2.5 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 hover:border-cyan-400 hover:shadow-lg transition-all">
+          <div class="space-y-1.5">
+            <!-- Header Brand, Body Type & Engine Tag -->
+            <div class="flex items-center justify-between text-[9px] font-bold">
+              <span class="text-slate-700 dark:text-slate-300 uppercase tracking-wider">${sc.brand}</span>
+              <div class="flex items-center gap-1">
+                <span class="px-1 py-0.2 rounded text-[8px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 uppercase">
+                  ${(sc.bodyType || 'SUV').toUpperCase()}
+                </span>
+                <span class="px-1 py-0.2 rounded text-[8px] font-bold bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800 uppercase">
+                  ${(sc.engineType || 'BEV').toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <!-- Car Thumbnail: Tanpa background kotak, posisikan di tengah card -->
+            <a href="/mobil/${sc.slug}" class="w-full h-20 sm:h-28 flex items-center justify-center p-1 relative group-hover:scale-105 transition-transform">
+              <img src="${sc.img || '/images/cars/default-car.webp'}" alt="${sc.name}" class="max-h-full max-w-full object-contain drop-shadow-sm mx-auto" loading="lazy" />
+            </a>
+
+            <!-- Name & Price -->
+            <div>
+              <a href="/mobil/${sc.slug}" class="font-headline font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition line-clamp-1">
+                ${sc.name}
+              </a>
+              <div class="text-[11px] sm:text-xs font-black text-cyan-600 dark:text-cyan-400 mt-0.5">
+                ${sc.price || "Rp -"}
+              </div>
+            </div>
+
+            <!-- Micro metrics -->
+            <div class="grid grid-cols-2 gap-1 text-[9px] text-slate-500 dark:text-slate-400 py-0.5 border-t border-slate-100 dark:border-slate-800">
+              <div class="truncate flex items-center gap-1"><img src="/icons/zap.svg" class="w-3 h-3 opacity-60 inline-block" alt="" /> ${sc.hp || "-"}</div>
+              <div class="text-right truncate flex items-center justify-end gap-1"><img src="/icons/battery.svg" class="w-3 h-3 opacity-60 inline-block" alt="" /> ${sc.consumption || "-"}</div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="grid grid-cols-2 gap-1 pt-1.5 mt-1.5 border-t border-slate-100 dark:border-slate-800">
+            <a href="/mobil/${sc.slug}" class="px-2 py-1 rounded-lg text-center text-[10px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+              Detail
+            </a>
+            <a href="/komparasi?car1=${currentCar.slug}&car2=${sc.slug}" class="similar-compare-btn px-2 py-1 rounded-lg text-center text-[10px] font-bold bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/25 border border-cyan-400/30 transition flex items-center justify-center gap-1">
+              <span>Bandingkan</span>
+              <img src="/icons/scale.svg" class="w-3 h-3 opacity-80 inline-block" alt="" />
+            </a>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // 2. Dynamic ADAS Feature Breakdown Matrix Handler
+    const ADAS_POINTERS = [
+      { id: 'acc', name: 'Adaptive Cruise Control (ACC)', icon: '/icons/speedometer.svg', keywords: ['adaptive cruise control', 'acc', 'stop & go', 'stop and go', 'pilot assist', 'icc', 'smart cruise control'] },
+      { id: 'aeb', name: 'Automatic Emergency Braking (AEB)', icon: '/icons/shield-check.svg', keywords: ['autonomous emergency braking', 'automatic emergency braking', 'aeb', 'forward collision avoidance', 'fca', 'collision mitigation'] },
+      { id: 'fcw', name: 'Forward Collision Warning (FCW)', icon: '/icons/shield.svg', keywords: ['forward collision warning', 'fcw', 'front collision warning'] },
+      { id: 'lka', name: 'Lane Keeping Assist (LKA)', icon: '/icons/route.svg', keywords: ['lane keeping assist', 'lka', 'lane keep assist', 'lane following assist', 'lfa', 'elk'] },
+      { id: 'ldw', name: 'Lane Departure Warning (LDW)', icon: '/icons/route.svg', keywords: ['lane departure warning', 'ldw'] },
+      { id: 'bsd', name: 'Blind Spot Detection (BSD / BVM)', icon: '/icons/search.svg', keywords: ['blind spot detection', 'bsd', 'blind spot monitoring', 'bsm', 'bvm', 'blind spot view monitor'] },
+      { id: 'rcta', name: 'Rear Cross Traffic Alert (RCTA)', icon: '/icons/swap.svg', keywords: ['rear cross traffic alert', 'rcta', 'rcta-b', 'rccw', 'rcca', 'rear cross traffic braking'] },
+      { id: 'cam360', name: '360° Panoramic Surround View Camera', icon: '/icons/sparkles.svg', keywords: ['360', 'panoramic', 'surround view', 'around view monitor', 'avm', '540'] },
+      { id: 'apa', name: 'Auto Parking Assist (APA)', icon: '/icons/settings.svg', keywords: ['auto parking', 'apa', 'park assist', 'remote smart parking', 'rspa', 'valet parking'] },
+      { id: 'tsr', name: 'Traffic Sign Recognition (TSR / ISLA)', icon: '/icons/gauge.svg', keywords: ['traffic sign recognition', 'tsr', 'intelligent speed limit assist', 'isla', 'tsa'] },
+      { id: 'hma', name: 'High Beam Assist (HMA / Auto High Beam)', icon: '/icons/zap.svg', keywords: ['high beam assist', 'hma', 'auto high beam', 'ahb', 'matrix led'] },
+      { id: 'dow', name: 'Door Opening Warning (DOW / SEA)', icon: '/icons/shield.svg', keywords: ['door opening warning', 'dow', 'safe exit assist', 'sea', 'safe exit warning'] },
+      { id: 'tpms', name: 'Tire Pressure Monitoring System (TPMS)', icon: '/icons/gauge.svg', keywords: ['tire pressure monitoring', 'tpms', 'tekanan ban'] },
+    ];
+
+    function updateAdasMatrix(currentCar: any) {
+      const table = document.getElementById('adas-matrix-table');
+      const thead = document.getElementById('adas-matrix-thead');
+      const tbody = document.getElementById('adas-matrix-tbody');
+      if (!table || !thead || !tbody) return;
+
+      const variants = currentCar.variants || [];
+
+      // If single variant or empty
+      if (variants.length === 0) {
+        thead.innerHTML = `
+          <tr class="border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20">
+            <th class="py-3 px-5 font-bold text-slate-400 uppercase tracking-wider text-[11px] w-56 sticky left-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm z-10">Fitur ADAS</th>
+            <th class="py-3 px-4 font-bold text-slate-900 dark:text-white">Standar Fitur Resmi</th>
+          </tr>
+        `;
+        const fullSafety = (currentCar.specs?.safety_adas_full || '').toLowerCase();
+        tbody.innerHTML = ADAS_POINTERS.map(p => {
+          const has = p.keywords.some(k => fullSafety.includes(k));
+          return `
+            <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+              <td class="py-2.5 px-5 font-medium text-slate-700 dark:text-slate-300 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2.5 border-r border-slate-100 dark:border-slate-800/60">
+                <img src="${p.icon}" class="w-4 h-4 opacity-70 shrink-0 inline-block" alt="" /> <span class="truncate">${p.name}</span>
+              </td>
+              <td class="py-2.5 px-4 border-l border-slate-100 dark:border-slate-800/60">
+                ${has 
+                  ? '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-md"><svg class="w-3 h-3 text-emerald-500 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Standar</span>' 
+                  : '<span class="inline-flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-100 dark:bg-slate-800/50 px-2 py-0.5 rounded-md"><span class="w-1.5 h-1.5 rounded-full bg-slate-400/50 inline-block"></span> Belum Ada</span>'}
+              </td>
+            </tr>
+          `;
+        }).join('');
+        return;
+      }
+
+      // Multi-variant Thead
+      thead.innerHTML = `
+        <tr class="border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/20">
+          <th class="py-3 px-5 font-bold text-slate-400 uppercase tracking-wider text-[11px] w-56 sticky left-0 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm z-10">
+            Fitur Keselamatan Aktif
+          </th>
+          ${variants.map((v: any, idx: number) => `
+            <th class="py-3 px-4 font-bold text-slate-900 dark:text-white min-w-36 border-l border-slate-100 dark:border-slate-800/60">
+              <div class="flex items-center justify-between gap-1">
+                <span>${v.name.replace(/\s*CKD\b/gi, '').trim()}</span>
+                ${idx === 0 && variants.length > 1 ? '<span class="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded-full font-normal">Entry</span>' : ''}
+                ${idx === variants.length - 1 && variants.length > 1 ? '<span class="text-[9px] bg-cyan-100 dark:bg-cyan-900/60 text-cyan-600 dark:text-cyan-400 px-1.5 py-0.5 rounded-full font-bold">Top</span>' : ''}
+              </div>
+            </th>
+          `).join('')}
+        </tr>
+      `;
+
+      // Multi-variant Tbody
+      tbody.innerHTML = ADAS_POINTERS.map(p => {
+        return `
+          <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+            <td class="py-2.5 px-5 font-medium text-slate-700 dark:text-slate-300 sticky left-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm z-10 flex items-center gap-2.5 border-r border-slate-100 dark:border-slate-800/60">
+              <img src="${p.icon}" class="w-4 h-4 opacity-70 shrink-0 inline-block" alt="" /> <span class="truncate">${p.name}</span>
+            </td>
+            ${variants.map((v: any) => {
+              const vAdasStr = ((v.safety_adas || '') + ' ' + (currentCar.specs?.safety_adas_full || '')).toLowerCase();
+              const hasFeature = p.keywords.some(k => vAdasStr.includes(k));
+              return `
+                <td class="py-2.5 px-4 border-l border-slate-100 dark:border-slate-800/60">
+                  ${hasFeature 
+                    ? '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-md"><svg class="w-3 h-3 text-emerald-500 inline-block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Standar</span>' 
+                    : '<span class="inline-flex items-center gap-1.5 text-[11px] text-slate-400 bg-slate-100 dark:bg-slate-800/50 px-2 py-0.5 rounded-md"><span class="w-1.5 h-1.5 rounded-full bg-slate-400/50 inline-block"></span> Belum Ada</span>'}
+                </td>
+              `;
+            }).join('')}
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 3. Segmented Specs Category Filter Tabs
+    const catBtns = document.querySelectorAll<HTMLButtonElement>('.spec-cat-btn');
+    const catBlocks = document.querySelectorAll<HTMLElement>('.spec-cat-block');
+
+    catBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        catBtns.forEach(b => {
+          b.classList.remove('active', 'bg-slate-900', 'text-white', 'dark:bg-white', 'dark:text-slate-900');
+          b.classList.add('text-slate-600', 'dark:text-slate-300');
+          b.setAttribute('aria-selected', 'false');
+        });
+        btn.classList.add('active', 'bg-slate-900', 'text-white', 'dark:bg-white', 'dark:text-slate-900');
+        btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+        btn.setAttribute('aria-selected', 'true');
+
+        const target = btn.dataset.catTarget;
+        catBlocks.forEach(block => {
+          if (target === 'all' || block.dataset.specCat === target) {
+            block.style.display = 'block';
+            block.style.opacity = '1';
+          } else {
+            block.style.display = 'none';
+            block.style.opacity = '0';
+          }
+        });
+      });
+    });
+
+    // Button click listeners
+    if (prevBtn) {
+      prevBtn.addEventListener('click', () => {
+        updateShowroom(currentIndex - 1, 'left');
+      });
+    }
+
+    if (nextBtn) {
+      nextBtn.addEventListener('click', () => {
+        updateShowroom(currentIndex + 1, 'right');
+      });
+    }
+
+    navTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const targetIdx = parseInt(tab.dataset.carIndex || '0', 10);
+        const dir = targetIdx > currentIndex ? 'right' : 'left';
+        updateShowroom(targetIdx, dir);
+      });
+
+      // Keyboard navigation within the tablist (Arrow keys, Home, End)
+      tab.addEventListener('keydown', (e) => {
+        let newIndex = currentIndex;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          newIndex = (currentIndex + 1) % cars.length;
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          newIndex = (currentIndex - 1 + cars.length) % cars.length;
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          newIndex = 0;
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          newIndex = cars.length - 1;
+        }
+
+        if (newIndex !== currentIndex) {
+          updateShowroom(newIndex, newIndex > currentIndex ? 'right' : 'left');
+          navTabs[newIndex]?.focus();
+        }
+      });
+    });
+
+    // Mobile Swipe Gesture Support
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const stageEl = document.getElementById('car-image-wrapper');
+
+    if (stageEl) {
+      stageEl.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      stageEl.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 50) {
+          updateShowroom(currentIndex + 1, 'right');
+        } else if (touchEndX - touchStartX > 50) {
+          updateShowroom(currentIndex - 1, 'left');
+        }
+      }, { passive: true });
+    }
+
+    // Dedicated Interactive Brand Dropdown Pop-up Handlers
+    const brandBadgeBtn = document.getElementById('showroom-brand-badge-btn');
+    const brandDropdownPopover = document.getElementById('showroom-brand-dropdown-popover');
+    const brandDropdownClose = document.getElementById('showroom-brand-dropdown-close');
+    const brandArrow = document.getElementById('showroom-brand-arrow');
+    const brandSearchInput = document.getElementById('showroom-brand-search-input') as HTMLInputElement | null;
+    const brandCards = document.querySelectorAll<HTMLAnchorElement>('.showroom-brand-card');
+
+    function toggleBrandDropdown(show?: boolean) {
+      if (!brandDropdownPopover) return;
+      const isHidden = brandDropdownPopover.classList.contains('hidden');
+      const shouldOpen = typeof show === 'boolean' ? show : isHidden;
+
+      if (shouldOpen) {
+        brandDropdownPopover.classList.remove('hidden');
+        brandBadgeBtn?.setAttribute('aria-expanded', 'true');
+        brandArrow?.classList.add('rotate-180');
+        setTimeout(() => brandSearchInput?.focus(), 50);
+      } else {
+        brandDropdownPopover.classList.add('hidden');
+        brandBadgeBtn?.setAttribute('aria-expanded', 'false');
+        brandArrow?.classList.remove('rotate-180');
+      }
+    }
+
+    if (brandBadgeBtn) {
+      brandBadgeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleBrandDropdown();
+      });
+    }
+
+    if (brandDropdownClose) {
+      brandDropdownClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleBrandDropdown(false);
+        brandBadgeBtn?.focus();
+      });
+    }
+
+    if (brandSearchInput) {
+      brandSearchInput.addEventListener('input', () => {
+        const q = (brandSearchInput.value || '').trim().toLowerCase();
+        brandCards.forEach(card => {
+          const bname = card.dataset.brandName || '';
+          if (!q || bname.includes(q)) {
+            card.style.display = 'flex';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+
+      brandSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          toggleBrandDropdown(false);
+          brandBadgeBtn?.focus();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const firstVisibleCard = Array.from(brandCards).find(c => c.style.display !== 'none');
+          firstVisibleCard?.focus();
+        }
+      });
+    }
+
+    // Dismiss dropdown on outside click or Escape key
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement | null;
+      if (!target?.closest('#showroom-brand-dropdown-wrapper')) {
+        toggleBrandDropdown(false);
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && brandDropdownPopover && !brandDropdownPopover.classList.contains('hidden')) {
+        toggleBrandDropdown(false);
+        brandBadgeBtn?.focus();
+      }
+    });
+
+    // If initial index is non-zero, trigger initial sync
+    if (currentIndex > 0) {
+      updateShowroom(currentIndex, 'none');
+    }
+  }
+
+  document.addEventListener('astro:page-load', initXpengShowroom);
+  initXpengShowroom();
+</script>

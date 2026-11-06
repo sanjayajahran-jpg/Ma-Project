@@ -1,0 +1,101 @@
+---
+// EV Policy Guide & Incentive Section (Apple Liquid Glass Theme - Edmunds 3-Column Layout - 100% Bahasa Indonesia)
+const EV_POLICY_ITEMS = [
+  {
+    id: "tax-incentive",
+    badge: "SPONSOR / ATURAN PPNBM",
+    badgeType: "sponsored",
+    title: "Subsidi PPN 1% & Bebas PPnBM 0%: Panduan Lengkap Pajak EV 2026",
+    description: "Pemerintah resmi memperpanjang insentif PPN DTP 1% dan pembebasan PPnBM 0% untuk mobil listrik hasil rakitan lokal (CKD) maupun kuota CBU resmi.",
+    img: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    id: "tkdn-award",
+    badge: "EVNESIA EV TERBAIK 2026",
+    badgeType: "award",
+    title: "Aturan Standar TKDN 40% & Garansi Baterai Resmi Seumur Hidup",
+    description: "Simak daftar 15 model mobil listrik Indonesia yang telah memenuhi syarat nilai TKDN minimal 40% serta fasilitas garansi baterai resmi 8–10 tahun.",
+    img: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=600&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    id: "odd-even",
+    badge: "BEBAS GANJIL GENAP",
+    badgeType: "sponsored",
+    title: "Bebas Ganjil Genap & Insentif PKB/BBNKB 0% di Wilayah Jabodetabek",
+    description: "Nikmati kemudahan mobilitas harian tanpa pembatasan plat nomor di jalur protokol Jakarta serta penghematan pajak tahunan PKB hingga 100%.",
+    img: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=600&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  }
+];
+---
+
+<div class="space-y-5 sm:space-y-8">
+  <!-- Section Title Header (Edmunds Style Center Title) -->
+  <div class="text-center space-y-1.5 sm:space-y-2 max-w-3xl mx-auto">
+    <span class="text-[9px] sm:text-xs font-extrabold text-brand uppercase tracking-widest block">
+      REGULASI & PANDUAN KENDARAAN LISTRIK
+    </span>
+    <h2 class="font-headline text-lg sm:text-3xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tight drop-shadow-xs leading-snug">
+      Panduan & Kebijakan Insentif Mobil Listrik (EV) 2026
+    </h2>
+    <p class="text-[11px] sm:text-sm text-slate-600 dark:text-sky-200 font-medium">
+      Informasi resmi subsidi pemerintah, potongan pajak PPNBM, bebas ganjil genap, dan standar TKDN untuk kemudahan transaksi Anda.
+    </p>
+  </div>
+
+  <!-- 3-Column Card Grid (Apple Liquid Glass Cards with Image Badges) -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-6 md:gap-8">
+    {EV_POLICY_ITEMS.map((item) => (
+      <a
+        href={item.link}
+        class="apple-liquid-glass group rounded-2xl sm:rounded-3xl p-3 sm:p-5 flex flex-col justify-between transition-all duration-500 hover:-translate-y-1.5 shadow-md sm:shadow-xl hover:shadow-2xl border border-line"
+      >
+        <div class="space-y-3 sm:space-y-4">
+          <!-- Card Image Thumbnail Container with Bottom-Left / Center Badge -->
+          <div class="relative aspect-16/10 overflow-hidden rounded-xl sm:rounded-2xl border border-line bg-slate-900 shadow-xs">
+            <img
+              src={item.img}
+              alt={item.title}
+              class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
+              loading="lazy"
+            />
+            <div class="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent"></div>
+
+            {item.badgeType === "award" ? (
+              <div class="absolute inset-0 flex items-center justify-center p-2">
+                <div class="rounded-xl bg-slate-950/85 backdrop-blur-md border border-cyan-300/40 px-3 py-1.5 sm:px-3.5 sm:py-2 text-center shadow-lg">
+                  <span class="text-[8px] sm:text-[9px] font-black uppercase tracking-widest text-cyan-300 flex items-center justify-center gap-1"><img src="/icons/award.svg" class="w-3 h-3 opacity-90 inline-block" alt="" /> EVNESIA</span>
+                  <span class="font-headline text-[11px] sm:text-xs font-black text-white tracking-wider">EV TERBAIK 2026</span>
+                </div>
+              </div>
+            ) : (
+              <div class="absolute bottom-2.5 left-2.5 sm:bottom-3 sm:left-3">
+                <span class="rounded-md sm:rounded-lg bg-brand px-2.5 py-0.5 sm:px-3 sm:py-1 text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-white shadow-md">
+                  {item.badge}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <!-- Title & Description -->
+          <div class="space-y-1 sm:space-y-2">
+            <h3 class="font-headline text-sm sm:text-lg font-black text-slate-900 dark:text-white group-hover:text-brand transition leading-snug">
+              {item.title}
+            </h3>
+            <p class="text-[11px] sm:text-xs text-slate-600 dark:text-sky-200 font-medium leading-relaxed">
+              {item.description}
+            </p>
+          </div>
+        </div>
+
+        <!-- Read More Arrow Link -->
+        <div class="pt-2.5 sm:pt-4 border-t border-line mt-2.5 sm:mt-4 flex items-center justify-between text-[11px] sm:text-xs font-black text-brand group-hover:text-brand-hover">
+          <span>Baca Panduan Selengkapnya</span>
+          <span class="text-sm transition-transform duration-300 group-hover:translate-x-1">→</span>
+        </div>
+      </a>
+    ))}
+  </div>
+</div>

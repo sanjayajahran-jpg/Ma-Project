@@ -1,0 +1,798 @@
+---
+import Logo from "./Logo.astro";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+
+interface Props {
+  siteName?: string;
+  logoUrl?: string;
+  darkLogoUrl?: string;
+  navItems?: any[];
+  menuTree?: any[];
+  socialLinks?: any[];
+  navCategories?: Array<{ name: string; slug: string }>;
+}
+
+const { siteName = "EVnesia" } = Astro.props;
+
+// Active page detection
+const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+const isHome = currentPath === "/";
+const isKatalog =
+  currentPath.startsWith("/katalog-mobil") || currentPath.startsWith("/mobil/");
+const isUlasan =
+  currentPath.includes("ulasan") || currentPath.startsWith("/kategori/ulasan");
+
+// Helper normalize brand
+const normBrand = (s: string) =>
+  (s || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+// Calculate real model counts from database
+const modelCounts: Record<string, number> = {};
+ELECTRIFIED_CARS_DATA.forEach((c: any) => {
+  const b = normBrand(c.brand);
+  modelCounts[b] = (modelCounts[b] || 0) + 1;
+});
+
+const BRAND_LOGOS: Record<string, string> = {
+  aletra: "/images/brands/aletra-logo.svg",
+  baic: "/images/brands/baic-logo.svg",
+  bmw: "/images/brands/bmw-logo.svg",
+  byd: "/images/brands/byd-logo.svg",
+  changan: "/images/brands/changan-logo.svg",
+  chery: "/images/brands/chery-logo.svg",
+  citroen: "/images/brands/citroen-logo.svg",
+  citroën: "/images/brands/citroen-logo.svg",
+  daihatsu: "/images/brands/daihatsu-logo.svg",
+  denza: "/images/brands/denza-logo.svg",
+  dfsk: "/images/brands/dfsk-logo.svg",
+  foton: "/images/brands/foton-logo.svg",
+  gac: "/images/brands/gac-logo.svg",
+  "gac aion": "/images/brands/gac-logo.svg",
+  geely: "/images/brands/geely-logo.svg",
+  gwm: "/images/brands/gwm-logo.svg",
+  honda: "/images/brands/honda-logo.svg",
+  hyundai: "/images/brands/hyundai-logo.svg",
+  icar: "/images/brands/icar-seeklogo.svg",
+  jaecoo: "/images/brands/jaecoo-logo.svg",
+  jetour: "/images/brands/jetour-logo.svg",
+  kia: "/images/brands/kia-logo.svg",
+  leapmotor: "/images/brands/leapmotor-logo.svg",
+  lepas: "/images/brands/lepas-logo.svg",
+  lexus: "/images/brands/lexus-logo.svg",
+  maxus: "/images/brands/maxus-logo.svg",
+  mazda: "/images/brands/mazda-logo.svg",
+  "mercedes-benz": "/images/brands/mercedes-benz-logo.svg",
+  mg: "/images/brands/mg-logo.svg",
+  mini: "/images/brands/mini-logo.svg",
+  mitsubishi: "/images/brands/mitsubishi-logo.svg",
+  nissan: "/images/brands/nissan-logo.svg",
+  polytron: "/images/brands/polytron-logo.svg",
+  porsche: "/images/brands/porsche-logo.svg",
+  seres: "/images/brands/seres-logo.svg",
+  tesla: "/images/brands/tesla-logo.svg",
+  toyota: "/images/brands/toyota-logo.svg",
+  vinfast: "/images/brands/vinfast-logo.svg",
+  volkswagen: "/images/brands/volkswagen-logo.svg",
+  volvo: "/images/brands/volvo-logo.svg",
+  wuling: "/images/brands/wuling-logo.svg",
+  xpeng: "/images/brands/xpeng-logo.svg",
+  zeekr: "/images/brands/zeekr-logo.svg",
+};
+
+const ALL_BRANDS = [
+  {
+    name: "Aletra",
+    slug: "aletra",
+    modelsCount: modelCounts[normBrand("Aletra")] || 3,
+  },
+  {
+    name: "BAIC",
+    slug: "baic",
+    modelsCount: modelCounts[normBrand("BAIC")] || 2,
+  },
+  { name: "BMW", slug: "bmw", modelsCount: modelCounts[normBrand("BMW")] || 9 },
+  { name: "BYD", slug: "byd", modelsCount: modelCounts[normBrand("BYD")] || 9 },
+  {
+    name: "Changan",
+    slug: "changan",
+    modelsCount: modelCounts[normBrand("Changan")] || 4,
+  },
+  {
+    name: "Chery",
+    slug: "chery",
+    modelsCount: modelCounts[normBrand("Chery")] || 7,
+  },
+  {
+    name: "Citroën",
+    slug: "citroen",
+    modelsCount: modelCounts[normBrand("Citroën")] || 2,
+  },
+  {
+    name: "Daihatsu",
+    slug: "daihatsu",
+    modelsCount: modelCounts[normBrand("Daihatsu")] || 1,
+  },
+  {
+    name: "Denza",
+    slug: "denza",
+    modelsCount: modelCounts[normBrand("Denza")] || 2,
+  },
+  {
+    name: "DFSK",
+    slug: "dfsk",
+    modelsCount: modelCounts[normBrand("DFSK")] || 1,
+  },
+  {
+    name: "Foton",
+    slug: "foton",
+    modelsCount: modelCounts[normBrand("Foton")] || 2,
+  },
+  {
+    name: "GAC Aion",
+    slug: "gac",
+    modelsCount: modelCounts[normBrand("GAC Aion")] || 7,
+  },
+  {
+    name: "Geely",
+    slug: "geely",
+    modelsCount: modelCounts[normBrand("Geely")] || 3,
+  },
+  { name: "GWM", slug: "gwm", modelsCount: modelCounts[normBrand("GWM")] || 4 },
+  {
+    name: "Honda",
+    slug: "honda",
+    modelsCount: modelCounts[normBrand("Honda")] || 6,
+  },
+  {
+    name: "Hyundai",
+    slug: "hyundai",
+    modelsCount: modelCounts[normBrand("Hyundai")] || 9,
+  },
+  {
+    name: "iCAR",
+    slug: "icar",
+    modelsCount: modelCounts[normBrand("iCAR")] || 3,
+  },
+  {
+    name: "Jaecoo",
+    slug: "jaecoo",
+    modelsCount: modelCounts[normBrand("Jaecoo")] || 3,
+  },
+  {
+    name: "Jetour",
+    slug: "jetour",
+    modelsCount: modelCounts[normBrand("Jetour")] || 2,
+  },
+  { name: "Kia", slug: "kia", modelsCount: modelCounts[normBrand("Kia")] || 6 },
+  {
+    name: "Leapmotor",
+    slug: "leapmotor",
+    modelsCount: modelCounts[normBrand("Leapmotor")] || 2,
+  },
+  {
+    name: "Lepas",
+    slug: "lepas",
+    modelsCount: modelCounts[normBrand("Lepas")] || 2,
+  },
+  {
+    name: "Lexus",
+    slug: "lexus",
+    modelsCount: modelCounts[normBrand("Lexus")] || 12,
+  },
+  {
+    name: "Maxus",
+    slug: "maxus",
+    modelsCount: modelCounts[normBrand("Maxus")] || 2,
+  },
+  {
+    name: "Mazda",
+    slug: "mazda",
+    modelsCount: modelCounts[normBrand("Mazda")] || 3,
+  },
+  {
+    name: "Mercedes-Benz",
+    slug: "mercedes-benz",
+    modelsCount: modelCounts[normBrand("Mercedes-Benz")] || 5,
+  },
+  { name: "MG", slug: "mg", modelsCount: modelCounts[normBrand("MG")] || 7 },
+  {
+    name: "MINI",
+    slug: "mini",
+    modelsCount: modelCounts[normBrand("MINI")] || 4,
+  },
+  {
+    name: "Mitsubishi",
+    slug: "mitsubishi",
+    modelsCount: modelCounts[normBrand("Mitsubishi")] || 4,
+  },
+  {
+    name: "Nissan",
+    slug: "nissan",
+    modelsCount: modelCounts[normBrand("Nissan")] || 4,
+  },
+  {
+    name: "Polytron",
+    slug: "polytron",
+    modelsCount: modelCounts[normBrand("Polytron")] || 2,
+  },
+  {
+    name: "Porsche",
+    slug: "porsche",
+    modelsCount: modelCounts[normBrand("Porsche")] || 3,
+  },
+  {
+    name: "Seres",
+    slug: "seres",
+    modelsCount: modelCounts[normBrand("Seres")] || 3,
+  },
+  {
+    name: "Tesla",
+    slug: "tesla",
+    modelsCount: modelCounts[normBrand("Tesla")] || 3,
+  },
+  {
+    name: "Toyota",
+    slug: "toyota",
+    modelsCount: modelCounts[normBrand("Toyota")] || 14,
+  },
+  {
+    name: "VinFast",
+    slug: "vinfast",
+    modelsCount: modelCounts[normBrand("VinFast")] || 9,
+  },
+  {
+    name: "Volkswagen",
+    slug: "volkswagen",
+    modelsCount: modelCounts[normBrand("Volkswagen")] || 1,
+  },
+  {
+    name: "Volvo",
+    slug: "volvo",
+    modelsCount: modelCounts[normBrand("Volvo")] || 7,
+  },
+  {
+    name: "Wuling",
+    slug: "wuling",
+    modelsCount: modelCounts[normBrand("Wuling")] || 7,
+  },
+  {
+    name: "XPENG",
+    slug: "xpeng",
+    modelsCount: modelCounts[normBrand("XPENG")] || 2,
+  },
+  {
+    name: "Zeekr",
+    slug: "zeekr",
+    modelsCount: modelCounts[normBrand("Zeekr")] || 3,
+  },
+]
+  .sort((a, b) => a.name.localeCompare(b.name, "id", { sensitivity: "base" }))
+  .map((b) => ({
+    ...b,
+    logoUrl:
+      BRAND_LOGOS[b.slug] ||
+      BRAND_LOGOS[b.name.toLowerCase()] ||
+      BRAND_LOGOS[normBrand(b.name)] ||
+      null,
+    fallbackSvg: `<polygon points="50,18 84,78 68,78 50,44 32,78 16,78" fill="currentColor"/><polygon points="50,56 60,78 40,78" fill="none" stroke="currentColor" stroke-width="4"/>`,
+  }));
+---
+
+<!-- Edge-to-Edge Figma-Calibrated Liquid Glass Floating Header -->
+<header
+  class="sticky top-2 sm:top-3 z-50 w-full px-2 sm:px-4 mb-2 sm:mb-3 transition-all duration-300"
+>
+  <div
+    class="w-full rounded-[23px] gradient-header py-2 sm:py-2.5 px-4 sm:px-6 flex items-center justify-between min-h-13 sm:min-h-14.5 relative"
+  >
+    <!-- Left: 3-Stripes Animated Hamburger Menu (Automotive Brand Hub) -->
+    <div class="flex items-center gap-3 shrink-0 z-10">
+      <button
+        type="button"
+        id="brand-menu-toggle-btn"
+        class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center text-slate-700 dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-300 cursor-pointer group"
+        aria-label="Pilih Merek Mobil"
+        title="Daftar Merek Mobil"
+        aria-expanded="false"
+      >
+        <div
+          class="w-5 h-4 flex flex-col justify-between items-center relative overflow-hidden"
+        >
+          <span
+            id="burger-bar-1"
+            class="w-5 h-0.5 bg-current rounded-full transition-all duration-300 transform origin-center"
+          ></span>
+          <span
+            id="burger-bar-2"
+            class="w-5 h-0.5 bg-current rounded-full transition-all duration-300 transform origin-center"
+          ></span>
+          <span
+            id="burger-bar-3"
+            class="w-5 h-0.5 bg-current rounded-full transition-all duration-300 transform origin-center"
+          ></span>
+        </div>
+      </button>
+
+      <!-- Quick Text Nav with Dynamic Active State -->
+      <nav
+        id="header-main-nav"
+        class="hidden md:flex items-center gap-1 font-headline text-xs font-semibold"
+      >
+        <a
+          href="/"
+          data-nav="home"
+          class:list={[
+            "nav-link px-3 py-1.5 rounded-full transition",
+            isHome
+              ? "font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/20 border border-cyan-500/25 dark:border-cyan-400/30"
+              : "font-semibold text-slate-700 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white",
+          ]}
+        >
+          Beranda
+        </a>
+        <a
+          href="/katalog-mobil"
+          data-nav="katalog"
+          class:list={[
+            "nav-link px-3 py-1.5 rounded-full transition",
+            isKatalog
+              ? "font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/20 border border-cyan-500/25 dark:border-cyan-400/30"
+              : "font-semibold text-slate-700 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white",
+          ]}
+        >
+          Katalog
+        </a>
+        <a
+          href="/kategori/ulasan"
+          data-nav="ulasan"
+          class:list={[
+            "nav-link px-3 py-1.5 rounded-full transition",
+            isUlasan
+              ? "font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/20 border border-cyan-500/25 dark:border-cyan-400/30"
+              : "font-semibold text-slate-700 dark:text-white/80 hover:bg-black/5 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white",
+          ]}
+        >
+          Ulasan
+        </a>
+      </nav>
+    </div>
+
+    <!-- Center: Brand Identity Logo -->
+    <div
+      class="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto"
+    >
+      <a
+        href="/"
+        class="flex items-center gap-2 group py-1"
+        aria-label="EVnesia Beranda"
+      >
+        <div
+          class="w-9 h-9 rounded-2xl bg-linear-to-br from-[#0369a1] to-[#06b6d4] flex items-center justify-center text-white shadow-lg shadow-cyan-500/30 group-hover:scale-105 transition-transform duration-300 glow-cyan"
+        >
+          <svg
+            class="w-4.5 h-4.5 text-white"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+          </svg>
+        </div>
+        <div class="flex flex-col text-left">
+          <div class="flex items-center gap-1">
+            <span
+              class="font-headline font-black text-base sm:text-lg tracking-tight text-slate-900 dark:text-white leading-none"
+            >
+              EVNESIA
+            </span>
+            <span
+              class="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md bg-cyan-500/15 dark:bg-cyan-400/25 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 dark:border-cyan-400/40 uppercase tracking-tighter"
+            >
+              ID
+            </span>
+          </div>
+          <span
+            class="hidden min-[380px]:block text-[8px] font-bold tracking-wider text-slate-500 dark:text-cyan-300/80 uppercase leading-none mt-0.5 whitespace-nowrap"
+          >
+            Mobil Listrik & Hybrid
+          </span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Right: Search, Mode Toggle & Admin/Profile -->
+    <div class="flex items-center gap-1 sm:gap-2 shrink-0 z-10">
+      <!-- Search Link -->
+      <a
+        href="/katalog-mobil"
+        class="w-8 h-8 sm:w-9 sm:h-9 rounded-[14px] flex items-center justify-center text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition hover:scale-105 active:scale-95"
+        title="Cari Mobil"
+        aria-label="Cari Mobil"
+      >
+        <svg
+          class="w-4 h-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+      </a>
+
+      <!-- Theme Mode Switcher -->
+      <button
+        type="button"
+        id="theme-toggle-btn"
+        class="w-8 h-8 sm:w-9 sm:h-9 rounded-[14px] flex items-center justify-center text-slate-600 dark:text-white/70 hover:text-slate-900 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer hover:scale-105 active:scale-95"
+        title="Mode Terang / Gelap"
+        aria-label="Mode Terang / Gelap"
+      >
+        <svg
+          id="theme-sun-icon"
+          class="h-4 w-4 text-amber-500 dark:text-amber-300"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          ></path>
+        </svg>
+        <svg
+          id="theme-moon-icon"
+          class="h-4 w-4 text-cyan-600 dark:text-cyan-300 hidden"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          ></path>
+        </svg>
+      </button>
+
+
+    </div>
+  </div>
+
+  <!-- DROPDOWN: 2-ROW HORIZONTALLY SCROLLABLE LIQUID GLASS AUTOMOTIVE BRANDS HUB (Absolute Overlay) -->
+  <div
+    id="brand-dropdown-panel"
+    class="brand-dropdown-animated absolute left-2 sm:left-4 right-2 sm:right-4 top-full mt-2 rounded-[23px] bg-white/95 dark:bg-linear-to-br dark:from-[#020913]/98 dark:via-[#041525]/97 dark:to-[#072040]/97 backdrop-blur-2xl border border-slate-200/80 dark:border-[rgba(56,189,248,0.18)] shadow-2xl dark:shadow-black/60 z-50 max-w-[calc(100vw-16px)] sm:max-w-[calc(100vw-32px)] overflow-hidden"
+    data-state="closed"
+  >
+    <div class="dropdown-inner w-full min-w-0 max-w-full p-3 sm:p-4 space-y-2 overflow-hidden">
+      <div
+        class="flex items-center justify-between pb-2 border-b border-slate-200/50 dark:border-white/10 px-1"
+      >
+        <div
+          class="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-white uppercase tracking-wider"
+        >
+          <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+          Pilih Merek Kendaraan ({ALL_BRANDS.length} Pabrikan A-Z)
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button
+            type="button"
+            id="scroll-brands-left"
+            class="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer active:scale-90 transition"
+            aria-label="Geser Kiri"
+          >
+            ←
+          </button>
+          <button
+            type="button"
+            id="scroll-brands-right"
+            class="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs text-slate-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer active:scale-90 transition"
+            aria-label="Geser Kanan"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+      <!-- 2-Row Horizontal Scrollable Grid of Brand Pills -->
+      <div
+        id="brand-scroll-container"
+        class="grid grid-rows-2 grid-flow-col auto-cols-max gap-2 sm:gap-2.5 overflow-x-auto w-full max-w-full py-1 px-1 no-scrollbar scroll-smooth"
+      >
+        {
+          ALL_BRANDS.map((b) => (
+            <a
+              href={`/katalog-mobil?brand=${encodeURIComponent(b.name)}`}
+              class="brand-pill-card group flex items-center gap-2.5 px-3 py-2 rounded-2xl bg-white/40 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 hover:border-cyan-500/50 dark:hover:border-cyan-400/50 hover:bg-white/80 dark:hover:bg-white/10 transition-all duration-200 whitespace-nowrap shadow-xs hover:shadow-md hover:scale-[1.03] active:scale-95 cursor-pointer"
+            >
+              <div class="w-7 h-7 shrink-0 flex items-center justify-center rounded-lg p-0.5 bg-white/80 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/50 shadow-2xs group-hover:scale-110 transition-all duration-200">
+                {b.logoUrl ? (
+                  <img
+                    src={b.logoUrl}
+                    alt={b.name}
+                    class="w-full h-full object-contain filter drop-shadow-2xs"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div
+                    class="w-full h-full text-slate-700 dark:text-slate-300 group-hover:text-cyan-600 dark:group-hover:text-cyan-400"
+                    set:html={b.fallbackSvg}
+                  />
+                )}
+              </div>
+              <div class="flex flex-col text-left pr-1">
+                <span class="font-headline font-bold text-xs text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                  {b.name}
+                </span>
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  {b.modelsCount} Model
+                </span>
+              </div>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Click-outside Backdrop for Mobile/Desktop Overlay -->
+  <div
+    id="brand-dropdown-backdrop"
+    class="fixed inset-0 bg-slate-950/40 backdrop-blur-xs z-40 hidden transition-opacity duration-200"
+    aria-hidden="true"
+  >
+  </div>
+</header>
+
+<style>
+  /* Fluid 60FPS CSS Grid Dropdown Animation (Absolute Floating Overlay) */
+  .brand-dropdown-animated {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+    visibility: hidden;
+    overflow: hidden;
+    pointer-events: none;
+    transition:
+      grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+      visibility 0.35s;
+    will-change: grid-template-rows, opacity, transform;
+  }
+
+  .brand-dropdown-animated > .dropdown-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .brand-dropdown-animated[data-state="open"] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto !important;
+  }
+
+  /* Hamburger Icon Morphing to X */
+  #brand-menu-toggle-btn[aria-expanded="true"] #burger-bar-1 {
+    transform: translateY(7px) rotate(45deg);
+  }
+  #brand-menu-toggle-btn[aria-expanded="true"] #burger-bar-2 {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  #brand-menu-toggle-btn[aria-expanded="true"] #burger-bar-3 {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+</style>
+
+<script>
+  function initHeaderControls() {
+    const themeBtn = document.getElementById("theme-toggle-btn");
+    const sunIcon = document.getElementById("theme-sun-icon");
+    const moonIcon = document.getElementById("theme-moon-icon");
+    const brandMenuBtn = document.getElementById("brand-menu-toggle-btn");
+    const brandDropdown = document.getElementById("brand-dropdown-panel");
+    const brandBackdrop = document.getElementById("brand-dropdown-backdrop");
+    const scrollLeftBtn = document.getElementById("scroll-brands-left");
+    const scrollRightBtn = document.getElementById("scroll-brands-right");
+    const scrollContainer = document.getElementById("brand-scroll-container");
+
+    function updateIcons(scheme: string) {
+      if (scheme === "dark") {
+        if (sunIcon) sunIcon.classList.add("hidden");
+        if (moonIcon) moonIcon.classList.remove("hidden");
+      } else {
+        if (sunIcon) sunIcon.classList.remove("hidden");
+        if (moonIcon) moonIcon.classList.add("hidden");
+      }
+    }
+
+    const storageKey = "automotive-color-scheme";
+    let currentScheme = "light";
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved === "dark" || saved === "light") {
+        currentScheme = saved;
+      } else {
+        currentScheme = document.documentElement.getAttribute("data-color-scheme") || "light";
+      }
+    } catch {
+      currentScheme = document.documentElement.getAttribute("data-color-scheme") || "light";
+    }
+
+    document.documentElement.setAttribute("data-color-scheme", currentScheme);
+    document.documentElement.dataset.colorScheme = currentScheme;
+    document.documentElement.style.colorScheme = currentScheme;
+    if (currentScheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+    updateIcons(currentScheme);
+
+    if (themeBtn && !themeBtn.dataset.toggleAttached) {
+      themeBtn.dataset.toggleAttached = "true";
+      themeBtn.addEventListener("click", () => {
+        let current = "light";
+        try {
+          const saved = localStorage.getItem(storageKey);
+          current = (saved === "dark" || saved === "light") ? saved : (document.documentElement.getAttribute("data-color-scheme") || "light");
+        } catch {
+          current = document.documentElement.getAttribute("data-color-scheme") || "light";
+        }
+        const next = current === "light" ? "dark" : "light";
+
+        document.documentElement.setAttribute("data-color-scheme", next);
+        document.documentElement.dataset.colorScheme = next;
+        document.documentElement.style.colorScheme = next;
+        if (next === "dark") {
+          document.documentElement.classList.add("dark");
+        } else {
+          document.documentElement.classList.remove("dark");
+        }
+        try {
+          localStorage.setItem(storageKey, next);
+        } catch {}
+        updateIcons(next);
+      });
+    }
+
+    function closeBrandMenu() {
+      if (brandDropdown) brandDropdown.setAttribute("data-state", "closed");
+      if (brandMenuBtn) brandMenuBtn.setAttribute("aria-expanded", "false");
+      if (brandBackdrop) brandBackdrop.classList.add("hidden");
+    }
+
+    function openBrandMenu() {
+      if (brandDropdown) brandDropdown.setAttribute("data-state", "open");
+      if (brandMenuBtn) brandMenuBtn.setAttribute("aria-expanded", "true");
+      if (brandBackdrop) brandBackdrop.classList.remove("hidden");
+    }
+
+    if (brandMenuBtn && brandDropdown && !brandMenuBtn.dataset.menuAttached) {
+      brandMenuBtn.dataset.menuAttached = "true";
+      brandMenuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = brandDropdown.getAttribute("data-state") === "open";
+        if (isOpen) {
+          closeBrandMenu();
+        } else {
+          openBrandMenu();
+        }
+      });
+
+      if (brandBackdrop) {
+        brandBackdrop.addEventListener("click", () => {
+          closeBrandMenu();
+        });
+      }
+
+      document.addEventListener("click", (e) => {
+        if (
+          !brandDropdown.contains(e.target as Node) &&
+          !brandMenuBtn.contains(e.target as Node)
+        ) {
+          closeBrandMenu();
+        }
+      });
+    }
+
+    if (
+      scrollLeftBtn &&
+      scrollContainer &&
+      !scrollLeftBtn.dataset.scrollAttached
+    ) {
+      scrollLeftBtn.dataset.scrollAttached = "true";
+      scrollLeftBtn.addEventListener("click", () => {
+        scrollContainer.scrollBy({ left: -240, behavior: "smooth" });
+      });
+    }
+
+    if (
+      scrollRightBtn &&
+      scrollContainer &&
+      !scrollRightBtn.dataset.scrollAttached
+    ) {
+      scrollRightBtn.dataset.scrollAttached = "true";
+      scrollRightBtn.addEventListener("click", () => {
+        scrollContainer.scrollBy({ left: 240, behavior: "smooth" });
+      });
+    }
+
+    // Direct link click handler to guarantee clean dropdown close
+    const brandPills = document.querySelectorAll(".brand-pill-card");
+    brandPills.forEach((pill) => {
+      const el = pill as HTMLElement;
+      if (!el.dataset.clickAttached) {
+        el.dataset.clickAttached = "true";
+        el.addEventListener("click", () => {
+          if (brandDropdown) brandDropdown.setAttribute("data-state", "closed");
+          if (brandMenuBtn) brandMenuBtn.setAttribute("aria-expanded", "false");
+        });
+      }
+    });
+
+    // Dynamic Client-side active nav indicator update
+    function updateActiveNavLink() {
+      const p = window.location.pathname.replace(/\/$/, "") || "/";
+      const navLinks = document.querySelectorAll("#header-main-nav .nav-link");
+      const activeClasses = [
+        "text-cyan-600",
+        "dark:text-cyan-400",
+        "font-bold",
+        "bg-cyan-500/10",
+        "dark:bg-cyan-400/10",
+      ];
+      const inactiveClasses = [
+        "text-slate-600",
+        "dark:text-slate-300",
+        "hover:bg-black/5",
+        "dark:hover:bg-white/10",
+        "hover:text-slate-900",
+        "dark:hover:text-white",
+        "font-semibold",
+      ];
+
+      navLinks.forEach((link) => {
+        const type = link.getAttribute("data-nav");
+        let active = false;
+        if (type === "home" && p === "/") active = true;
+        else if (
+          type === "katalog" &&
+          (p.startsWith("/katalog-mobil") || p.startsWith("/mobil/"))
+        )
+          active = true;
+        else if (
+          type === "ulasan" &&
+          (p.includes("ulasan") || p.startsWith("/kategori/ulasan"))
+        )
+          active = true;
+
+        if (active) {
+          inactiveClasses.forEach((c) => link.classList.remove(c));
+          activeClasses.forEach((c) => link.classList.add(c));
+        } else {
+          activeClasses.forEach((c) => link.classList.remove(c));
+          inactiveClasses.forEach((c) => link.classList.add(c));
+        }
+      });
+    }
+
+    updateActiveNavLink();
+  }
+
+  document.addEventListener("astro:page-load", initHeaderControls);
+</script>

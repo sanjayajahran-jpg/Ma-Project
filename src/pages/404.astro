@@ -1,0 +1,6 @@
+---
+import { resolveThemePage } from "@/lib/theme-resolver";
+Astro.response.status = 404;
+const { default: Page, siteConfig } = await resolveThemePage(Astro.request, "notFound");
+---
+<Page request={Astro.request} params={Astro.params} url={Astro.url} siteConfig={siteConfig} />

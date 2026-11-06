@@ -1,0 +1,106 @@
+---
+// Komponen Floating Spec Comparator Drawer (Spec Section 4)
+---
+
+<div
+  id="floating-compare-bar"
+  class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-2xl rounded-2xl border border-brand bg-paper/95 backdrop-blur-xl p-4 shadow-2xl transition-all duration-300 transform translate-y-28 opacity-0 pointer-events-none"
+>
+  <div class="flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="grid h-8 w-8 place-items-center rounded-xl bg-brand text-white font-black text-xs shadow-md shadow-brand/40">
+        <img src="/icons/scale.svg" class="w-4 h-4 invert" alt="" />
+      </span>
+      <div>
+        <span class="text-[10px] font-extrabold uppercase tracking-widest text-brand block">Drawer Perbandingan Mobil</span>
+        <h4 class="font-headline text-xs sm:text-sm font-bold text-ink" id="compare-bar-count">
+          0 Mobil Dipilih Untuk Dibandingkan
+        </h4>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        id="clear-compare-btn"
+        class="rounded-xl px-3 py-1.5 text-xs font-bold text-muted hover:text-red-400 transition"
+      >
+        Reset
+      </button>
+
+      <a
+        href="/kategori/ulasan-test-drive"
+        class="rounded-xl bg-brand px-4 py-2 text-xs font-black uppercase text-white shadow-lg hover:bg-brand-hover transition"
+      >
+        Bandingkan Sekarang →
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initFloatingCompare() {
+    let compareList: string[] = [];
+    const bar = document.getElementById("floating-compare-bar");
+    const countDisplay = document.getElementById("compare-bar-count");
+    const clearBtn = document.getElementById("clear-compare-btn");
+    const openHeaderBtn = document.getElementById("open-compare-drawer-btn");
+    const triggerHeroBtn = document.getElementById("trigger-compare-drawer");
+
+    function updateDrawerUI() {
+      if (!bar || !countDisplay) return;
+      if (compareList.length > 0) {
+        bar.classList.remove("translate-y-28", "opacity-0", "pointer-events-none");
+        countDisplay.textContent = `${compareList.length} Mobil Dipilih Untuk Dibandingkan`;
+      } else {
+        bar.classList.add("translate-y-28", "opacity-0", "pointer-events-none");
+      }
+    }
+
+    document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const addBtn = target.closest<HTMLButtonElement>("[data-add-compare]");
+
+      if (addBtn) {
+        const carName = addBtn.dataset.carName || "Mobil";
+        if (!compareList.includes(carName)) {
+          compareList.push(carName);
+          addBtn.textContent = "✓ Dipilih";
+          addBtn.classList.add("bg-brand", "text-white");
+        } else {
+          compareList = compareList.filter((item) => item !== carName);
+          addBtn.textContent = "+ Bandingkan";
+          addBtn.classList.remove("bg-brand", "text-white");
+        }
+        updateDrawerUI();
+      }
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        compareList = [];
+        document.querySelectorAll("[data-add-compare]").forEach((btn) => {
+          btn.textContent = "+ Bandingkan";
+          btn.classList.remove("bg-brand", "text-white");
+        });
+        updateDrawerUI();
+      });
+    }
+
+    if (openHeaderBtn) {
+      openHeaderBtn.addEventListener("click", () => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+
+    if (triggerHeroBtn) {
+      triggerHeroBtn.addEventListener("click", () => {
+        const firstCardBtn = document.querySelector<HTMLButtonElement>("[data-add-compare]");
+        if (firstCardBtn) firstCardBtn.click();
+      });
+    }
+  }
+
+  initFloatingCompare();
+  document.addEventListener("astro:page-load", initFloatingCompare);
+</script>

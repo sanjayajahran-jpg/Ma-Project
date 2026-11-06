@@ -1,0 +1,1463 @@
+---
+// EVnesia Automotive Catalog & Smart Instant Search Component
+// Advanced Multi-Stage Filtering: Range Slider, Powertrain, Min Range (>400km), Body Type, Brand & Sorting
+// Fast In-Memory Client Filtering, URL Synced State, Zero Obstructive Overlays
+// Pure Minimalist Scandinavian / Executive UI (Zero Emojis, Crisp Vector SVG Assets)
+import { fetchCarsFromApi, fetchBrandsFromApi } from "@/lib/api";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+
+interface Props {
+  initialBrand?: string;
+}
+
+const { initialBrand = "all" } = Astro.props;
+
+// Powertrain Categories for Instant Filtering (Clean SVG Assets)
+const ENGINE_TYPES_LIST = [
+  { val: "all", label: "Semua Powertrain", short: "Semua", icon: "/icons/zap.svg" },
+  { val: "bev", label: "BEV (Murni Listrik)", short: "BEV Listrik", icon: "/icons/battery-bolt.svg", desc: "100% Listrik Murni" },
+  { val: "phev", label: "PHEV (Plug-in Hybrid)", short: "PHEV", icon: "/icons/plug.svg", desc: "Colok Listrik + Bensin" },
+  { val: "hev", label: "HEV (Full Hybrid)", short: "Hybrid", icon: "/icons/leaf.svg", desc: "Self-Charging Bensin Irit" }
+];
+
+// Body Types Categories (Clean SVG Assets)
+const BODY_TYPES = [
+  { id: "all", label: "Semua Bodi", icon: "/icons/car.svg" },
+  { id: "suv", label: "SUV & Crossover", icon: "/icons/suv.svg" },
+  { id: "mpv", label: "MPV Keluarga", icon: "/icons/van.svg" },
+  { id: "sedan", label: "Sedan & Coupe", icon: "/icons/sedan.svg" },
+  { id: "citycar", label: "City Car & Hatchback", icon: "/icons/hatchback.svg" }
+];
+
+// Quick Minimum Range Presets
+const RANGE_PRESETS = [
+  { val: 0, label: "Semua Jarak" },
+  { val: 300, label: "≥ 300 km", hint: "Harian Kota" },
+  { val: 400, label: "≥ 400 km", hint: "Luar Kota" },
+  { val: 500, label: "≥ 500 km", hint: "Antar Provinsi" },
+  { val: 600, label: "≥ 600 km", hint: "Ultra Long" }
+];
+
+// Quick Budget Presets
+const BUDGET_PRESETS = [
+  { min: 0, max: 1500, label: "Semua Budget" },
+  { min: 0, max: 400, label: "< Rp 400 Jt" },
+  { min: 400, max: 800, label: "Rp 400 - 800 Jt" },
+  { min: 800, max: 1200, label: "Rp 800 Jt - 1,2 M" },
+  { min: 1200, max: 9999, label: "> Rp 1,2 Miliar" }
+];
+
+const INITIAL_FALLBACK_CARS = ELECTRIFIED_CARS_DATA;
+
+// Helper normalize brand for matching
+const normBrand = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, "");
+
+// Calculate real model counts per brand from dataset
+const brandModelCounts: Record<string, number> = {};
+const engineTypeCounts: Record<string, number> = { all: ELECTRIFIED_CARS_DATA.length, bev: 0, phev: 0, hev: 0 };
+const bodyTypeCounts: Record<string, number> = { all: ELECTRIFIED_CARS_DATA.length, suv: 0, mpv: 0, sedan: 0, citycar: 0 };
+
+ELECTRIFIED_CARS_DATA.forEach((c: any) => {
+  const bk = normBrand(c.brand);
+  brandModelCounts[bk] = (brandModelCounts[bk] || 0) + 1;
+
+  const eng = (c.engineType || "").toLowerCase();
+  if (eng === "bev" || eng === "ev") engineTypeCounts.bev = (engineTypeCounts.bev || 0) + 1;
+  else if (eng === "phev") engineTypeCounts.phev = (engineTypeCounts.phev || 0) + 1;
+  else if (eng === "hev" || eng === "hybrid") engineTypeCounts.hev = (engineTypeCounts.hev || 0) + 1;
+
+  const bdy = (c.bodyType || "").toLowerCase();
+  if (bdy === "suv" || bdy === "crossover") bodyTypeCounts.suv = (bodyTypeCounts.suv || 0) + 1;
+  else if (bdy === "mpv") bodyTypeCounts.mpv = (bodyTypeCounts.mpv || 0) + 1;
+  else if (bdy === "sedan" || bdy === "coupe") bodyTypeCounts.sedan = (bodyTypeCounts.sedan || 0) + 1;
+  else if (bdy === "hatchback" || bdy === "city car" || bdy === "citycar" || bdy === "compact") bodyTypeCounts.citycar = (bodyTypeCounts.citycar || 0) + 1;
+});
+
+// Dynamically generate unique brands from dataset
+const uniqueBrands = Array.from(new Set(ELECTRIFIED_CARS_DATA.map((c: any) => c.brand))).filter(Boolean).sort();
+const DEFAULT_BRANDS = [
+  { val: "all", label: "Semua Merek", count: ELECTRIFIED_CARS_DATA.length },
+  ...uniqueBrands.map(b => ({
+    val: b,
+    label: b,
+    count: brandModelCounts[normBrand(b)] || 0
+  }))
+];
+
+const BRAND_LOGOS: Record<string, string> = {
+  "aletra": "/images/brands/aletra-logo.svg",
+  "baic": "/images/brands/baic-logo.svg",
+  "bmw": "/images/brands/bmw-logo.svg",
+  "byd": "/images/brands/byd-logo.svg",
+  "changan": "/images/brands/changan-logo.svg",
+  "chery": "/images/brands/chery-logo.svg",
+  "citroen": "/images/brands/citroen-logo.svg",
+  "citroën": "/images/brands/citroen-logo.svg",
+  "daihatsu": "/images/brands/daihatsu-logo.svg",
+  "denza": "/images/brands/denza-logo.svg",
+  "dfsk": "/images/brands/dfsk-logo.svg",
+  "foton": "/images/brands/foton-logo.svg",
+  "gac": "/images/brands/gac-logo.svg",
+  "gac aion": "/images/brands/gac-logo.svg",
+  "geely": "/images/brands/geely-logo.svg",
+  "gwm": "/images/brands/gwm-logo.svg",
+  "honda": "/images/brands/honda-logo.svg",
+  "hyundai": "/images/brands/hyundai-logo.svg",
+  "icar": "/images/brands/icar-seeklogo.svg",
+  "jaecoo": "/images/brands/jaecoo-logo.svg",
+  "jetour": "/images/brands/jetour-logo.svg",
+  "kia": "/images/brands/kia-logo.svg",
+  "leapmotor": "/images/brands/leapmotor-logo.svg",
+  "lepas": "/images/brands/lepas-logo.svg",
+  "lexus": "/images/brands/lexus-logo.svg",
+  "maxus": "/images/brands/maxus-logo.svg",
+  "mazda": "/images/brands/mazda-logo.svg",
+  "mercedes-benz": "/images/brands/mercedes-benz-logo.svg",
+  "mg": "/images/brands/mg-logo.svg",
+  "mini": "/images/brands/mini-logo.svg",
+  "mitsubishi": "/images/brands/mitsubishi-logo.svg",
+  "nissan": "/images/brands/nissan-logo.svg",
+  "polytron": "/images/brands/polytron-logo.svg",
+  "porsche": "/images/brands/porsche-logo.svg",
+  "seres": "/images/brands/seres-logo.svg",
+  "tesla": "/images/brands/tesla-logo.svg",
+  "toyota": "/images/brands/toyota-logo.svg",
+  "vinfast": "/images/brands/vinfast-logo.svg",
+  "volkswagen": "/images/brands/volkswagen-logo.svg",
+  "volvo": "/images/brands/volvo-logo.svg",
+  "wuling": "/images/brands/wuling-logo.svg",
+  "xpeng": "/images/brands/xpeng-logo.svg",
+  "zeekr": "/images/brands/zeekr-logo.svg",
+};
+
+// SSR Hybrid Fetch: try to get live cars from backend API, fall back to curated dataset
+const [liveApiCars, liveApiBrands] = await Promise.all([
+  fetchCarsFromApi(200),
+  fetchBrandsFromApi()
+]);
+
+const BRANDS = liveApiBrands && liveApiBrands.length
+  ? [{ val: "all", label: "Semua Merek", count: ELECTRIFIED_CARS_DATA.length }, ...liveApiBrands.map((b: any) => ({
+      val: b.name,
+      label: b.name,
+      count: b.car_count || brandModelCounts[normBrand(b.name)] || 0
+    }))]
+  : DEFAULT_BRANDS;
+
+const INITIAL_CARS = (liveApiCars && liveApiCars.length >= 5)
+  ? liveApiCars.map((c: any) => {
+      const fallbackMatch = INITIAL_FALLBACK_CARS.find(f => f.slug === c.slug || f.name.toLowerCase() === c.name.toLowerCase());
+      return {
+        id: c.id,
+        slug: c.slug,
+        name: c.name,
+        brand: c.brand_name || fallbackMatch?.brand || "EVnesia",
+        bodyType: c.body_type_slug || fallbackMatch?.bodyType || "suv",
+        engineType: c.engine_type_slug || fallbackMatch?.engineType || "bev",
+        engineLabel: c.engine_type_slug === 'bev' || c.engine_type_slug === 'ev' ? 'Electric (BEV)' : c.engine_type_slug === 'phev' ? 'Plug-in Hybrid (PHEV)' : 'Full Hybrid (HEV)',
+        price: c.price_start ? `Rp ${Math.round(c.price_start / 1000000)} Juta` : (fallbackMatch?.price || "Hubungi APM"),
+        priceVal: c.price_start ? Math.round(c.price_start / 1000000) : (fallbackMatch?.priceVal || 500),
+        img: c.image_url || fallbackMatch?.img || "https://images.unsplash.com/photo-1617788138017-80ad40651399?q=80&w=800",
+        hp: fallbackMatch?.hp || "200 HP",
+        torque: fallbackMatch?.torque || "350 Nm",
+        acc: fallbackMatch?.acc || "6.5s",
+        consumption: fallbackMatch?.consumption || "Jarak 450 km",
+        badge: fallbackMatch?.badge || "PRO VERIFIED",
+        tagline: c.tagline || fallbackMatch?.tagline || "",
+        description: c.description || fallbackMatch?.description || "",
+        specs: c.specs || fallbackMatch?.specs || {},
+        variants: (c.variants && c.variants.length) ? c.variants : (fallbackMatch?.variants || [])
+      };
+    })
+  : INITIAL_FALLBACK_CARS;
+---
+
+<div class="space-y-8 car-finder-root" data-initial-brand={initialBrand}>
+  <!-- Top Header Title -->
+  <div class="border-b border-slate-200/60 dark:border-white/10 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+    <div>
+      <span class="text-[10px] font-extrabold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest block">
+        KATALOG RESMI & SPESIFIKASI MOBIL ELEKTRIFIKASI
+      </span>
+      <h1 class="font-headline text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-1">
+        Pencarian Pintar & Filter Spesifikasi EV
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal mt-1 max-w-3xl">
+        Temukan mobil listrik & hybrid idaman berdasarkan rentang harga, teknologi baterai, jarak tempuh nyata, dan tipe bodi secara instan.
+      </p>
+    </div>
+    
+    <!-- Live Status Indicator Badge -->
+    <div class="flex items-center gap-2 self-start sm:self-auto shrink-0 bg-white dark:bg-slate-900/60 px-3.5 py-1.5 rounded-full border border-slate-200 dark:border-white/10 text-[11px] font-bold shadow-xs">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" id="api-live-indicator-dot"></span>
+      <span class="text-slate-600 dark:text-slate-300" id="api-live-status-text">Database Neon Active ({INITIAL_CARS.length} Unit)</span>
+    </div>
+  </div>
+
+  <!-- Multi-Stage Filter Control Panel Card (Sleek Apple Liquid Glass) -->
+  <div class="rounded-3xl apple-liquid-glass p-5 sm:p-7 space-y-6 shadow-xl border border-slate-200/80 dark:border-white/10 transition-all duration-300">
+    
+    <!-- 0. BARIS PENCARIAN SMART INSTANT MULTI-KATA & KEYWORDS -->
+    <div class="space-y-2.5">
+      <div class="relative flex items-center">
+        <i class="absolute left-4 text-cyan-600 dark:text-cyan-400 pointer-events-none flex items-center justify-center">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </i>
+        <input
+          type="text"
+          id="car-search-input"
+          placeholder="Ketik model, pabrikan, atau fitur (contoh: Ioniq 5, BYD Seal, LFP, AWD, V2L, ADAS)..."
+          class="w-full pl-11 pr-24 py-3 sm:py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white text-xs sm:text-sm font-medium shadow-xs focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition placeholder-slate-400"
+          autocomplete="off"
+        />
+        <div class="absolute right-3 flex items-center gap-1.5">
+          <span class="hidden sm:inline-block px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-mono text-slate-400 border border-slate-200 dark:border-slate-700 select-none">
+            /
+          </span>
+          <button
+            type="button"
+            id="clear-search-btn"
+            class="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white text-[11px] font-bold hidden transition cursor-pointer"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Suggestion Chips -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar text-xs font-semibold">
+        <span class="text-slate-400 shrink-0 text-[11px] font-bold">Populer:</span>
+        <button type="button" class="quick-pill px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 hover:border-cyan-400 hover:text-cyan-500 transition cursor-pointer" data-keyword="BYD Seal">BYD Seal</button>
+        <button type="button" class="quick-pill px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 hover:border-cyan-400 hover:text-cyan-500 transition cursor-pointer" data-keyword="Ioniq 5">Ioniq 5</button>
+        <button type="button" class="quick-pill px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 hover:border-cyan-400 hover:text-cyan-500 transition cursor-pointer" data-keyword="Binguo">Wuling Binguo</button>
+        <button type="button" class="quick-pill px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 hover:border-cyan-400 hover:text-cyan-500 transition cursor-pointer" data-keyword="Zenix">Innova Zenix Hybrid</button>
+        <button type="button" class="quick-pill px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 hover:border-cyan-400 hover:text-cyan-500 transition cursor-pointer" data-keyword="Omoda E5">Chery Omoda E5</button>
+        <button type="button" class="quick-pill px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60 hover:border-cyan-400 hover:text-cyan-500 transition cursor-pointer" data-keyword="Blade">Baterai LFP Blade</button>
+      </div>
+    </div>
+
+    <!-- 1. TIPE POWERTRAIN (Instant Segmented Toggle) -->
+    <div class="space-y-2.5 border-t border-slate-200/60 dark:border-white/10 pt-4">
+      <div class="flex items-center justify-between">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          1. Tipe Powertrain Elektrifikasi:
+        </label>
+        <span class="text-[11px] font-medium text-slate-400" id="powertrain-active-desc">Semua Teknologi Mesin</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="engine-filter-group">
+        {ENGINE_TYPES_LIST.map((eng, idx) => (
+          <button
+            type="button"
+            data-engine-val={eng.val}
+            data-active={idx === 0 ? "true" : "false"}
+            class="powertrain-filter-btn flex items-center justify-between p-2.5 sm:p-3 rounded-2xl text-left border transition-all cursor-pointer bg-slate-50 dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-cyan-400 hover:shadow-xs group"
+          >
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="w-8 h-8 rounded-xl bg-slate-200/60 dark:bg-slate-800 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <img src={eng.icon} alt="" class="w-4 h-4 opacity-80 group-hover:opacity-100 dark:invert" />
+              </span>
+              <div class="truncate">
+                <span class="block text-xs font-bold text-slate-900 dark:text-white truncate">{eng.short}</span>
+                <span class="hidden sm:block text-[10px] text-slate-400 dark:text-slate-500 truncate">{eng.desc || 'Listrik & Hybrid'}</span>
+              </div>
+            </div>
+            <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+              {engineTypeCounts[eng.val] ?? ELECTRIFIED_CARS_DATA.length}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- 2. TIPE BODI KENDARAAN (SUV, MPV, Sedan, City Car) -->
+    <div class="space-y-2.5 border-t border-slate-200/60 dark:border-white/10 pt-4">
+      <div class="flex items-center justify-between">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          2. Tipe Bodi Kendaraan:
+        </label>
+        <span class="text-[11px] font-medium text-slate-400">SUV, MPV, Sedan, City Car</span>
+      </div>
+      <div class="flex flex-wrap gap-2" id="body-filter-group">
+        {BODY_TYPES.map((type, idx) => (
+          <button
+            type="button"
+            data-body-type={type.id}
+            data-active={idx === 0 ? "true" : "false"}
+            class="body-filter-btn flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-cyan-400 cursor-pointer"
+          >
+            <img src={type.icon} alt="" class="w-3.5 h-3.5 opacity-75 dark:invert shrink-0" />
+            <span>{type.label}</span>
+            <span class="text-[10px] font-mono opacity-60 ml-0.5">
+              ({bodyTypeCounts[type.id] ?? ELECTRIFIED_CARS_DATA.length})
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+
+    <!-- 3 & 4. DUAL SLIDERS: RENTANG HARGA & JARAK TEMPUH MINIMAL -->
+    <div class="grid gap-6 md:grid-cols-2 border-t border-slate-200/60 dark:border-white/10 pt-4">
+      
+      <!-- 3. RENTANG HARGA (SLIDER + PRESETS) -->
+      <div class="space-y-3 bg-white/60 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80">
+        <div class="flex justify-between items-center text-xs font-bold">
+          <label for="budget-range-input" class="text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <img src="/icons/wallet.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+            <span>3. Budget Maksimal:</span>
+          </label>
+          <span id="budget-value-display" class="font-headline font-black text-cyan-600 dark:text-cyan-400 text-sm">
+            Semua Budget (Rp 1,5 M+)
+          </span>
+        </div>
+
+        <input
+          type="range"
+          id="budget-range-input"
+          min="150"
+          max="1500"
+          step="50"
+          value="1500"
+          class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+          aria-label="Rentang Budget Harga Mobil"
+        />
+
+        <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+          <span>Rp 150 Jt</span>
+          <span>Rp 500 Jt</span>
+          <span>Rp 1 M</span>
+          <span>Rp 1,5 M+</span>
+        </div>
+
+        <!-- Budget Quick Presets -->
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          {BUDGET_PRESETS.map((bp) => (
+            <button
+              type="button"
+              class="budget-preset-pill px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-cyan-400 hover:text-cyan-500 transition cursor-pointer"
+              data-max-budget={bp.max}
+              data-min-budget={bp.min}
+            >
+              {bp.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- 4. JARAK TEMPUH MINIMAL (SLIDER + PRESETS) -->
+      <div class="space-y-3 bg-white/60 dark:bg-slate-900/40 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80">
+        <div class="flex justify-between items-center text-xs font-bold">
+          <label for="range-slider-input" class="text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+            <img src="/icons/route.svg" alt="" class="w-3.5 h-3.5 opacity-70 dark:invert shrink-0" />
+            <span>4. Jarak Tempuh Minimal:</span>
+          </label>
+          <span id="range-value-display" class="font-headline font-black text-emerald-600 dark:text-emerald-400 text-sm">
+            Semua Jarak (≥ 0 km)
+          </span>
+        </div>
+
+        <input
+          type="range"
+          id="range-slider-input"
+          min="0"
+          max="700"
+          step="50"
+          value="0"
+          class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+          aria-label="Jarak Tempuh Minimal Mobil Listrik"
+        />
+
+        <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+          <span>0 km</span>
+          <span>300 km</span>
+          <span>500 km</span>
+          <span>700 km+</span>
+        </div>
+
+        <!-- Range Quick Presets -->
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          {RANGE_PRESETS.map((rp) => (
+            <button
+              type="button"
+              class="range-preset-pill px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-emerald-400 hover:text-emerald-500 transition cursor-pointer"
+              data-min-range={rp.val}
+            >
+              {rp.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. FILTER MEREK & URUTAN HASIL (SORTING) -->
+    <div class="grid gap-4 sm:grid-cols-2 border-t border-slate-200/60 dark:border-white/10 pt-4">
+      
+      <!-- Brand Selector Dropdown -->
+      <div class="space-y-1.5 relative" id="custom-brand-dropdown-container">
+        <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          5. Pabrikan / Brand:
+        </label>
+        
+        <button
+          type="button"
+          id="brand-dropdown-trigger"
+          class="w-full flex items-center justify-between rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none hover:border-cyan-400 transition shadow-xs cursor-pointer"
+        >
+          <span class="flex items-center gap-2" id="brand-dropdown-label">
+            <img src="/icons/car.svg" alt="" class="w-3.5 h-3.5 opacity-75 dark:invert shrink-0" />
+            <span>Semua Merek ({BRANDS.length - 1} Pabrikan)</span>
+          </span>
+          <svg class="h-4 w-4 text-cyan-500 transition-transform duration-300" id="brand-dropdown-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <div
+          id="brand-dropdown-menu"
+          class="hidden absolute top-full left-0 right-0 z-50 mt-1.5 max-h-64 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-2 border border-slate-200 dark:border-slate-700 shadow-2xl space-y-1 backdrop-blur-xl transition-all duration-300"
+        >
+          {BRANDS.map((b) => (
+            <button
+              type="button"
+              data-brand-val={b.val}
+              class="w-full flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 hover:bg-cyan-50 dark:hover:bg-slate-800 hover:text-cyan-600 dark:hover:text-cyan-400 transition text-left cursor-pointer"
+            >
+              <span class="flex items-center gap-2">
+                <img src="/icons/car.svg" alt="" class="w-3.5 h-3.5 opacity-60 dark:invert shrink-0" />
+                <span>{b.label}</span>
+              </span>
+              <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-200/60 dark:border-slate-700/50">
+                {b.count} Model
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Sorting Selector -->
+      <div class="space-y-1.5">
+        <label for="catalog-sort-select" class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+          6. Urutkan Hasil Berdasarkan:
+        </label>
+        <select
+          id="catalog-sort-select"
+          class="w-full rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-xs font-bold text-slate-900 dark:text-white outline-none hover:border-cyan-400 transition shadow-xs cursor-pointer"
+        >
+          <option value="featured">Rekomendasi (Terbaru & Populer)</option>
+          <option value="price_asc">Harga: Termurah → Termahal</option>
+          <option value="price_desc">Harga: Termahal → Termurah</option>
+          <option value="range_desc">Jarak Tempuh: Terjauh (km)</option>
+          <option value="power_desc">Tenaga Motor: Tertinggi (HP)</option>
+          <option value="acc_asc">Akselerasi: Tercepat (0-100)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Filter Pill Banner & Quick Reset -->
+  <div id="active-filters-chips-bar" class="flex flex-wrap items-center justify-between gap-2.5 px-4 py-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-xs font-medium">
+    <div class="flex flex-wrap items-center gap-1.5" id="active-filter-tags-container">
+      <span class="text-xs font-bold text-cyan-800 dark:text-cyan-300 flex items-center gap-1.5">
+        <img src="/icons/filter.svg" alt="" class="w-3.5 h-3.5 opacity-80 dark:invert shrink-0" />
+        <span>Filter Aktif:</span>
+      </span>
+      <!-- Injected dynamically via JS -->
+    </div>
+    <button
+      type="button"
+      id="reset-all-filters-btn"
+      class="text-[11px] font-bold text-cyan-700 dark:text-cyan-400 hover:text-cyan-900 dark:hover:text-cyan-200 hover:underline flex items-center gap-1.5 cursor-pointer shrink-0 ml-auto"
+    >
+      <img src="/icons/refresh.svg" alt="" class="w-3 h-3 opacity-80 dark:invert shrink-0" />
+      <span>Reset Semua Filter</span>
+    </button>
+  </div>
+
+  <!-- Filter Results Summary Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/60 dark:border-white/10 pb-3">
+    <div>
+      <h2 class="font-headline text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+        <span>Daftar Model Mobil & Trim</span>
+        <span class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-400/30 font-bold" id="results-count-display" aria-live="polite" aria-atomic="true">
+          {INITIAL_CARS.length} Unit
+        </span>
+      </h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400 font-normal mt-0.5" id="pagination-info-text">
+        Menampilkan mobil terdaftar dalam database Neon
+      </p>
+    </div>
+    <div class="flex items-center gap-3 text-xs text-slate-400">
+      <span>Gunakan tombol perbandingan untuk duel spesifikasi head-to-head</span>
+    </div>
+  </div>
+
+  <!-- Filtered Car Cards Grid -->
+  <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 min-h-60" id="car-catalog-grid">
+    {INITIAL_CARS.map((car) => {
+      const bSlug = (car.brand || '').toLowerCase().replace(/\s*\(.*?\)/g, '').trim();
+      const bLogo = BRAND_LOGOS[bSlug] || BRAND_LOGOS[bSlug.split(' ')[0]] || null;
+      const specs = car.specs || {};
+      const electricRange = specs.electric_range_km || (parseInt(car.consumption?.match(/\d+/)?.[0] || "0", 10)) || 0;
+      const horsepower = specs.horsepower || (parseInt(car.hp?.match(/\d+/)?.[0] || "0", 10)) || 0;
+      const batteryKwh = specs.battery_capacity_kwh || 0;
+      const acceleration = specs.acceleration_0_100 || (parseFloat(car.acc?.replace('s','') || "0")) || 0;
+
+      return (
+      <div
+        class="car-card group flex flex-col justify-between overflow-hidden rounded-3xl bg-white dark:bg-slate-900/60 p-5 shadow-xs transition-all duration-300 hover:shadow-xl border border-slate-200/80 dark:border-white/10"
+        data-body={car.bodyType}
+        data-engine={car.engineType}
+        data-brand={car.brand}
+        data-price={car.priceVal}
+        data-slug={car.slug}
+        data-name={car.name}
+        data-range={electricRange}
+        data-hp={horsepower}
+        data-acc={acceleration}
+        data-battery={batteryKwh}
+        data-car-data={JSON.stringify(car)}
+      >
+        <div class="space-y-3.5">
+          <!-- Vehicle Thumbnail Image Container -->
+          <a
+            href={`/mobil/${car.slug}`}
+            data-astro-prefetch="hover"
+            class="flex items-center justify-center aspect-video max-h-52 overflow-hidden rounded-2xl bg-linear-to-b from-slate-100 to-slate-200/70 dark:from-slate-800/80 dark:to-slate-900/80 relative p-3 group-hover:shadow-md transition group/img"
+          >
+            {car.img ? (
+              <img
+                src={car.img}
+                alt={car.name}
+                class="max-h-full max-w-full object-contain select-none group-hover:scale-105 transition duration-500 drop-shadow-sm"
+                loading="lazy"
+                decoding="async"
+                onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');"
+              />
+            ) : null}
+            <div class={`flex flex-col items-center justify-center gap-1.5 text-center p-4 select-none ${car.img ? 'hidden' : ''}`}>
+              <div class="w-10 h-10 rounded-xl bg-slate-200/60 dark:bg-slate-700/50 flex items-center justify-center text-slate-400 dark:text-slate-500">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                </svg>
+              </div>
+              <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Foto Belum Tersedia
+              </span>
+            </div>
+            
+            <!-- Powertrain Tag Badge (Minimalist) -->
+            <span class="absolute top-3 left-3 flex items-center gap-1.5 rounded-md bg-[#002b49]/90 dark:bg-cyan-950/90 backdrop-blur-md px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-cyan-300 border border-cyan-500/20 shadow-xs">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              <span>{car.engineType === 'bev' ? '100% Listrik (BEV)' : car.engineType === 'phev' ? 'Plug-in Hybrid (PHEV)' : 'Full Hybrid (HEV)'}</span>
+            </span>
+
+            {/* Quick compare button on top right of card */}
+            <a
+              href={`/komparasi?cars=${encodeURIComponent(car.slug)}`}
+              title="Bandingkan mobil ini"
+              class="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/90 dark:bg-slate-900/90 text-slate-700 dark:text-slate-300 hover:text-cyan-500 hover:bg-white dark:hover:bg-slate-800 flex items-center justify-center shadow-sm border border-slate-200/80 dark:border-slate-700 transition"
+              onclick="event.stopPropagation();"
+            >
+              <img src="/icons/scale.svg" alt="Bandingkan" class="w-4 h-4 opacity-75 dark:invert" />
+            </a>
+          </a>
+
+          <!-- Brand Logo Header & Body Type Tag -->
+          <div class="flex items-center justify-between gap-2 pt-0.5">
+            <a
+              href={`/katalog-mobil?brand=${encodeURIComponent(car.brand)}`}
+              data-astro-prefetch="hover"
+              class="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 hover:border-cyan-500/40 transition"
+              title={`Showroom ${car.brand}`}
+            >
+              {bLogo && (
+                <img src={bLogo} alt={car.brand} class="h-3.5 w-auto max-w-9 object-contain" loading="lazy" />
+              )}
+              <span class="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                {car.brand}
+              </span>
+            </a>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+              {car.bodyType || 'SUV'}
+            </span>
+          </div>
+
+          <!-- Title & Description -->
+          <div class="space-y-1">
+            <h3 class="font-headline text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight line-clamp-1 leading-snug group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition">
+              <a href={`/mobil/${car.slug}`} data-astro-prefetch="hover">
+                {car.name}
+              </a>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+              {car.tagline || car.description || "Spesifikasi dan varian resmi mobil listrik & hybrid di Indonesia."}
+            </p>
+          </div>
+
+          <!-- Key Metrics Grid: Range, Battery, Power, Accel (Minimalist Vector Icons) -->
+          <div class="grid grid-cols-2 gap-2 rounded-2xl bg-slate-50/80 dark:bg-slate-900/80 p-2.5 text-[11px] border border-slate-100 dark:border-slate-800 tracking-tight tabular-nums">
+            <div class="space-y-0.5">
+              <span class="text-[10px] text-slate-400 dark:text-slate-500 block">Jarak Tempuh:</span>
+              <strong class="text-slate-900 dark:text-white font-bold flex items-center gap-1.5">
+                <img src="/icons/route.svg" alt="" class="w-3.5 h-3.5 opacity-60 dark:invert shrink-0" />
+                <span>{electricRange > 0 ? `${electricRange} km` : (car.consumption || "-")}</span>
+              </strong>
+            </div>
+            <div class="space-y-0.5 border-l border-slate-200/60 dark:border-slate-800 pl-2">
+              <span class="text-[10px] text-slate-400 dark:text-slate-500 block">Baterai:</span>
+              <strong class="text-slate-900 dark:text-white font-bold flex items-center gap-1.5">
+                <img src="/icons/battery.svg" alt="" class="w-3.5 h-3.5 opacity-60 dark:invert shrink-0" />
+                <span>{batteryKwh > 0 ? `${batteryKwh} kWh` : "-"}</span>
+              </strong>
+            </div>
+            <div class="space-y-0.5 border-t border-slate-200/60 dark:border-slate-800 pt-1.5">
+              <span class="text-[10px] text-slate-400 dark:text-slate-500 block">Tenaga Motor:</span>
+              <strong class="text-slate-900 dark:text-white font-bold flex items-center gap-1.5">
+                <img src="/icons/gauge.svg" alt="" class="w-3.5 h-3.5 opacity-60 dark:invert shrink-0" />
+                <span>{horsepower > 0 ? `${horsepower} HP` : (car.hp || "-")}</span>
+              </strong>
+            </div>
+            <div class="space-y-0.5 border-t border-l border-slate-200/60 dark:border-slate-800 pt-1.5 pl-2">
+              <span class="text-[10px] text-slate-400 dark:text-slate-500 block">Akselerasi 0-100:</span>
+              <strong class="text-slate-900 dark:text-white font-bold flex items-center gap-1.5">
+                <img src="/icons/speedometer.svg" alt="" class="w-3.5 h-3.5 opacity-60 dark:invert shrink-0" />
+                <span>{acceleration > 0 ? `${acceleration}s` : (car.acc || "-")}</span>
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Price & Action Button Bar -->
+        <div class="flex items-center justify-between gap-3 border-t border-slate-100 dark:border-white/10 pt-4 mt-4">
+          <div>
+            <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+              ESTIMASI OTR:
+            </span>
+            <span class="font-headline text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight block tabular-nums">
+              {car.price && car.price !== "0" && car.price !== "Rp 0" ? car.price : "Hubungi APM"}
+            </span>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <a
+              href={`/komparasi?cars=${encodeURIComponent(car.slug)}`}
+              data-astro-prefetch="hover"
+              class="inline-flex items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-950/60 text-slate-700 dark:text-slate-300 hover:text-cyan-600 dark:hover:text-cyan-400 text-xs font-bold transition border border-slate-200/80 dark:border-slate-700 cursor-pointer"
+              title="Bandingkan mobil ini"
+            >
+              <img src="/icons/scale.svg" alt="Bandingkan" class="w-3.5 h-3.5 opacity-80 dark:invert" />
+            </a>
+            <a
+              href={`/mobil/${car.slug}`}
+              data-astro-prefetch="hover"
+              class="inline-flex items-center justify-center gap-1 px-3.5 sm:px-4 py-2 rounded-xl bg-[#002b49] hover:bg-[#003b66] dark:bg-cyan-600 dark:hover:bg-cyan-500 text-xs font-bold text-white transition-all shadow-xs hover:shadow-md active:scale-95 group/btn whitespace-nowrap"
+            >
+              <span>Spesifikasi</span>
+              <span class="transition-transform group-hover/btn:translate-x-0.5">→</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    );})}
+  </div>
+
+  <!-- Empty State (Shown if no car matches search/filter) -->
+  <div id="no-cars-fallback" class="hidden text-center py-16 px-4 rounded-3xl apple-liquid-glass border border-slate-200/80 dark:border-white/10 space-y-4">
+    <div class="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center mx-auto border border-cyan-400/20">
+      <img src="/icons/search.svg" alt="" class="w-7 h-7 opacity-70 dark:invert" />
+    </div>
+    <div class="space-y-1">
+      <h3 class="font-headline text-lg font-extrabold text-slate-900 dark:text-white">Tidak Ada Kendaraan yang Cocok</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+        Kriteria filter Anda terlalu spesifik. Coba turunkan jarak tempuh minimal, perbesar budget, atau klik tombol di bawah untuk mereset seluruh filter.
+      </p>
+    </div>
+    <button
+      type="button"
+      id="empty-reset-filters-btn"
+      class="px-5 py-2.5 rounded-xl bg-cyan-600 text-white font-bold text-xs shadow-md hover:bg-cyan-500 transition cursor-pointer"
+    >
+      Reset Semua Filter
+    </button>
+  </div>
+
+  <!-- STATE URL PAGINATION CONTROLS -->
+  <div id="catalog-pagination-container" class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200/60 dark:border-white/10 pt-6">
+    <div class="text-xs text-slate-400 font-medium" id="pagination-status-counter">
+      Halaman 1
+    </div>
+
+    <div class="flex items-center gap-1.5" id="pagination-buttons-wrapper">
+      <!-- Buttons dynamically injected via JS -->
+    </div>
+  </div>
+</div>
+
+<script>
+  function initCarFinderFilter() {
+    const rootEl = document.querySelector('.car-finder-root') as HTMLElement | null;
+    const initialBrandProp = rootEl?.dataset.initialBrand || "all";
+
+    const params = new URLSearchParams(window.location.search);
+    let currentPage = parseInt(params.get("page") || "1", 10);
+    const PAGE_SIZE = 9;
+
+    // Filter controls
+    const searchInput = document.getElementById('car-search-input') as HTMLInputElement | null;
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+    const engineBtns = document.querySelectorAll<HTMLButtonElement>('.powertrain-filter-btn');
+    const bodyBtnGroup = document.querySelectorAll<HTMLButtonElement>('.body-filter-btn');
+    const budgetInput = document.getElementById('budget-range-input') as HTMLInputElement | null;
+    const budgetDisplay = document.getElementById('budget-value-display');
+    const rangeSlider = document.getElementById('range-slider-input') as HTMLInputElement | null;
+    const rangeDisplay = document.getElementById('range-value-display');
+    const sortSelect = document.getElementById('catalog-sort-select') as HTMLSelectElement | null;
+    
+    // Summary & Meta
+    const resultsCountDisplay = document.getElementById('results-count-display');
+    const paginationInfoText = document.getElementById('pagination-info-text');
+    const paginationStatusCounter = document.getElementById('pagination-status-counter');
+    const paginationButtonsWrapper = document.getElementById('pagination-buttons-wrapper');
+    const noCarsFallback = document.getElementById('no-cars-fallback');
+    const activeFilterTagsContainer = document.getElementById('active-filter-tags-container');
+    const resetAllBtn = document.getElementById('reset-all-filters-btn');
+    const emptyResetBtn = document.getElementById('empty-reset-filters-btn');
+    const powertrainDesc = document.getElementById('powertrain-active-desc');
+
+    const carCards = Array.from(document.querySelectorAll<HTMLElement>('.car-card'));
+
+    // Normalizer and Matcher Functions
+    const norm = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, "");
+
+    function brandsMatch(b1: string, b2: string): boolean {
+      if (!b1 || !b2 || b1 === "all" || b2 === "all") return true;
+      const n1 = norm(b1);
+      const n2 = norm(b2);
+      if (n1 === n2) return true;
+      if (n1.startsWith(n2) || n2.startsWith(n1)) return true;
+      return false;
+    }
+
+    function enginesMatch(itemEngine: string, selectedEngine: string): boolean {
+      if (!selectedEngine || selectedEngine === "all") return true;
+      const ie = (itemEngine || "").toLowerCase();
+      const se = (selectedEngine || "").toLowerCase();
+      if (ie === se) return true;
+      if (se === "bev" && (ie === "ev" || ie === "electric" || ie === "listrik")) return true;
+      if ((se === "ev" || se === "electric" || se === "listrik") && (ie === "bev" || ie === "ev")) return true;
+      if (se === "hybrid") return ie === "hev" || ie === "phev" || ie === "hybrid";
+      if (se === "hev" && (ie === "hybrid" || ie === "hev")) return true;
+      if (se === "phev" && (ie === "phev" || ie === "plug-in")) return true;
+      return false;
+    }
+
+    function bodiesMatch(itemBody: string, selectedBody: string): boolean {
+      if (!selectedBody || selectedBody === "all") return true;
+      const ib = (itemBody || "").toLowerCase();
+      const sb = (selectedBody || "").toLowerCase();
+      if (ib === sb) return true;
+      if (sb === "suv" && (ib === "crossover" || ib === "suv")) return true;
+      if (sb === "mpv" && ib === "mpv") return true;
+      if (sb === "sedan" && (ib === "sedan" || ib === "coupe")) return true;
+      if (sb === "citycar" && (ib === "hatchback" || ib === "city car" || ib === "citycar" || ib === "compact" || ib === "mini")) return true;
+      return false;
+    }
+
+    // In-memory Card Cache for ultra-fast filtering
+    const cachedCardData = carCards.map((card) => {
+      const raw = card.dataset.carData || "";
+      const name = card.dataset.name || "";
+      const brand = card.dataset.brand || "";
+      const body = card.dataset.body || "";
+      const engine = card.dataset.engine || "";
+      const price = parseFloat(card.dataset.price || "0");
+      const range = parseFloat(card.dataset.range || "0");
+      const hp = parseFloat(card.dataset.hp || "0");
+      const acc = parseFloat(card.dataset.acc || "0");
+      const battery = parseFloat(card.dataset.battery || "0");
+      
+      const plainLower = `${name} ${brand} ${body} ${engine} ${raw}`.toLowerCase();
+      const normalizedAll = norm(plainLower);
+
+      return {
+        el: card,
+        name,
+        brand,
+        body: body.toLowerCase(),
+        engine: engine.toLowerCase(),
+        price,
+        range,
+        hp,
+        acc,
+        battery,
+        searchableText: `${plainLower} ${normalizedAll}`
+      };
+    });
+
+    // Dropdown Elements for Brand
+    const brandTrigger = document.getElementById('brand-dropdown-trigger');
+    const brandMenu = document.getElementById('brand-dropdown-menu');
+    const brandLabel = document.getElementById('brand-dropdown-label');
+    const brandArrow = document.getElementById('brand-dropdown-arrow');
+    const brandItems = document.querySelectorAll<HTMLButtonElement>('[data-brand-val]');
+
+    // Current State
+    let searchQuery = params.get("q") || "";
+    let selectedBody = params.get("body") || "all";
+    let selectedEngine = params.get("engine") || params.get("powertrain") || "all";
+    let selectedBrand = params.get("brand") || initialBrandProp || "all";
+    let selectedBudget = parseFloat(params.get("budget") || "1500");
+    let selectedMinRange = parseFloat(params.get("min_range") || "0");
+    let currentSort = params.get("sort") || "featured";
+
+    // Restore UI from URL params
+    if (searchInput && searchQuery) {
+      searchInput.value = searchQuery;
+      if (clearSearchBtn) clearSearchBtn.classList.remove('hidden');
+    }
+
+    if (budgetInput && selectedBudget) {
+      budgetInput.value = String(selectedBudget);
+      if (budgetDisplay) {
+        budgetDisplay.textContent = selectedBudget >= 1500 ? "Semua Budget (Rp 1,5 M+)" : `Maksimal: Rp ${selectedBudget} Juta`;
+      }
+    }
+
+    if (rangeSlider && selectedMinRange) {
+      rangeSlider.value = String(selectedMinRange);
+      if (rangeDisplay) {
+        rangeDisplay.textContent = selectedMinRange <= 0 ? "Semua Jarak (≥ 0 km)" : `Minimal: ≥ ${selectedMinRange} km`;
+      }
+    }
+
+    if (sortSelect && currentSort) {
+      sortSelect.value = currentSort;
+    }
+
+    function updatePowertrainUI() {
+      engineBtns.forEach((btn) => {
+        const val = btn.dataset.engineVal || "all";
+        const isActive = val.toLowerCase() === selectedEngine.toLowerCase();
+        btn.setAttribute('data-active', String(isActive));
+        if (isActive) {
+          btn.classList.add('border-cyan-500', 'bg-cyan-500/10', 'text-cyan-700', 'dark:text-cyan-300', 'shadow-xs');
+          btn.classList.remove('bg-slate-50', 'dark:bg-slate-900', 'border-slate-200/80', 'dark:border-slate-800');
+        } else {
+          btn.classList.remove('border-cyan-500', 'bg-cyan-500/10', 'text-cyan-700', 'dark:text-cyan-300', 'shadow-xs');
+          btn.classList.add('bg-slate-50', 'dark:bg-slate-900', 'border-slate-200/80', 'dark:border-slate-800');
+        }
+      });
+      if (powertrainDesc) {
+        if (selectedEngine === "bev") powertrainDesc.textContent = "Hanya Mobil Listrik Murni 100% BEV";
+        else if (selectedEngine === "phev") powertrainDesc.textContent = "Hanya Mobil Plug-in Hybrid (Colok + Bensin)";
+        else if (selectedEngine === "hev") powertrainDesc.textContent = "Hanya Mobil Full Hybrid (BBM Irit)";
+        else powertrainDesc.textContent = "Semua Teknologi Mesin";
+      }
+    }
+
+    function updateBodyUI() {
+      bodyBtnGroup.forEach((btn) => {
+        const bType = btn.dataset.bodyType || "all";
+        const isActive = bType.toLowerCase() === selectedBody.toLowerCase();
+        btn.setAttribute('data-active', String(isActive));
+        if (isActive) {
+          btn.classList.add('bg-cyan-600', 'text-white', 'border-cyan-600', 'shadow-xs');
+          btn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-200');
+        } else {
+          btn.classList.remove('bg-cyan-600', 'text-white', 'border-cyan-600', 'shadow-xs');
+          btn.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-slate-700', 'dark:text-slate-200');
+        }
+      });
+    }
+
+    function updateBrandUI(brandName: string) {
+      if (brandName && brandName.toLowerCase() !== "all") {
+        const matchItem = Array.from(brandItems).find(i => brandsMatch(i.dataset.brandVal || "", brandName));
+        if (matchItem && brandLabel) {
+          brandLabel.innerHTML = `<img src="/icons/car.svg" alt="" class="w-3.5 h-3.5 opacity-75 dark:invert shrink-0" /><span>${brandName}</span>`;
+        }
+      } else {
+        if (brandLabel) brandLabel.innerHTML = `<img src="/icons/car.svg" alt="" class="w-3.5 h-3.5 opacity-75 dark:invert shrink-0" /><span>Semua Merek</span>`;
+      }
+    }
+
+    updatePowertrainUI();
+    updateBodyUI();
+    updateBrandUI(selectedBrand);
+
+    // Toggle Dropdowns
+    function closeAllDropdowns() {
+      if (brandMenu) brandMenu.classList.add('hidden');
+      if (brandArrow) brandArrow.style.transform = 'rotate(0deg)';
+    }
+
+    if (brandTrigger && brandMenu && brandArrow) {
+      brandTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = brandMenu.classList.contains('hidden');
+        closeAllDropdowns();
+        if (isHidden) {
+          brandMenu.classList.remove('hidden');
+          brandArrow.style.transform = 'rotate(180deg)';
+        }
+      });
+    }
+
+    brandItems.forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedBrand = item.dataset.brandVal || "all";
+        updateBrandUI(selectedBrand);
+        closeAllDropdowns();
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    });
+
+    if (!(window as any).__carFinderDropdownClickAttached) {
+      (window as any).__carFinderDropdownClickAttached = true;
+      document.addEventListener('click', closeAllDropdowns);
+      document.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Escape') closeAllDropdowns();
+        if (e.key === '/' && document.activeElement !== searchInput) {
+          e.preventDefault();
+          searchInput?.focus();
+        }
+      });
+    }
+
+    // Engine Buttons Click
+    engineBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectedEngine = btn.dataset.engineVal || "all";
+        updatePowertrainUI();
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    });
+
+    // Body Buttons Click
+    bodyBtnGroup.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectedBody = btn.dataset.bodyType || "all";
+        updateBodyUI();
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    });
+
+    // Budget Slider Event
+    if (budgetInput) {
+      budgetInput.addEventListener('input', () => {
+        selectedBudget = parseFloat(budgetInput.value) || 1500;
+        if (budgetDisplay) {
+          budgetDisplay.textContent = selectedBudget >= 1500 ? "Semua Budget (Rp 1,5 M+)" : `Maksimal: Rp ${selectedBudget} Juta`;
+        }
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    }
+
+    // Budget Preset Pills
+    document.querySelectorAll<HTMLButtonElement>('.budget-preset-pill').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        const maxVal = parseFloat(pill.dataset.maxBudget || "1500");
+        selectedBudget = maxVal;
+        if (budgetInput) budgetInput.value = String(Math.min(maxVal, 1500));
+        if (budgetDisplay) {
+          budgetDisplay.textContent = maxVal >= 1500 ? "Semua Budget (Rp 1,5 M+)" : `Maksimal: Rp ${maxVal} Juta`;
+        }
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    });
+
+    // Range Slider Event
+    if (rangeSlider) {
+      rangeSlider.addEventListener('input', () => {
+        selectedMinRange = parseFloat(rangeSlider.value) || 0;
+        if (rangeDisplay) {
+          rangeDisplay.textContent = selectedMinRange <= 0 ? "Semua Jarak (≥ 0 km)" : `Minimal: ≥ ${selectedMinRange} km`;
+        }
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    }
+
+    // Range Preset Pills
+    document.querySelectorAll<HTMLButtonElement>('.range-preset-pill').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        const minVal = parseFloat(pill.dataset.minRange || "0");
+        selectedMinRange = minVal;
+        if (rangeSlider) rangeSlider.value = String(minVal);
+        if (rangeDisplay) {
+          rangeDisplay.textContent = minVal <= 0 ? "Semua Jarak (≥ 0 km)" : `Minimal: ≥ ${minVal} km`;
+        }
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    });
+
+    // Sorting Selector Event
+    if (sortSelect) {
+      sortSelect.addEventListener('change', () => {
+        currentSort = sortSelect.value || "featured";
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    }
+
+    // Search Input Event
+    let searchDebounceTimer: any;
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          searchQuery = searchInput.value.trim();
+          if (clearSearchBtn) {
+            if (searchQuery) clearSearchBtn.classList.remove('hidden');
+            else clearSearchBtn.classList.add('hidden');
+          }
+          currentPage = 1;
+          applyFiltersAndPagination();
+        }, 120);
+      });
+    }
+
+    if (clearSearchBtn && searchInput) {
+      clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchQuery = '';
+        clearSearchBtn.classList.add('hidden');
+        currentPage = 1;
+        applyFiltersAndPagination();
+      });
+    }
+
+    // Quick Pill buttons
+    document.querySelectorAll<HTMLButtonElement>('.quick-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        const kw = pill.dataset.keyword || '';
+        if (searchInput) {
+          searchInput.value = kw;
+          searchQuery = kw;
+          if (clearSearchBtn) clearSearchBtn.classList.remove('hidden');
+          currentPage = 1;
+          applyFiltersAndPagination();
+        }
+      });
+    });
+
+    // Reset All Filters
+    function resetAllFilters() {
+      selectedBody = "all";
+      selectedEngine = "all";
+      selectedBrand = "all";
+      selectedBudget = 1500;
+      selectedMinRange = 0;
+      searchQuery = "";
+      currentSort = "featured";
+      currentPage = 1;
+
+      if (searchInput) searchInput.value = "";
+      if (clearSearchBtn) clearSearchBtn.classList.add('hidden');
+      if (budgetInput) budgetInput.value = "1500";
+      if (budgetDisplay) budgetDisplay.textContent = "Semua Budget (Rp 1,5 M+)";
+      if (rangeSlider) rangeSlider.value = "0";
+      if (rangeDisplay) rangeDisplay.textContent = "Semua Jarak (≥ 0 km)";
+      if (sortSelect) sortSelect.value = "featured";
+
+      updatePowertrainUI();
+      updateBodyUI();
+      updateBrandUI("all");
+      applyFiltersAndPagination();
+    }
+
+    if (resetAllBtn) resetAllBtn.addEventListener('click', resetAllFilters);
+    if (emptyResetBtn) emptyResetBtn.addEventListener('click', resetAllFilters);
+
+    // ----------------------------------------------------
+    // Core Filter, Sort & URL-Synchronized Pagination Engine
+    // ----------------------------------------------------
+    function applyFiltersAndPagination() {
+      const queryTokens = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+      let matchingItems: typeof cachedCardData = [];
+
+      for (let i = 0; i < cachedCardData.length; i++) {
+        const item = cachedCardData[i];
+
+        // 1. Powertrain Match
+        const matchEngine = enginesMatch(item.engine, selectedEngine);
+        if (!matchEngine) continue;
+
+        // 2. Body Match
+        const matchBody = bodiesMatch(item.body, selectedBody);
+        if (!matchBody) continue;
+
+        // 3. Brand Match
+        const matchBrand = brandsMatch(item.brand, selectedBrand);
+        if (!matchBrand) continue;
+
+        // 4. Budget Match (slider max)
+        const matchBudget = selectedBudget >= 1500
+          ? true
+          : (item.price > 0 && item.price <= selectedBudget);
+        if (!matchBudget) continue;
+
+        // 5. Min Range Match
+        const matchRange = selectedMinRange <= 0
+          ? true
+          : (item.range >= selectedMinRange);
+        if (!matchRange) continue;
+
+        // 6. Search Match
+        const matchSearch = queryTokens.length === 0 || queryTokens.every(t => {
+          const normToken = norm(t);
+          return item.searchableText.includes(t) || (normToken && item.searchableText.includes(normToken));
+        });
+        if (!matchSearch) continue;
+
+        matchingItems.push(item);
+      }
+
+      // 7. Apply Sorting
+      if (currentSort === "price_asc") {
+        matchingItems.sort((a, b) => (a.price || 99999) - (b.price || 99999));
+      } else if (currentSort === "price_desc") {
+        matchingItems.sort((a, b) => (b.price || 0) - (a.price || 0));
+      } else if (currentSort === "range_desc") {
+        matchingItems.sort((a, b) => (b.range || 0) - (a.range || 0));
+      } else if (currentSort === "power_desc") {
+        matchingItems.sort((a, b) => (b.hp || 0) - (a.hp || 0));
+      } else if (currentSort === "acc_asc") {
+        matchingItems.sort((a, b) => (a.acc || 99) - (b.acc || 99));
+      }
+
+      const totalMatches = matchingItems.length;
+      const totalPages = Math.max(1, Math.ceil(totalMatches / PAGE_SIZE));
+
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      // Slice cards for current page with high-performance O(1) Set lookup
+      const startIndex = (currentPage - 1) * PAGE_SIZE;
+      const endIndex = startIndex + PAGE_SIZE;
+      const visibleSet = new Set(matchingItems.slice(startIndex, endIndex).map(m => m.el));
+
+      // Re-order DOM elements according to sorted array
+      const grid = document.getElementById('car-catalog-grid');
+      if (grid && currentSort !== "featured") {
+        matchingItems.slice(startIndex, endIndex).forEach(item => {
+          grid.appendChild(item.el);
+        });
+      }
+
+      for (let i = 0; i < carCards.length; i++) {
+        const card = carCards[i];
+        card.style.display = visibleSet.has(card) ? "flex" : "none";
+      }
+
+      // Update counters & UI
+      if (resultsCountDisplay) {
+        resultsCountDisplay.textContent = `${totalMatches} Unit`;
+      }
+      if (paginationInfoText) {
+        if (totalMatches > 0) {
+          const displayStart = startIndex + 1;
+          const displayEnd = Math.min(endIndex, totalMatches);
+          paginationInfoText.textContent = `Menampilkan ${displayStart} - ${displayEnd} dari ${totalMatches} kendaraan`;
+        } else {
+          paginationInfoText.textContent = `Tidak ditemukan kendaraan yang sesuai kriteria`;
+        }
+      }
+
+      // Empty state toggle
+      if (noCarsFallback) {
+        if (totalMatches === 0) noCarsFallback.classList.remove('hidden');
+        else noCarsFallback.classList.add('hidden');
+      }
+
+      // Render Active Filter Tags
+      renderActiveFilterTags();
+
+      // Render Pagination Buttons
+      renderPaginationControls(totalPages, totalMatches);
+
+      // Synchronize URL query parameters
+      syncUrlState();
+    }
+
+    function renderActiveFilterTags() {
+      if (!activeFilterTagsContainer) return;
+      let tagsHtml = `
+        <span class="text-xs font-bold text-cyan-800 dark:text-cyan-300 flex items-center gap-1.5">
+          <img src="/icons/filter.svg" alt="" class="w-3.5 h-3.5 opacity-80 dark:invert shrink-0" />
+          <span>Filter Aktif:</span>
+        </span>
+      `;
+      let hasActiveFilter = false;
+
+      if (selectedEngine !== "all") {
+        hasActiveFilter = true;
+        tagsHtml += `
+          <button type="button" class="filter-dismiss-tag inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-600 text-white text-[11px] font-bold cursor-pointer" data-dismiss="engine">
+            <span>Powertrain: ${selectedEngine.toUpperCase()}</span>
+            <span class="opacity-70 hover:opacity-100">✕</span>
+          </button>
+        `;
+      }
+
+      if (selectedBody !== "all") {
+        hasActiveFilter = true;
+        tagsHtml += `
+          <button type="button" class="filter-dismiss-tag inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-600 text-white text-[11px] font-bold cursor-pointer" data-dismiss="body">
+            <span>Bodi: ${selectedBody.toUpperCase()}</span>
+            <span class="opacity-70 hover:opacity-100">✕</span>
+          </button>
+        `;
+      }
+
+      if (selectedBrand !== "all") {
+        hasActiveFilter = true;
+        tagsHtml += `
+          <button type="button" class="filter-dismiss-tag inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-600 text-white text-[11px] font-bold cursor-pointer" data-dismiss="brand">
+            <span>Merek: ${selectedBrand}</span>
+            <span class="opacity-70 hover:opacity-100">✕</span>
+          </button>
+        `;
+      }
+
+      if (selectedBudget < 1500) {
+        hasActiveFilter = true;
+        tagsHtml += `
+          <button type="button" class="filter-dismiss-tag inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-600 text-white text-[11px] font-bold cursor-pointer" data-dismiss="budget">
+            <span>Maks: Rp ${selectedBudget} Jt</span>
+            <span class="opacity-70 hover:opacity-100">✕</span>
+          </button>
+        `;
+      }
+
+      if (selectedMinRange > 0) {
+        hasActiveFilter = true;
+        tagsHtml += `
+          <button type="button" class="filter-dismiss-tag inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-600 text-white text-[11px] font-bold cursor-pointer" data-dismiss="range">
+            <span>Jarak: ≥ ${selectedMinRange} km</span>
+            <span class="opacity-70 hover:opacity-100">✕</span>
+          </button>
+        `;
+      }
+
+      if (searchQuery) {
+        hasActiveFilter = true;
+        tagsHtml += `
+          <button type="button" class="filter-dismiss-tag inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-600 text-white text-[11px] font-bold cursor-pointer" data-dismiss="search">
+            <span>“${searchQuery}”</span>
+            <span class="opacity-70 hover:opacity-100">✕</span>
+          </button>
+        `;
+      }
+
+      if (!hasActiveFilter) {
+        tagsHtml += `<span class="text-slate-400 text-[11px] font-normal italic">Menampilkan seluruh data tanpa batasan filter</span>`;
+      }
+
+      activeFilterTagsContainer.innerHTML = tagsHtml;
+
+      // Attach dismiss events
+      activeFilterTagsContainer.querySelectorAll<HTMLButtonElement>('.filter-dismiss-tag').forEach(tag => {
+        tag.addEventListener('click', () => {
+          const dismissType = tag.dataset.dismiss;
+          if (dismissType === 'engine') selectedEngine = "all";
+          else if (dismissType === 'body') selectedBody = "all";
+          else if (dismissType === 'brand') selectedBrand = "all";
+          else if (dismissType === 'budget') {
+            selectedBudget = 1500;
+            if (budgetInput) budgetInput.value = "1500";
+            if (budgetDisplay) budgetDisplay.textContent = "Semua Budget (Rp 1,5 M+)";
+          } else if (dismissType === 'range') {
+            selectedMinRange = 0;
+            if (rangeSlider) rangeSlider.value = "0";
+            if (rangeDisplay) rangeDisplay.textContent = "Semua Jarak (≥ 0 km)";
+          } else if (dismissType === 'search') {
+            searchQuery = "";
+            if (searchInput) searchInput.value = "";
+            if (clearSearchBtn) clearSearchBtn.classList.add('hidden');
+          }
+
+          updatePowertrainUI();
+          updateBodyUI();
+          updateBrandUI(selectedBrand);
+          currentPage = 1;
+          applyFiltersAndPagination();
+        });
+      });
+    }
+
+    function renderPaginationControls(totalPages: number, totalMatches: number) {
+      if (!paginationButtonsWrapper || !paginationStatusCounter) return;
+
+      paginationStatusCounter.innerHTML = `Menampilkan <strong class="text-slate-900 dark:text-white font-bold">Halaman ${currentPage}</strong> dari <strong class="text-slate-900 dark:text-white font-bold">${totalPages}</strong> <span class="text-slate-400">(${totalMatches} unit)</span>`;
+
+      if (totalPages <= 1) {
+        paginationButtonsWrapper.innerHTML = '';
+        return;
+      }
+
+      // Calculate visible page items (windowing + ellipsis)
+      let pages: (number | string)[] = [];
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) pages.push(i);
+      } else {
+        if (currentPage <= 4) {
+          pages = [1, 2, 3, 4, 5, '...', totalPages];
+        } else if (currentPage >= totalPages - 3) {
+          pages = [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+        } else {
+          pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+        }
+      }
+
+      let html = `
+        <div class="flex items-center gap-1 bg-slate-50/90 dark:bg-slate-900/80 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs backdrop-blur-sm">
+          <button
+            type="button"
+            data-page-nav="prev"
+            ${currentPage === 1 ? 'disabled' : ''}
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-[#002b49] dark:hover:text-cyan-400 hover:shadow-2xs disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer"
+          >
+            <span>←</span>
+            <span class="hidden sm:inline text-[11px] font-bold">Sebelumnya</span>
+          </button>
+
+          <div class="flex items-center gap-1 px-1 border-x border-slate-200/60 dark:border-slate-800">
+      `;
+
+      pages.forEach((p) => {
+        if (p === '...') {
+          html += `
+            <span class="w-6 h-8 flex items-center justify-center text-xs font-bold text-slate-400 select-none tracking-widest">
+              …
+            </span>
+          `;
+        } else {
+          const isActive = p === currentPage;
+          html += `
+            <button
+              type="button"
+              data-page-num="${p}"
+              class="w-8 h-8 flex items-center justify-center rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                isActive
+                  ? 'bg-[#002b49] dark:bg-cyan-600 text-white shadow-xs scale-105'
+                  : 'text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+              }"
+            >
+              ${p}
+            </button>
+          `;
+        }
+      });
+
+      html += `
+          </div>
+
+          <button
+            type="button"
+            data-page-nav="next"
+            ${currentPage === totalPages ? 'disabled' : ''}
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 hover:text-[#002b49] dark:hover:text-cyan-400 hover:shadow-2xs disabled:opacity-25 disabled:pointer-events-none transition-all cursor-pointer"
+          >
+            <span class="hidden sm:inline text-[11px] font-bold">Berikutnya</span>
+            <span>→</span>
+          </button>
+        </div>
+      `;
+
+      paginationButtonsWrapper.innerHTML = html;
+
+      paginationButtonsWrapper.querySelectorAll<HTMLButtonElement>('[data-page-num]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentPage = parseInt(btn.dataset.pageNum || '1', 10);
+          applyFiltersAndPagination();
+          scrollToGrid();
+        });
+      });
+
+      const prevBtn = paginationButtonsWrapper.querySelector<HTMLButtonElement>('[data-page-nav="prev"]');
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          if (currentPage > 1) {
+            currentPage--;
+            applyFiltersAndPagination();
+            scrollToGrid();
+          }
+        });
+      }
+
+      const nextBtn = paginationButtonsWrapper.querySelector<HTMLButtonElement>('[data-page-nav="next"]');
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+          if (currentPage < totalPages) {
+            currentPage++;
+            applyFiltersAndPagination();
+            scrollToGrid();
+          }
+        });
+      }
+    }
+
+    function scrollToGrid() {
+      const gridHeader = document.getElementById('car-catalog-grid');
+      if (gridHeader) {
+        gridHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function syncUrlState() {
+      const newParams = new URLSearchParams();
+      if (searchQuery) newParams.set("q", searchQuery);
+      if (selectedBrand !== "all") newParams.set("brand", selectedBrand);
+      if (selectedEngine !== "all") newParams.set("engine", selectedEngine);
+      if (selectedBody !== "all") newParams.set("body", selectedBody);
+      if (selectedBudget < 1500) newParams.set("budget", String(selectedBudget));
+      if (selectedMinRange > 0) newParams.set("min_range", String(selectedMinRange));
+      if (currentSort !== "featured") newParams.set("sort", currentSort);
+      if (currentPage > 1) newParams.set("page", String(currentPage));
+
+      const newUrl = `${window.location.pathname}${newParams.toString() ? '?' + newParams.toString() : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    // Expose Global Helper for External Brand Card Clicks
+    (window as any).filterCarFinderByBrand = function(brandName: string) {
+      if (brandName && brandName !== "all") {
+        selectedBrand = brandName;
+        updateBrandUI(brandName);
+        currentPage = 1;
+        applyFiltersAndPagination();
+      } else {
+        selectedBrand = "all";
+        updateBrandUI("all");
+        currentPage = 1;
+        applyFiltersAndPagination();
+      }
+    };
+
+    applyFiltersAndPagination();
+  }
+
+  document.addEventListener('astro:page-load', initCarFinderFilter);
+</script>
+
+<style>
+  .powertrain-filter-btn[data-active="true"] {
+    border-color: #06b6d4 !important;
+    background-color: rgba(6, 182, 212, 0.12) !important;
+  }
+  .body-filter-btn[data-active="true"] {
+    background-color: #0891b2 !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 4px 12px rgba(8, 145, 178, 0.25) !important;
+  }
+</style>

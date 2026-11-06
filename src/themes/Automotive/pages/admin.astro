@@ -1,0 +1,1163 @@
+---
+const { request } = Astro.props as any;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { SITE } from "@/site";
+import { fetchCategoriesFromApi, fetchSiteConfigFromApi } from "@/lib/api";
+
+const [apiCategories, siteConfig] = await Promise.all([
+  fetchCategoriesFromApi(request),
+  fetchSiteConfigFromApi(request),
+]);
+---
+
+<BaseLayout
+  title={`EVnesia Studio - Panel Pengelolaan Database Mobil & Merek | ${SITE.name}`}
+  description="Panel pengelolaan data mobil, merek, spesifikasi teknis, dan kalkulator BBM bertenaga Rust Axum Backend."
+  siteConfig={siteConfig}
+  navCategories={apiCategories}
+>
+  <div class="min-h-screen bg-slate-50 dark:bg-slate-950/80 text-slate-900 dark:text-slate-100 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto space-y-8">
+      
+      <!-- HEADER BANNER (Clear & Light Responsive) -->
+      <div class="rounded-3xl bg-linear-to-r from-sky-50 via-cyan-50/70 to-white dark:from-[#002b49] dark:via-slate-900 dark:to-[#00385f] p-6 sm:p-8 text-slate-900 dark:text-white shadow-xl relative overflow-hidden border border-slate-200/80 dark:border-white/10">
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-100 dark:bg-cyan-500/20 border border-cyan-300 dark:border-cyan-400/30 text-cyan-800 dark:text-cyan-300 text-xs font-bold uppercase tracking-wider">
+                <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+                Backend Engine API
+              </span>
+              <span id="backend-status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-300 dark:border-emerald-400/30 text-emerald-800 dark:text-emerald-300 text-xs font-bold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Backend Aktif (Port 8000)</span>
+              </span>
+            </div>
+            <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight font-headline text-slate-900 dark:text-white">
+              Studio Manajemen Database Mobil
+            </h1>
+            <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 mt-1 max-w-2xl">
+              Kelola data mobil, merek, harga OTR, dan spesifikasi dengan antarmuka visual yang mudah dipahami.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <a 
+              href="/katalog-mobil" 
+              class="px-4 py-2.5 rounded-xl bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 border border-slate-200 dark:border-white/20 text-slate-800 dark:text-white text-xs sm:text-sm font-bold transition flex items-center gap-2 shadow-xs backdrop-blur-sm"
+            >
+              <img src="/icons/search.svg" class="w-4 h-4 opacity-70 inline-block" alt="" />
+              <span>Lihat Web Katalog</span>
+            </a>
+            <button 
+              id="btn-open-add-car" 
+              class="px-5 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs sm:text-sm font-extrabold shadow-lg shadow-cyan-600/25 transition-all transform hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer"
+            >
+              <span class="text-base font-normal leading-none">+</span>
+              <span>Tambah Mobil Baru</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUICK STATS CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2 11 2 11.3 2 11.7V16c0 .6.4 1 1 1h2m10 0a2 2 0 100-4 2 2 0 000 4zm-8 0a2 2 0 100-4 2 2 0 000 4z" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Mobil</div>
+            <div id="stat-total-cars" class="text-2xl font-extrabold text-slate-900 dark:text-white">184</div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Merek</div>
+            <div id="stat-total-brands" class="text-2xl font-extrabold text-slate-900 dark:text-white">41</div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Listrik Murni (BEV)</div>
+            <div id="stat-bev-count" class="text-2xl font-extrabold text-slate-900 dark:text-white">85+</div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-white dark:bg-slate-900 p-5 border border-slate-200/80 dark:border-white/10 shadow-xs flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7c0-2-1.5-3-3.5-3h-9C5.5 4 4 5 4 7zm16 4h1a1 1 0 011 1v2a1 1 0 01-1 1h-1M8 12h4m-2-2v4" />
+            </svg>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hybrid (HEV/PHEV)</div>
+            <div id="stat-hybrid-count" class="text-2xl font-extrabold text-slate-900 dark:text-white">60+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN STUDIO TABS & CONTROLS -->
+      <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-white/10 shadow-xl overflow-hidden">
+        
+        <!-- Studio Navigation Bar -->
+        <div class="border-b border-slate-200 dark:border-white/10 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/50">
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <button id="tab-btn-cars" class="studio-tab-btn active px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 bg-cyan-600 text-white shadow-xs">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2 11 2 11.3 2 11.7V16c0 .6.4 1 1 1h2m10 0a2 2 0 100-4 2 2 0 000 4zm-8 0a2 2 0 100-4 2 2 0 000 4z" /></svg>
+              <span>Daftar Mobil</span>
+              <span id="tab-badge-cars" class="px-2 py-0.5 rounded-full bg-white/20 text-[10px]">184</span>
+            </button>
+            <button id="tab-btn-brands" class="studio-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5 transition flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+              <span>Daftar Merek</span>
+              <span id="tab-badge-brands" class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px]">41</span>
+            </button>
+          </div>
+
+          <!-- Search & Filter Controls -->
+          <div class="flex items-center gap-3">
+            <div class="relative w-full sm:w-64">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              </span>
+              <input 
+                type="text" 
+                id="studio-search-input" 
+                placeholder="Cari nama mobil, merek..." 
+                class="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            </div>
+            <select 
+              id="studio-brand-filter" 
+              class="px-3 py-2 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-white/10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 font-medium"
+            >
+              <option value="all">Semua Merek</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: CARS LIST -->
+        <div id="tab-pane-cars" class="p-6">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 dark:border-white/10 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th class="py-3 px-4">Mobil & Merek</th>
+                  <th class="py-3 px-4">Tipe Bodi</th>
+                  <th class="py-3 px-4">Powertrain</th>
+                  <th class="py-3 px-4">Harga OTR</th>
+                  <th class="py-3 px-4 text-center">Tahun</th>
+                  <th class="py-3 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="cars-table-body" class="divide-y divide-slate-100 dark:divide-white/5 text-sm">
+                <!-- Rows injected via JS -->
+                <tr>
+                  <td colspan="6" class="text-center py-12 text-slate-400">
+                    <img src="/icons/refresh.svg" class="w-6 h-6 animate-spin opacity-50 inline-block mb-2" alt="" />
+                    <div>Memuat data database...</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Studio Pagination -->
+          <div class="mt-6 pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-500">
+            <div id="studio-pagination-info">Menampilkan 1 - 20 dari 184 mobil</div>
+            <div id="studio-pagination-btns" class="flex items-center gap-1">
+              <!-- Pagination buttons -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB CONTENT: BRANDS LIST -->
+        <div id="tab-pane-brands" class="p-6 hidden">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Daftar Brand Resmi</div>
+            <button id="btn-open-add-brand" class="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-1.5">
+              <span class="text-base font-normal leading-none">+</span>
+              <span>Tambah Merek Baru</span>
+            </button>
+          </div>
+          <div id="brands-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Brand cards injected via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT CAR ================= -->
+  <div id="modal-car" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-6">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
+        <div>
+          <h2 id="modal-car-title" class="text-xl font-bold text-slate-900 dark:text-white font-headline">
+            Tambah Mobil Baru
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Isi data mobil untuk disimpan ke backend Rust SQLite</p>
+        </div>
+        <button id="modal-car-close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-2 text-xl font-bold">✕</button>
+      </div>
+
+      <form id="form-car" class="space-y-4">
+        <input type="hidden" id="form-car-id" value="" />
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nama Mobil *</label>
+            <input type="text" id="form-car-name" required placeholder="Contoh: BYD Seal Performance" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Slug (URL)</label>
+            <input type="text" id="form-car-slug" placeholder="Otomatis jika dikosongkan" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Merek *</label>
+            <select id="form-car-brand" required class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              <!-- Brands options -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tipe Bodi</label>
+            <select id="form-car-body" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              <option value="1">SUV</option>
+              <option value="2">Crossover</option>
+              <option value="3">MPV</option>
+              <option value="4">Sedan</option>
+              <option value="5">Hatchback</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Powertrain</label>
+            <select id="form-car-engine" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none">
+              <option value="1">BEV (Listrik Murni)</option>
+              <option value="2">PHEV (Plug-in Hybrid)</option>
+              <option value="3">HEV (Full Hybrid)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Harga OTR Mulai (Rp)</label>
+            <input type="number" id="form-car-price" placeholder="Contoh: 719000000" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tahun Rilis</label>
+            <input type="number" id="form-car-year" value="2025" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Jarak Tempuh EV (km)</label>
+            <input type="number" id="form-car-range" placeholder="Contoh: 570" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Standar Pengujian Jarak</label>
+            <select id="form-car-range-standard" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none font-medium">
+              <option value="NEDC">NEDC (New European Driving Cycle)</option>
+              <option value="WLTP" selected>WLTP (Worldwide Harmonised)</option>
+              <option value="CLTC">CLTC (China Light-Duty Cycle)</option>
+              <option value="EPA">EPA (United States Standard)</option>
+              <option value="JC08">JC08 (Japan Cycle Standard)</option>
+              <option value="Real-World">Real-World / Uji Mandiri</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tagline / Slogan</label>
+          <input type="text" id="form-car-tagline" placeholder="Contoh: Sedan Listrik Mewah Akselerasi 3.8 Detik" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+        </div>
+
+        <!-- UPLOAD FOTO MOBIL (DRAG & DROP TO NEON STORAGE) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Foto Mobil (Neon Object Storage) *
+            </label>
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+              <img src="/icons/zap.svg" class="w-3 h-3 opacity-80 inline-block" alt="" />
+              <span>Otomatis Konversi WebP</span>
+            </span>
+          </div>
+
+          <input type="file" id="car-image-file-input" accept="image/*" class="hidden" />
+          
+          <div 
+            id="car-image-dropzone" 
+            class="relative border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-cyan-500 dark:hover:border-cyan-400 rounded-2xl p-5 text-center transition-all duration-200 cursor-pointer bg-slate-50/50 dark:bg-slate-800/40 group"
+          >
+            <!-- Default / Empty State -->
+            <div id="car-image-empty-state" class="space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                <span class="text-cyan-600 dark:text-cyan-400 hover:underline">Klik untuk pilih foto</span> atau tarik & lepas di sini
+              </div>
+              <p class="text-[11px] text-slate-400">PNG, JPG, JPEG, atau WebP (Maks. 10MB). Otomatis dikonversi ke WebP teroptimasi di Neon Cloud.</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="car-image-loading-state" class="hidden py-4 space-y-2">
+              <div class="w-8 h-8 mx-auto border-3 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+              <div class="text-xs font-bold text-cyan-600 dark:text-cyan-400 animate-pulse">Mengunggah & Mengonversi ke WebP di Neon Storage...</div>
+            </div>
+
+            <!-- Preview State -->
+            <div id="car-image-preview-state" class="hidden flex items-center gap-4 text-left">
+              <div class="w-20 h-16 rounded-xl overflow-hidden bg-slate-900 border border-slate-200 dark:border-white/10 shrink-0 flex items-center justify-center">
+                <img id="car-image-preview-img" src="" alt="Preview Mobil" class="w-full h-full object-contain" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <img src="/icons/shield-check.svg" class="w-3 h-3 text-emerald-500 inline-block" alt="" />
+                    <span>Tersimpan di Neon Storage (WebP)</span>
+                  </span>
+                </div>
+                <div id="car-image-preview-name" class="text-xs font-bold text-slate-900 dark:text-white truncate mt-1">foto-mobil.webp</div>
+                <div id="car-image-preview-url" class="text-[10px] text-slate-400 truncate mt-0.5 font-mono"></div>
+              </div>
+              <button 
+                type="button" 
+                id="btn-remove-car-image" 
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-red-200 dark:border-red-900/30 transition shrink-0"
+              >
+                Ganti
+              </button>
+            </div>
+          </div>
+          
+          <input type="hidden" id="form-car-image" value="" />
+        </div>
+
+        <!-- UPLOAD BROSUR MOBIL (PDF DRAG & DROP TO NEON STORAGE) -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Brosur Resmi Mobil (Neon Object Storage PDF)
+            </label>
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20">
+              <img src="/icons/file-text.svg" class="w-3 h-3 opacity-80 inline-block" alt="" />
+              <span>Format PDF</span>
+            </span>
+          </div>
+
+          <input type="file" id="car-brochure-file-input" accept="application/pdf" class="hidden" />
+          
+          <div 
+            id="car-brochure-dropzone" 
+            class="relative border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-red-500 dark:hover:border-red-400 rounded-2xl p-5 text-center transition-all duration-200 cursor-pointer bg-slate-50/50 dark:bg-slate-800/40 group"
+          >
+            <!-- Default / Empty State -->
+            <div id="car-brochure-empty-state" class="space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                <span class="text-red-600 dark:text-red-400 hover:underline">Klik untuk pilih brosur PDF</span> atau tarik & lepas di sini
+              </div>
+              <p class="text-[11px] text-slate-400">File dokumen PDF spesifikasi resmi (Maks. 25MB).</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="car-brochure-loading-state" class="hidden py-4 space-y-2">
+              <div class="w-8 h-8 mx-auto border-3 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+              <div class="text-xs font-bold text-red-600 dark:text-red-400 animate-pulse">Mengunggah Brosur PDF ke Neon Storage...</div>
+            </div>
+
+            <!-- Preview State -->
+            <div id="car-brochure-preview-state" class="hidden flex items-center gap-4 text-left">
+              <div class="w-12 h-12 rounded-xl bg-red-500/10 text-red-600 flex items-center justify-center shrink-0 border border-red-200 dark:border-red-900/30">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <img src="/icons/shield-check.svg" class="w-3 h-3 text-emerald-500 inline-block" alt="" />
+                    <span>Brosur Tersimpan di Neon Storage</span>
+                  </span>
+                </div>
+                <div id="car-brochure-preview-name" class="text-xs font-bold text-slate-900 dark:text-white truncate mt-1">brosur.pdf</div>
+                <a id="car-brochure-preview-link" href="#" target="_blank" class="text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 mt-0.5">
+                  <img src="/icons/download.svg" class="w-3 h-3 opacity-70 inline-block" alt="" />
+                  <span>Buka Brosur PDF di Tab Baru</span>
+                </a>
+              </div>
+              <button 
+                type="button" 
+                id="btn-remove-car-brochure" 
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 border border-red-200 dark:border-red-900/30 transition shrink-0"
+              >
+                Ganti
+              </button>
+            </div>
+          </div>
+
+          <input type="hidden" id="form-car-brochure" value="" />
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-3">
+          <button type="button" id="modal-car-cancel" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-white/10 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition">
+            Batal
+          </button>
+          <button type="submit" id="modal-car-submit" class="px-6 py-2.5 rounded-xl bg-linear-to-r from-cyan-600 to-blue-600 text-white text-xs sm:text-sm font-bold shadow-lg shadow-cyan-600/30 hover:brightness-110 transition">
+            Simpan Mobil
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT BRAND ================= -->
+  <div id="modal-brand" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl max-w-md w-full p-6 sm:p-8 space-y-6">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
+        <div>
+          <h2 id="modal-brand-title" class="text-xl font-bold text-slate-900 dark:text-white font-headline">
+            Tambah Merek Baru
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">Kelola data produsen mobil</p>
+        </div>
+        <button id="modal-brand-close" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-2 text-xl font-bold">✕</button>
+      </div>
+
+      <form id="form-brand" class="space-y-4">
+        <input type="hidden" id="form-brand-id" value="" />
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Nama Merek *</label>
+          <input type="text" id="form-brand-name" required placeholder="Contoh: XPeng" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Negara Asal</label>
+          <input type="text" id="form-brand-country" placeholder="Contoh: China, Jerman, Jepang" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-sm focus:ring-2 focus:ring-cyan-500 focus:outline-none" />
+        </div>
+
+        <!-- UPLOAD LOGO BRAND (DRAG & DROP TO NEON STORAGE) -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+            Logo Brand (SVG / PNG)
+          </label>
+
+          <input type="file" id="brand-logo-file-input" accept="image/svg+xml,image/png" class="hidden" />
+
+          <div 
+            id="brand-logo-dropzone" 
+            class="relative border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-cyan-500 rounded-2xl p-4 text-center cursor-pointer bg-slate-50/50 dark:bg-slate-800/40 group transition-all"
+          >
+            <div id="brand-logo-empty-state" class="space-y-1">
+              <div class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                <span class="text-cyan-600 dark:text-cyan-400 hover:underline">Pilih file logo</span> atau tarik & lepas
+              </div>
+              <p class="text-[10px] text-slate-400">Direkomendasikan SVG untuk ketajaman maksimal.</p>
+            </div>
+
+            <div id="brand-logo-loading-state" class="hidden py-2 space-y-1">
+              <div class="w-6 h-6 mx-auto border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+              <div class="text-xs text-cyan-500 font-bold">Mengunggah logo ke Neon Storage...</div>
+            </div>
+
+            <div id="brand-logo-preview-state" class="hidden flex items-center gap-3 text-left">
+              <div class="w-10 h-10 rounded-lg bg-white p-1 border border-slate-200 flex items-center justify-center shrink-0">
+                <img id="brand-logo-preview-img" src="" alt="Logo" class="w-full h-full object-contain" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <div id="brand-logo-preview-name" class="text-xs font-bold text-slate-900 dark:text-white truncate">logo.svg</div>
+                <div class="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                  <img src="/icons/shield-check.svg" class="w-3 h-3 text-emerald-500 inline-block" alt="" />
+                  <span>Diunggah ke Neon Storage</span>
+                </div>
+              </div>
+              <button type="button" id="btn-remove-brand-logo" class="text-xs text-red-500 font-bold px-2 py-1">Ganti</button>
+            </div>
+          </div>
+
+          <input type="hidden" id="form-brand-logo" value="" />
+        </div>
+
+        <div class="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-end gap-3">
+          <button type="button" id="modal-brand-cancel" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-white/10 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-6 py-2.5 rounded-xl bg-linear-to-r from-cyan-600 to-blue-600 text-white text-xs font-bold shadow-lg shadow-cyan-600/30 hover:brightness-110 transition">
+            Simpan Merek
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- CLIENT-SIDE STUDIO SCRIPT -->
+  <script is:inline>
+    const API_BASE = "http://localhost:8000/api/v1";
+    let allCars = [];
+    let allBrands = [];
+    let currentPage = 1;
+    const pageSize = 20;
+
+    function showToast(msg, type = "success") {
+      const c = document.getElementById("toast-container");
+      if (!c) return;
+      const el = document.createElement("div");
+      el.className = `px-5 py-3.5 rounded-2xl text-xs font-bold text-white shadow-2xl flex items-center gap-2 transform transition-all duration-300 pointer-events-auto ${
+        type === "error" ? "bg-red-600" : "bg-emerald-600"
+      }`;
+      el.innerHTML = `<span><svg class="w-4 h-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="${type === "error" ? "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" : "M5 13l4 4L19 7"}" /></svg></span> <span>${msg}</span>`;
+      c.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = "0";
+        el.style.transform = "translateY(10px)";
+        setTimeout(() => el.remove(), 300);
+      }, 3500);
+    }
+
+    async function initStudio(force = false) {
+      try {
+        const cached = sessionStorage.getItem("evnesia_studio_cache");
+        const cachedTime = sessionStorage.getItem("evnesia_studio_cache_time");
+        const isCacheValid = !force && cached && cachedTime && (Date.now() - parseInt(cachedTime, 10) < 300000);
+
+        if (isCacheValid) {
+          try {
+            const data = JSON.parse(cached);
+            allCars = data.cars || [];
+            allBrands = data.brands || [];
+            updateStats();
+            populateBrandOptions();
+            renderCarsTable();
+            renderBrandsGrid();
+          } catch {}
+        }
+
+        const [carsRes, brandsRes] = await Promise.all([
+          fetch(`${API_BASE}/cars?page=1&limit=200`).then(r => r.json()),
+          fetch(`${API_BASE}/brands`).then(r => r.json())
+        ]);
+
+        allCars = carsRes.items || [];
+        allBrands = brandsRes || [];
+
+        sessionStorage.setItem("evnesia_studio_cache", JSON.stringify({ cars: allCars, brands: allBrands }));
+        sessionStorage.setItem("evnesia_studio_cache_time", String(Date.now()));
+
+        updateStats();
+        populateBrandOptions();
+        renderCarsTable();
+        renderBrandsGrid();
+      } catch (err) {
+        console.error("Error loading studio data:", err);
+        showToast("Menghubungkan ke backend Rust...", "error");
+      }
+    }
+
+    function updateStats() {
+      document.getElementById("stat-total-cars").textContent = allCars.length;
+      document.getElementById("stat-total-brands").textContent = allBrands.length;
+      document.getElementById("tab-badge-cars").textContent = allCars.length;
+      document.getElementById("tab-badge-brands").textContent = allBrands.length;
+
+      const bev = allCars.filter(c => c.engine_type_slug === 'bev' || c.engine_type_slug === 'ev').length;
+      const hybrid = allCars.filter(c => c.engine_type_slug === 'phev' || c.engine_type_slug === 'hev').length;
+      document.getElementById("stat-bev-count").textContent = bev || "85+";
+      document.getElementById("stat-hybrid-count").textContent = hybrid || "60+";
+    }
+
+    function populateBrandOptions() {
+      const selectFilter = document.getElementById("studio-brand-filter");
+      const selectForm = document.getElementById("form-car-brand");
+      
+      selectFilter.innerHTML = '<option value="all">Semua Merek</option>';
+      selectForm.innerHTML = '';
+
+      allBrands.forEach(b => {
+        const opt1 = document.createElement("option");
+        opt1.value = b.name.toLowerCase();
+        opt1.textContent = b.name;
+        selectFilter.appendChild(opt1);
+
+        const opt2 = document.createElement("option");
+        opt2.value = b.id;
+        opt2.textContent = b.name;
+        selectForm.appendChild(opt2);
+      });
+    }
+
+    function formatRupiah(val) {
+      if (!val || val === 0) return "Hubungi APM";
+      return "Rp " + (val / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + " Jt";
+    }
+
+    function renderCarsTable() {
+      const search = (document.getElementById("studio-search-input").value || "").toLowerCase();
+      const brandFilter = document.getElementById("studio-brand-filter").value;
+
+      let filtered = allCars.filter(c => {
+        const nameMatch = c.name.toLowerCase().includes(search) || (c.brand_name && c.brand_name.toLowerCase().includes(search));
+        const brandMatch = brandFilter === "all" || (c.brand_name && c.brand_name.toLowerCase() === brandFilter) || (c.brand_slug && c.brand_slug === brandFilter);
+        return nameMatch && brandMatch;
+      });
+
+      const total = filtered.length;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+      currentPage = Math.min(currentPage, totalPages);
+      const start = (currentPage - 1) * pageSize;
+      const paginated = filtered.slice(start, start + pageSize);
+
+      const tbody = document.getElementById("cars-table-body");
+      if (paginated.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-slate-400">Tidak ada mobil yang sesuai filter.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = paginated.map(c => `
+        <tr class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+          <td class="py-3 px-4">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-10 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200 dark:border-white/10 flex items-center justify-center">
+                <img src="${c.image_url || '/images/brands/byd-logo.svg'}" alt="${c.name}" class="w-full h-full object-contain" onerror="this.src='/images/brands/byd-logo.svg'" />
+              </div>
+              <div>
+                <div class="font-bold text-slate-900 dark:text-white font-headline">${c.name}</div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-xs text-cyan-600 dark:text-cyan-400 font-semibold">${c.brand_name || 'Merek'}</span>
+                  ${c.brochure_url ? `
+                    <a href="${c.brochure_url}" target="_blank" class="inline-flex items-center gap-1 text-[10px] text-red-600 dark:text-red-400 font-bold hover:underline" title="Buka Brosur PDF">
+                      <img src="/icons/file-text.svg" class="w-3 h-3 opacity-80 inline-block" alt="" />
+                      <span>Brosur</span>
+                    </a>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase">${c.body_type_name || 'SUV'}</td>
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${
+              c.engine_type_slug === 'bev' ? 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+            }">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              ${c.engine_type_slug === 'bev' ? 'BEV' : (c.engine_type_name || 'Hybrid')}
+            </span>
+          </td>
+          <td class="py-3 px-4 font-bold text-slate-900 dark:text-white">${formatRupiah(c.price_start)}</td>
+          <td class="py-3 px-4 text-center font-medium text-xs text-slate-500">${c.year || 2025}</td>
+          <td class="py-3 px-4 text-right">
+            <div class="flex items-center justify-end gap-1.5">
+              <a href="/katalog-mobil/${c.slug}" target="_blank" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 text-slate-600 dark:text-slate-300 hover:text-cyan-600 text-xs font-bold transition flex items-center justify-center" title="Lihat di Web">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              </a>
+              <button onclick="editCar('${c.slug}')" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 text-slate-600 dark:text-slate-300 hover:text-blue-600 text-xs font-bold transition flex items-center justify-center" title="Edit Data">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+              </button>
+              <button onclick="deleteCar('${c.slug}', '${c.name.replace(/'/g, "\\'")}')" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/30 text-slate-600 dark:text-slate-300 hover:text-red-600 text-xs font-bold transition flex items-center justify-center" title="Hapus Mobil">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById("studio-pagination-info").textContent = `Menampilkan ${start + 1} - ${Math.min(start + pageSize, total)} dari ${total} mobil`;
+
+      const pBtns = document.getElementById("studio-pagination-btns");
+      pBtns.innerHTML = '';
+      for (let i = 1; i <= Math.min(totalPages, 8); i++) {
+        const b = document.createElement("button");
+        b.className = `w-8 h-8 rounded-lg text-xs font-bold transition ${
+          i === currentPage ? "bg-[#002b49] text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+        }`;
+        b.textContent = i;
+        b.onclick = () => { currentPage = i; renderCarsTable(); };
+        pBtns.appendChild(b);
+      }
+    }
+
+    function renderBrandsGrid() {
+      const grid = document.getElementById("brands-grid");
+      if (!grid) return;
+      grid.innerHTML = allBrands.map(b => `
+        <div class="rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-4 border border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-3 group hover:border-cyan-500/50 transition">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white dark:bg-white p-1.5 border border-slate-200 dark:border-white/20 flex items-center justify-center shrink-0">
+              <img src="${b.logo_url || '/images/brands/byd-logo.svg'}" alt="${b.name}" class="max-w-full max-h-full object-contain" onerror="this.src='/images/brands/byd-logo.svg'" />
+            </div>
+            <div>
+              <div class="font-bold text-sm text-slate-900 dark:text-white">${b.name}</div>
+              <div class="text-[11px] text-slate-400">${b.country || 'Global'} • ${b.car_count || 0} Model</div>
+            </div>
+          </div>
+          <button onclick="deleteBrand('${b.slug || b.id}', '${b.name.replace(/'/g, "\\'")}')" class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition text-xs font-bold" title="Hapus Merek">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // TAB SWITCHING
+    document.getElementById("tab-btn-cars").onclick = () => {
+      document.getElementById("tab-btn-cars").className = "studio-tab-btn active px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 bg-[#002b49] text-white shadow-xs";
+      document.getElementById("tab-btn-brands").className = "studio-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5 transition flex items-center gap-2";
+      document.getElementById("tab-pane-cars").classList.remove("hidden");
+      document.getElementById("tab-pane-brands").classList.add("hidden");
+    };
+
+    document.getElementById("tab-btn-brands").onclick = () => {
+      document.getElementById("tab-btn-brands").className = "studio-tab-btn active px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-2 bg-[#002b49] text-white shadow-xs";
+      document.getElementById("tab-btn-cars").className = "studio-tab-btn px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/5 transition flex items-center gap-2";
+      document.getElementById("tab-pane-brands").classList.remove("hidden");
+      document.getElementById("tab-pane-cars").classList.add("hidden");
+    };
+
+    // SEARCH & FILTER EVENTS
+    document.getElementById("studio-search-input").oninput = renderCarsTable;
+    document.getElementById("studio-brand-filter").onchange = renderCarsTable;
+
+    // ========================================================
+    // DRAG & DROP MEDIA UPLOADER HELPER (NEON OBJECT STORAGE)
+    // ========================================================
+    function setupDragAndDropUploader({
+      dropzoneId,
+      fileInputId,
+      emptyStateId,
+      loadingStateId,
+      previewStateId,
+      previewImgId,
+      previewNameId,
+      previewUrlId,
+      removeBtnId,
+      hiddenInputId,
+      uploadUrl,
+      acceptMime,
+      successMessage,
+      extraParams = {}
+    }) {
+      const dropzone = document.getElementById(dropzoneId);
+      const fileInput = document.getElementById(fileInputId);
+      const emptyState = document.getElementById(emptyStateId);
+      const loadingState = document.getElementById(loadingStateId);
+      const previewState = document.getElementById(previewStateId);
+      const hiddenInput = document.getElementById(hiddenInputId);
+      const removeBtn = document.getElementById(removeBtnId);
+
+      if (!dropzone || !fileInput) return;
+
+      // Click to browse
+      dropzone.onclick = (e) => {
+        if (e.target.closest("button") || e.target.closest("a")) return;
+        fileInput.click();
+      };
+
+      // File input change
+      fileInput.onchange = () => {
+        if (fileInput.files && fileInput.files[0]) {
+          handleUpload(fileInput.files[0]);
+        }
+      };
+
+      // Drag and Drop Events
+      ["dragenter", "dragover"].forEach(evt => {
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add("border-cyan-500", "bg-cyan-500/10", "scale-[1.01]");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(evt => {
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove("border-cyan-500", "bg-cyan-500/10", "scale-[1.01]");
+        });
+      });
+
+      dropzone.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files[0]) {
+          handleUpload(dt.files[0]);
+        }
+      });
+
+      // Remove / Replace
+      if (removeBtn) {
+        removeBtn.onclick = (e) => {
+          e.stopPropagation();
+          hiddenInput.value = "";
+          fileInput.value = "";
+          if (previewState) previewState.classList.add("hidden");
+          if (emptyState) emptyState.classList.remove("hidden");
+          if (loadingState) loadingState.classList.add("hidden");
+        };
+      }
+
+      async function handleUpload(file) {
+        if (acceptMime && !file.type.match(acceptMime) && !file.name.toLowerCase().endsWith(acceptMime.replace("*", ""))) {
+          showToast(`Format file tidak valid. Harap pilih ${acceptMime}.`, "error");
+          return;
+        }
+
+        // Show loading state
+        if (emptyState) emptyState.classList.add("hidden");
+        if (previewState) previewState.classList.add("hidden");
+        if (loadingState) loadingState.classList.remove("hidden");
+
+        const formData = new FormData();
+        formData.append("file", file);
+        for (const [k, v] of Object.entries(extraParams)) {
+          formData.append(k, v);
+        }
+
+        try {
+          const res = await fetch(uploadUrl, {
+            method: "POST",
+            body: formData
+          });
+
+          const data = await res.json();
+          if (res.ok && data.url) {
+            hiddenInput.value = data.url;
+
+            // Update preview
+            if (previewImgId && document.getElementById(previewImgId)) {
+              document.getElementById(previewImgId).src = data.url;
+            }
+            if (previewNameId && document.getElementById(previewNameId)) {
+              document.getElementById(previewNameId).textContent = data.filename || file.name;
+            }
+            if (previewUrlId && document.getElementById(previewUrlId)) {
+              const urlEl = document.getElementById(previewUrlId);
+              if (urlEl.tagName === "A") {
+                urlEl.href = data.url;
+              } else {
+                urlEl.textContent = data.url;
+              }
+            }
+
+            if (loadingState) loadingState.classList.add("hidden");
+            if (previewState) previewState.classList.remove("hidden");
+
+            showToast(data.message || successMessage || "Aset berhasil diunggah ke Neon Storage!");
+          } else {
+            throw new Error(data.detail || data.error || "Gagal mengunggah file");
+          }
+        } catch (err) {
+          console.error("Upload error:", err);
+          showToast(err.message || "Gagal mengunggah file ke Neon Storage", "error");
+          if (loadingState) loadingState.classList.add("hidden");
+          if (emptyState) emptyState.classList.remove("hidden");
+        }
+      }
+    }
+
+    // Helper to manually set preview (used when editing an existing item)
+    function setPreviewState(type, url, name) {
+      if (type === "car-image") {
+        const emptyState = document.getElementById("car-image-empty-state");
+        const previewState = document.getElementById("car-image-preview-state");
+        const img = document.getElementById("car-image-preview-img");
+        const nameEl = document.getElementById("car-image-preview-name");
+        const urlEl = document.getElementById("car-image-preview-url");
+        const hiddenInput = document.getElementById("form-car-image");
+
+        if (url) {
+          hiddenInput.value = url;
+          if (img) img.src = url;
+          if (nameEl) nameEl.textContent = name || url.split("/").pop();
+          if (urlEl) urlEl.textContent = url;
+          emptyState?.classList.add("hidden");
+          previewState?.classList.remove("hidden");
+        } else {
+          hiddenInput.value = "";
+          emptyState?.classList.remove("hidden");
+          previewState?.classList.add("hidden");
+        }
+      } else if (type === "car-brochure") {
+        const emptyState = document.getElementById("car-brochure-empty-state");
+        const previewState = document.getElementById("car-brochure-preview-state");
+        const nameEl = document.getElementById("car-brochure-preview-name");
+        const linkEl = document.getElementById("car-brochure-preview-link");
+        const hiddenInput = document.getElementById("form-car-brochure");
+
+        if (url) {
+          hiddenInput.value = url;
+          if (nameEl) nameEl.textContent = name || url.split("/").pop();
+          if (linkEl) linkEl.href = url;
+          emptyState?.classList.add("hidden");
+          previewState?.classList.remove("hidden");
+        } else {
+          hiddenInput.value = "";
+          emptyState?.classList.remove("hidden");
+          previewState?.classList.add("hidden");
+        }
+      } else if (type === "brand-logo") {
+        const emptyState = document.getElementById("brand-logo-empty-state");
+        const previewState = document.getElementById("brand-logo-preview-state");
+        const img = document.getElementById("brand-logo-preview-img");
+        const nameEl = document.getElementById("brand-logo-preview-name");
+        const hiddenInput = document.getElementById("form-brand-logo");
+
+        if (url) {
+          hiddenInput.value = url;
+          if (img) img.src = url;
+          if (nameEl) nameEl.textContent = name || url.split("/").pop();
+          emptyState?.classList.add("hidden");
+          previewState?.classList.remove("hidden");
+        } else {
+          hiddenInput.value = "";
+          emptyState?.classList.remove("hidden");
+          previewState?.classList.add("hidden");
+        }
+      }
+    }
+
+    // MODAL HELPERS
+    function openModal(modal) {
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+    function closeModal(modal) {
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    // MODAL OPEN / CLOSE (CAR)
+    const modalCar = document.getElementById("modal-car");
+    document.getElementById("btn-open-add-car").onclick = () => {
+      document.getElementById("modal-car-title").textContent = "Tambah Mobil Baru";
+      document.getElementById("form-car-id").value = "";
+      document.getElementById("form-car").reset();
+      setPreviewState("car-image", null);
+      setPreviewState("car-brochure", null);
+      openModal(modalCar);
+    };
+    document.getElementById("modal-car-close").onclick = () => closeModal(modalCar);
+    document.getElementById("modal-car-cancel").onclick = () => closeModal(modalCar);
+
+    // MODAL OPEN / CLOSE (BRAND)
+    const modalBrand = document.getElementById("modal-brand");
+    document.getElementById("btn-open-add-brand").onclick = () => {
+      document.getElementById("form-brand").reset();
+      setPreviewState("brand-logo", null);
+      openModal(modalBrand);
+    };
+    document.getElementById("modal-brand-close").onclick = () => closeModal(modalBrand);
+    document.getElementById("modal-brand-cancel").onclick = () => closeModal(modalBrand);
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeModal(modalCar);
+        closeModal(modalBrand);
+      }
+    });
+
+    // SUBMIT CAR (CREATE / UPDATE)
+    document.getElementById("form-car").onsubmit = async (e) => {
+      e.preventDefault();
+      const carId = document.getElementById("form-car-id").value;
+      const isEdit = Boolean(carId);
+
+      const payload = {
+        name: document.getElementById("form-car-name").value,
+        slug: document.getElementById("form-car-slug").value || undefined,
+        brand_id: parseInt(document.getElementById("form-car-brand").value) || 1,
+        body_type_id: parseInt(document.getElementById("form-car-body").value) || 1,
+        engine_type_id: parseInt(document.getElementById("form-car-engine").value) || 1,
+        price_start: parseFloat(document.getElementById("form-car-price").value) || 0,
+        year: parseInt(document.getElementById("form-car-year").value) || 2025,
+        tagline: document.getElementById("form-car-tagline").value || "",
+        image_url: document.getElementById("form-car-image").value || undefined,
+        brochure_url: document.getElementById("form-car-brochure").value || undefined,
+      };
+
+      try {
+        const url = isEdit ? `${API_BASE}/cars/${carId}` : `${API_BASE}/cars`;
+        const method = isEdit ? "PUT" : "POST";
+
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          showToast(isEdit ? "Mobil berhasil diperbarui!" : "Mobil baru berhasil ditambahkan!");
+          closeModal(modalCar);
+          initStudio(true);
+        } else {
+          showToast(data.detail || data.error || "Gagal menyimpan mobil", "error");
+        }
+      } catch (err) {
+        showToast("Koneksi gagal ke server", "error");
+      }
+    };
+
+    // EDIT CAR
+    window.editCar = (slug) => {
+      const car = allCars.find(c => c.slug === slug);
+      if (!car) return;
+      document.getElementById("modal-car-title").textContent = `Edit: ${car.name}`;
+      document.getElementById("form-car-id").value = car.slug || car.id;
+      document.getElementById("form-car-name").value = car.name || "";
+      document.getElementById("form-car-slug").value = car.slug || "";
+      document.getElementById("form-car-brand").value = car.brand_id || 1;
+      document.getElementById("form-car-body").value = car.body_type_id || 1;
+      document.getElementById("form-car-engine").value = car.engine_type_id || 1;
+      document.getElementById("form-car-price").value = car.price_start || "";
+      document.getElementById("form-car-year").value = car.year || 2025;
+      document.getElementById("form-car-tagline").value = car.tagline || "";
+      
+      // Muat preview foto mobil & brosur PDF dari Neon CDN
+      setPreviewState("car-image", car.image_url, car.name);
+      setPreviewState("car-brochure", car.brochure_url, `${car.name} - Brosur.pdf`);
+
+      openModal(modalCar);
+    };
+
+    // DELETE CAR
+    window.deleteCar = async (slug, name) => {
+      if (!confirm(`Apakah Anda yakin ingin menghapus mobil "${name}" dari database?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/cars/${slug}`, { method: "DELETE" });
+        if (res.ok) {
+          showToast(`Mobil "${name}" berhasil dihapus!`);
+          initStudio(true);
+        } else {
+          showToast("Gagal menghapus mobil", "error");
+        }
+      } catch (err) {
+        showToast("Koneksi gagal ke server", "error");
+      }
+    };
+
+    // SUBMIT BRAND
+    document.getElementById("form-brand").onsubmit = async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: document.getElementById("form-brand-name").value,
+        country: document.getElementById("form-brand-country").value,
+        logo_url: document.getElementById("form-brand-logo").value,
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/brands`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          showToast("Merek baru berhasil ditambahkan!");
+          closeModal(modalBrand);
+          initStudio(true);
+        } else {
+          showToast(data.detail || data.error || "Gagal menyimpan merek", "error");
+        }
+      } catch (err) {
+        showToast("Koneksi gagal ke server", "error");
+      }
+    };
+
+    // DELETE BRAND
+    window.deleteBrand = async (slugOrId, name) => {
+      if (!confirm(`Hapus merek "${name}"?`)) return;
+      try {
+        const res = await fetch(`${API_BASE}/brands/${slugOrId}`, { method: "DELETE" });
+        if (res.ok) {
+          showToast(`Merek "${name}" berhasil dihapus!`);
+          initStudio(true);
+        } else {
+          showToast("Gagal menghapus merek", "error");
+        }
+      } catch (err) {
+        showToast("Koneksi gagal ke server", "error");
+      }
+    };
+
+    // INISIALISASI UPLOADER
+    setupDragAndDropUploader({
+      dropzoneId: "car-image-dropzone",
+      fileInputId: "car-image-file-input",
+      emptyStateId: "car-image-empty-state",
+      loadingStateId: "car-image-loading-state",
+      previewStateId: "car-image-preview-state",
+      previewImgId: "car-image-preview-img",
+      previewNameId: "car-image-preview-name",
+      previewUrlId: "car-image-preview-url",
+      removeBtnId: "btn-remove-car-image",
+      hiddenInputId: "form-car-image",
+      uploadUrl: `${API_BASE}/uploads/cars`,
+      acceptMime: "image/*",
+      successMessage: "Foto mobil berhasil dikonversi ke WebP dan diunggah ke Neon Storage!"
+    });
+
+    setupDragAndDropUploader({
+      dropzoneId: "car-brochure-dropzone",
+      fileInputId: "car-brochure-file-input",
+      emptyStateId: "car-brochure-empty-state",
+      loadingStateId: "car-brochure-loading-state",
+      previewStateId: "car-brochure-preview-state",
+      previewNameId: "car-brochure-preview-name",
+      previewUrlId: "car-brochure-preview-link",
+      removeBtnId: "btn-remove-car-brochure",
+      hiddenInputId: "form-car-brochure",
+      uploadUrl: `${API_BASE}/uploads/brochures`,
+      acceptMime: ".pdf",
+      successMessage: "Brosur PDF berhasil diunggah ke Neon Storage!"
+    });
+
+    setupDragAndDropUploader({
+      dropzoneId: "brand-logo-dropzone",
+      fileInputId: "brand-logo-file-input",
+      emptyStateId: "brand-logo-empty-state",
+      loadingStateId: "brand-logo-loading-state",
+      previewStateId: "brand-logo-preview-state",
+      previewImgId: "brand-logo-preview-img",
+      previewNameId: "brand-logo-preview-name",
+      removeBtnId: "btn-remove-brand-logo",
+      hiddenInputId: "form-brand-logo",
+      uploadUrl: `${API_BASE}/uploads/brands`,
+      acceptMime: "image/*",
+      successMessage: "Logo brand berhasil diunggah ke Neon Storage!"
+    });
+
+    initStudio();
+  </script>
+</BaseLayout>

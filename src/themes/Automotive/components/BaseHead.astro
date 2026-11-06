@@ -1,0 +1,108 @@
+---
+/** <head> bersama: meta, OG/Twitter, canonical, JSON-LD, font, view transitions. */
+import { ClientRouter } from "astro:transitions";
+import { SITE } from "@/site";
+import { siteUrlFromScope } from "@/lib/api";
+import "@/styles/global.css";
+// Font self-host (S7-8) — variable font, dimuat & di-subset oleh Fontsource.
+import "@fontsource-variable/inter";
+import "@fontsource-variable/source-serif-4";
+import "@fontsource-variable/plus-jakarta-sans";
+import "@fontsource-variable/outfit";
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  type?: "website" | "article";
+  publishedTime?: string;
+  modifiedTime?: string;
+  authorName?: string;
+  noindex?: boolean;
+  jsonLd?: object | object[];
+  siteName?: string;
+  siteDescription?: string;
+  siteTagline?: string;
+  faviconUrl?: string;
+  themeColor?: string;
+  defaultImageUrl?: string;
+}
+const {
+  title,
+  description = SITE.description,
+  image,
+  type = "website",
+  publishedTime,
+  modifiedTime,
+  authorName,
+  noindex = false,
+  jsonLd,
+  siteName = SITE.name,
+  siteDescription = SITE.description,
+  siteTagline = SITE.tagline,
+  faviconUrl = "/favicon.svg",
+  themeColor = "#15120e",
+  defaultImageUrl = "/og-default.svg",
+} = Astro.props;
+
+const requestSiteUrl = siteUrlFromScope(Astro.request);
+const canonical = new URL(Astro.url.pathname, requestSiteUrl).href;
+const ogImage = new URL(image ?? defaultImageUrl, requestSiteUrl).href;
+const displaySiteName = (!siteName || siteName === "Portal Media" || siteName === "Regional Network" || siteName === "AWASI.ID" || siteName === "Berdaya News" || siteName === "AutoDrive" || siteName === "AutoDrive PRO") ? "EVnesia" : siteName;
+const displaySiteTagline = (!siteTagline || siteTagline === "Media profesional, cepat, dan relevan." || siteTagline === "Suara daerah untuk pembaca Indonesia" || siteTagline === "Jurnal & Pengujian Otomotif Terpercaya") ? "Media Informasi, Panduan & Komparasi Mobil Listrik & Hybrid Indonesia" : siteTagline;
+
+const fullTitle =
+  !title || title === SITE.name || title === siteName || title === displaySiteName || title === "Portal Media" || title === "Regional Network"
+    ? `${displaySiteName} — ${displaySiteTagline}`
+    : `${title} — ${displaySiteName}`;
+const metaDescription = description === SITE.description ? siteDescription : description;
+const ldArray = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="icon" href={faviconUrl} />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="generator" content={Astro.generator} />
+<meta name="theme-color" content={themeColor} />
+
+<title>{fullTitle}</title>
+<meta name="description" content={metaDescription} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex, nofollow" />}
+
+<!-- Preconnect & DNS Prefetch for external image CDN to accelerate LCP -->
+<link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+<link rel="dns-prefetch" href="https://images.unsplash.com" />
+
+<link rel="alternate" type="application/rss+xml" title={`RSS ${siteName}`} href="/rss.xml" />
+
+{/* Open Graph */}
+<meta property="og:site_name" content={siteName} />
+<meta property="og:type" content={type} />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={metaDescription} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:locale" content="id_ID" />
+{publishedTime && <meta property="article:published_time" content={publishedTime} />}
+{modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+{authorName && <meta property="article:author" content={authorName} />}
+
+{/* Twitter */}
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={title} />
+<meta name="twitter:description" content={metaDescription} />
+<meta name="twitter:image" content={ogImage} />
+
+{/* JSON-LD (S7-2 dasar) */}
+{
+  ldArray.map((ld) => (
+    <script is:inline type="application/ld+json" set:html={JSON.stringify(ld)} />
+  ))
+}
+
+<ClientRouter />

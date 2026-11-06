@@ -1,0 +1,17 @@
+---
+import { resolveThemePage } from "@/lib/theme-resolver";
+import { fetchArticleBySlugFromApi } from "@/lib/api";
+import { articleUrl } from "@/types";
+
+const slug = Astro.params.slug ?? "";
+const article = await fetchArticleBySlugFromApi(slug, Astro.request);
+
+if (!article) Astro.response.status = 404;
+if (article && Astro.params.category && Astro.params.category !== article.category.slug) {
+  return Astro.redirect(articleUrl(article), 301);
+}
+
+const pageName = article ? "article" : "notFound";
+const { default: Page, siteConfig } = await resolveThemePage(Astro.request, pageName);
+---
+<Page request={Astro.request} params={Astro.params} url={Astro.url} article={article} siteConfig={siteConfig} />

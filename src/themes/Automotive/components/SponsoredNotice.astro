@@ -1,0 +1,45 @@
+---
+/** Kotak disclosure untuk artikel kerjasama (S5-7). Wajib jelas demi kepatuhan. */
+import type { Sponsor } from "@/types";
+import Badge from "./Badge.astro";
+interface Props {
+  sponsor?: Sponsor;
+  class?: string;
+}
+const { sponsor, class: cls = "" } = Astro.props;
+---
+
+<aside
+  class:list={["rounded-2xl border border-line bg-paper/90 backdrop-blur-sm px-4 py-3 shadow-xs", cls]}
+  aria-label="Informasi konten bersponsor"
+>
+  <div class="flex flex-wrap items-center gap-2">
+    <Badge tone="sponsored">Konten Bersponsor</Badge>
+    {
+      sponsor && (
+        <span class="text-sm text-muted">
+          bersama{" "}
+          {sponsor.website ? (
+            <a
+              href={sponsor.website}
+              rel="sponsored nofollow noopener"
+              target="_blank"
+              class="font-semibold text-ink hover:text-cyan-600 dark:hover:text-cyan-400"
+            >
+              {sponsor.name}
+            </a>
+          ) : (
+            <span class="font-semibold text-ink">{sponsor.name}</span>
+          )}
+        </span>
+      )
+    }
+  </div>
+  <p class="mt-2 text-sm leading-relaxed text-muted">
+    Artikel ini adalah konten kerjasama berbayar. Materi disusun untuk tujuan
+    promosi dan tidak melewati proses editorial independen redaksi.
+    <a href="/disclosure" class="text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 underline underline-offset-2"
+      >Pelajari pedoman kami</a
+    >.
+  </p>
+</aside>

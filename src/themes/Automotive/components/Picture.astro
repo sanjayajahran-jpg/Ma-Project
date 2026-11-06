@@ -1,0 +1,50 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+  thumbSrc?: string;
+  mobileSrc?: string;
+  width?: number;
+  height?: number;
+  ratio?: string;
+  sizes?: string;
+  loading?: "lazy" | "eager";
+  fetchpriority?: "high" | "low" | "auto";
+  class?: string;
+}
+const {
+  src,
+  alt,
+  thumbSrc,
+  mobileSrc,
+  width = 1280,
+  height = 720,
+  ratio = "16 / 9",
+  sizes = "(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) calc((100vw - 3.5rem) / 2), 368px",
+  loading = "lazy",
+  fetchpriority = "auto",
+  class: cls = "",
+} = Astro.props;
+
+const srcset = [thumbSrc, mobileSrc, src].filter(Boolean).length > 1
+  ? [
+      thumbSrc ? `${thumbSrc} 480w` : null,
+      mobileSrc ? `${mobileSrc} 768w` : null,
+      `${src} 1280w`,
+    ].filter(Boolean).join(", ")
+  : undefined;
+---
+
+<div class:list={["media", cls]} style={`aspect-ratio:${ratio}`}>
+  <img
+    src={src}
+    srcset={srcset}
+    alt={alt}
+    width={width}
+    height={height}
+    sizes={sizes}
+    loading={loading}
+    fetchpriority={fetchpriority}
+    decoding="async"
+  />
+</div>

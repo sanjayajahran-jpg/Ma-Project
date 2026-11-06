@@ -1,0 +1,16 @@
+---
+import type { Category } from "@/types";
+interface Props {
+  category: Category;
+  class?: string;
+}
+const { category, class: cls = "" } = Astro.props;
+---
+
+<a
+  href={`/kategori/${category.slug}`}
+  class:list={["kicker hover:underline underline-offset-2", cls]}
+  style={`color: var(--color-cat-${category.slug}, var(--color-brand, #0284c7))`}
+>
+  {category.name}
+</a>

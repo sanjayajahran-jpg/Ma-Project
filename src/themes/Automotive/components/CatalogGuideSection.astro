@@ -1,0 +1,221 @@
+---
+// Catalog Enrichment Component: Buyer Guides, Specs Comparison & Interactive FAQ (100% Bahasa Indonesia)
+const GUIDE_ARTICLES = [
+  {
+    category: "PANDUAN PEMBELI",
+    title: "10 Hal Wajib Diperiksa Sebelum Membeli SUV Hybrid / EV 2026",
+    desc: "Panduan praktis mengecek kondisi baterai, efisiensi regeneratif, garansi resmi pabrikan, dan depresiasi nilai jual kembali.",
+    img: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=600&auto=format&fit=crop",
+    readTime: "6 menit baca",
+    link: "/kategori/mobil-terbaik"
+  },
+  {
+    category: "ANALISA BIAYA",
+    title: "BBM vs SPKLU: Perhitungan Biaya Operasional 5 Tahun Kepemilikan",
+    desc: "Komparasi detail biaya konsumsi bensin bulanan versus listrik SPKLU rumah dengan insentif diskon tarif malam PLN 30%.",
+    img: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600&auto=format&fit=crop",
+    readTime: "8 menit baca",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    category: "INSENTIF PAJAK",
+    title: "Panduan Bebas Ganjil Genap & Diskon Pajak PKB/BBNKB 100%",
+    desc: "Simak aturan resmi wilayah Jabodetabek dan insentif pembebasan bea balik nama untuk kendaraan listrik ramah lingkungan.",
+    img: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=600&auto=format&fit=crop",
+    readTime: "5 menit baca",
+    link: "/kategori/ev-teknologi"
+  }
+];
+
+const FAQS = [
+  {
+    q: "Apakah insentif PPN DTP 1% berlaku untuk semua mobil listrik di Indonesia?",
+    a: "Insentif PPN DTP 1% berlaku khusus untuk mobil listrik (EV) yang diproduksi secara lokal (CKD) dan telah memenuhi batas minimal Tingkat Komponen Dalam Negeri (TKDN) sebesar 40%."
+  },
+  {
+    q: "Berapa lama rata-rata garansi baterai resmi yang diberikan produsen EV?",
+    a: "Sebagian besar APM di Indonesia memberikan garansi baterai resmi selama 8 tahun atau 160.000 km. Beberapa produsen bahkan menawarkan garansi baterai seumur hidup untuk pemilik pertama."
+  },
+  {
+    q: "Mana yang lebih hemat biaya operasional harian: Mobil Hybrid atau EV Murni?",
+    a: "Mobil EV murni menawarkan biaya pengisian energi termurah (sekitar Rp 300 - Rp 500 per km), sedangkan mobil Hybrid menawarkan fleksibilitas tanpa perlu khawatir infrastruktur pengisian daya dengan efisiensi 18-22 km/L."
+  },
+  {
+    q: "Apakah mobil EV bebas dari aturan pembatasan lalu lintas Ganjil Genap?",
+    a: "Ya, berdasarkan Pergub DKI Jakarta, seluruh kendaraan bermotor berbasis baterai (EV murni) mendapatkan kebebasan penuh dari aturan Ganjil Genap di seluruh ruas jalan protokol."
+  }
+];
+---
+
+<div class="space-y-12 py-6">
+  <!-- SECTION A: PANDUAN PEMBELI & REKOMENDASI REDAKSI -->
+  <div class="space-y-6">
+    <div class="border-b border-line pb-3 flex items-center justify-between">
+      <div>
+        <span class="text-[10px] font-extrabold text-brand uppercase tracking-widest block">EDISI PANDUAN KENDARAAN</span>
+        <h2 class="font-headline text-2xl sm:text-3xl font-black text-ink">
+          Panduan Pembeli & Ulasan Komparasi
+        </h2>
+      </div>
+      <a href="/kategori/mobil-terbaik" class="text-xs font-bold text-brand hover:underline hidden sm:inline">
+        Lihat Semua Panduan →
+      </a>
+    </div>
+
+    <!-- 3-Column Article Cards Grid -->
+    <div class="grid gap-6 md:grid-cols-3">
+      {GUIDE_ARTICLES.map((art) => (
+        <a
+          href={art.link}
+          class="apple-liquid-glass group rounded-3xl p-5 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1.5 shadow-xl border border-line"
+        >
+          <div class="space-y-3">
+            <div class="relative aspect-16/10 overflow-hidden rounded-2xl border border-line bg-slate-900 shadow-md">
+              <img
+                src={art.img}
+                alt={art.title}
+                class="h-full w-full object-cover group-hover:scale-105 transition duration-500"
+                loading="lazy"
+              />
+              <span class="absolute top-3 left-3 rounded-full bg-brand px-2.5 py-0.5 text-[9px] font-black uppercase text-white shadow-sm">
+                {art.category}
+              </span>
+            </div>
+
+            <div class="space-y-1">
+              <h3 class="font-headline text-base font-black text-ink group-hover:text-brand transition leading-snug line-clamp-2">
+                {art.title}
+              </h3>
+              <p class="text-xs text-soft font-medium leading-relaxed line-clamp-3">
+                {art.desc}
+              </p>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-line mt-3 flex items-center justify-between text-[11px] font-bold text-brand">
+            <span>{art.readTime}</span>
+            <span>Baca Selengkapnya →</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </div>
+
+  <!-- SECTION B: TABEL KOMPARASI SPESIFIKASI TEKNIS & EFISIENSI ENERGI -->
+  <div class="apple-liquid-glass rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl border border-line">
+    <div class="border-b border-line pb-3">
+      <span class="text-[10px] font-extrabold text-brand uppercase tracking-widest block">RINGKASAN DATA REDAKSI</span>
+      <h2 class="font-headline text-xl sm:text-2xl font-black text-ink">
+        Tabel Komparasi Jenis Mesin & Estimasi Biaya
+      </h2>
+    </div>
+
+    <!-- Responsive Table Wrapper -->
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr class="border-b border-line text-ink font-black uppercase tracking-wider text-[11px] bg-white/40 dark:bg-slate-900/40">
+            <th class="py-3 px-4">Jenis Mesin</th>
+            <th class="py-3 px-4">Estimasi Biaya / Km</th>
+            <th class="py-3 px-4">Pajak Tahunan (PKB)</th>
+            <th class="py-3 px-4">Aturan Ganjil Genap</th>
+            <th class="py-3 px-4">Garansi Komponen Utama</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-line font-medium text-soft">
+          <tr class="hover:bg-white/60 dark:hover:bg-slate-900/60 transition">
+            <td class="py-3.5 px-4 font-bold text-brand flex items-center gap-2">
+              <img src="/icons/battery-bolt.svg" class="w-4 h-4 opacity-80 inline-block" alt="" />
+              <span>Electric (EV)</span>
+            </td>
+            <td class="py-3.5 px-4 font-bold text-ink">Rp 350 - Rp 500 / km</td>
+            <td class="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 font-extrabold">Bebas 100% (Rp 0)</td>
+            <td class="py-3.5 px-4 text-emerald-600 dark:text-emerald-400 font-extrabold">Bebas Penuh</td>
+            <td class="py-3.5 px-4">8 Tahun / 160.000 km</td>
+          </tr>
+          <tr class="hover:bg-white/60 dark:hover:bg-slate-900/60 transition">
+            <td class="py-3.5 px-4 font-bold text-brand flex items-center gap-2">
+              <img src="/icons/leaf.svg" class="w-4 h-4 opacity-80 inline-block" alt="" />
+              <span>Hybrid (HEV)</span>
+            </td>
+            <td class="py-3.5 px-4 font-bold text-ink">Rp 650 - Rp 850 / km</td>
+            <td class="py-3.5 px-4">Standar (Sesuai NJKB)</td>
+            <td class="py-3.5 px-4 text-amber-600 dark:text-amber-400 font-extrabold">Berlaku Aturan Plat</td>
+            <td class="py-3.5 px-4">8 Tahun Baterai Hybrid</td>
+          </tr>
+          <tr class="hover:bg-white/60 dark:hover:bg-slate-900/60 transition">
+            <td class="py-3.5 px-4 font-bold text-brand flex items-center gap-2">
+              <img src="/icons/droplet.svg" class="w-4 h-4 opacity-80 inline-block" alt="" />
+              <span>Bensin (ICE)</span>
+            </td>
+            <td class="py-3.5 px-4 font-bold text-ink">Rp 1.100 - Rp 1.500 / km</td>
+            <td class="py-3.5 px-4">Standar (Sesuai NJKB)</td>
+            <td class="py-3.5 px-4 text-amber-600 dark:text-amber-400 font-extrabold">Berlaku Aturan Plat</td>
+            <td class="py-3.5 px-4">3 Tahun / 100.000 km</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION C: FAQ INTERAKTIF PEMBELI MOBIL 2026 -->
+  <div class="apple-liquid-glass rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl border border-line">
+    <div class="border-b border-line pb-3 text-center max-w-2xl mx-auto space-y-1">
+      <span class="text-[10px] font-extrabold text-brand uppercase tracking-widest block">PUSAT INFORMASI</span>
+      <h2 class="font-headline text-2xl font-black text-ink">
+        Pertanyaan Sering Diajukan (FAQ)
+      </h2>
+      <p class="text-xs text-soft">Temukan jawaban cepat seputar transaksi, garansi, insentif pajak, dan pemilihan jenis mesin mobil baru.</p>
+    </div>
+
+    <!-- Accordion Items List -->
+    <div class="space-y-3 max-w-3xl mx-auto" id="faq-accordion-group">
+      {FAQS.map((item, idx) => (
+        <div class="inner-glass-card rounded-2xl overflow-hidden border border-line transition-all duration-300">
+          <button
+            type="button"
+            data-faq-btn={idx}
+            class="w-full flex items-center justify-between p-4 text-left font-headline text-xs sm:text-sm font-black text-ink hover:text-brand transition cursor-pointer"
+          >
+            <span>{item.q}</span>
+            <span class="text-brand font-black text-base transition-transform duration-300" data-faq-icon>+</span>
+          </button>
+
+          <div class="hidden p-4 pt-0 text-xs text-soft font-medium leading-relaxed border-t border-line/40 bg-white/40 dark:bg-slate-900/40" data-faq-content={idx}>
+            {item.a}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<script>
+  function initFaqAccordion() {
+    const faqBtns = document.querySelectorAll<HTMLButtonElement>('[data-faq-btn]');
+
+    faqBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = btn.dataset.faqBtn;
+        const content = document.querySelector<HTMLElement>(`[data-faq-content="${idx}"]`);
+        const icon = btn.querySelector<HTMLElement>('[data-faq-icon]');
+
+        if (content) {
+          const isHidden = content.classList.contains('hidden');
+
+          // Close all other FAQs
+          document.querySelectorAll('[data-faq-content]').forEach((c) => c.classList.add('hidden'));
+          document.querySelectorAll('[data-faq-icon]').forEach((i) => (i.textContent = '+'));
+
+          if (isHidden) {
+            content.classList.remove('hidden');
+            if (icon) icon.textContent = '−';
+          }
+        }
+      });
+    });
+  }
+
+  initFaqAccordion();
+  document.addEventListener('astro:page-load', initFaqAccordion);
+</script>

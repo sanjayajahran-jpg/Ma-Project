@@ -1,0 +1,559 @@
+/* ==========================================================================
+   📱 EVHub.id "Console Glass" (Mobile-First) CSS Design Tokens & Animation System
+   Spesifikasi: UI_DESIGN_SPEC_EVNESIA_V2_MOBILE_FIRST.md
+   Fokus: High-fluidity Physics Animations, Tactile Micro-Interactions, Apple-style Glassmorphism
+   ========================================================================== */
+
+:root {
+  /* 1. Warna PS5 Void & Ambient */
+  --bg-void: #04060c;
+  --bg-deep: #0a1020;
+  --bg-raise: #111a30;
+  --bg-raise-hover: #16223e;
+  
+  --accent: #2e9bff;
+  --accent-deep: #0070d1;
+  --accent-glow: rgba(46, 155, 255, 0.45);
+  
+  --energy: #34e0a1;
+  --energy-glow: rgba(52, 224, 161, 0.4);
+  --warn: #ffb340;
+  --danger: #ff5a5f;
+
+  --label-1: #f5f7fa;
+  --label-2: rgba(235, 240, 255, 0.62);
+  --label-3: rgba(235, 240, 255, 0.34);
+
+  /* 2. Liquid Glass Materials (Mobile Ringan: 14px blur) */
+  --glass-fill: rgba(255, 255, 255, 0.08);
+  --glass-fill-strong: rgba(255, 255, 255, 0.12);
+  --glass-stroke: rgba(255, 255, 255, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.36);
+  --glass-blur: 14px;
+  --glass-saturate: 180%;
+
+  /* 3. Ukuran Mobile-First */
+  --gutter: 16px;
+  --header-h: 48px;
+  --dock-h: 56px;
+  --r-card: 20px;
+  --r-inner: 12px;
+  --r-pill: 9999px;
+  --tap: 44px;
+  --stage-h: 38svh;
+
+  /* 4. Tipografi Fluid */
+  --fs-display: clamp(1.875rem, 1.2rem + 3vw, 3.5rem);
+  --fs-title1: clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem);
+  --fs-title2: clamp(1.125rem, 1rem + 0.5vw, 1.5rem);
+  --fs-body: clamp(0.9375rem, 0.9rem + 0.2vw, 1rem);
+  --fs-metric: clamp(1.75rem, 1.2rem + 2.2vw, 2.75rem);
+
+  /* 5. Modern Fluid & Spring Physics Easing Tokens */
+  --ease-fluid: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-back: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  
+  --dur-fast: 180ms;
+  --dur-base: 320ms;
+  --dur-slow: 550ms;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 28px;
+    --header-h: 58px;
+    --r-card: 24px;
+    --r-inner: 16px;
+    --glass-blur: 20px;
+    --stage-h: 55vh;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 40px;
+  }
+}
+
+/* Latar Panggung Void & Light Mode Tokens — Khusus Tema V2 Mobile-First (evnesia-v2) */
+html[data-template="evnesia-v2"],
+html.theme-evnesia-v2 {
+  background-color: var(--bg-void);
+  color: var(--label-1);
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 16px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Dark Mode Defaults */
+html.dark[data-template="evnesia-v2"],
+html.dark.theme-evnesia-v2 {
+  color-scheme: dark;
+}
+
+/* Light Mode Overrides: Clean, Crisp & High-Legibility */
+html:not(.dark)[data-template="evnesia-v2"],
+html.light[data-template="evnesia-v2"],
+html.light.theme-evnesia-v2 {
+  --bg-void: #f8fafc;
+  --bg-deep: #f1f5f9;
+  --bg-raise: #ffffff;
+  --bg-raise-hover: #e2e8f0;
+
+  --label-1: #0f172a;
+  --label-2: #334155;
+  --label-3: #64748b;
+
+  --glass-fill: rgba(255, 255, 255, 0.9);
+  --glass-fill-strong: rgba(255, 255, 255, 0.97);
+  --glass-stroke: rgba(203, 213, 225, 0.85);
+  --glass-highlight: rgba(255, 255, 255, 0.98);
+
+  color-scheme: light;
+}
+
+html[data-template="evnesia-v2"] body,
+html.theme-evnesia-v2 body {
+  background-attachment: fixed;
+  color: var(--label-1);
+  font-family: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  padding-bottom: calc(var(--dock-h) + 20px + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--dur-base) var(--ease-fluid), color var(--dur-base) var(--ease-fluid);
+}
+
+/* Dark Mode Body Gradient */
+html.dark[data-template="evnesia-v2"] body,
+html.dark.theme-evnesia-v2 body {
+  background:
+    radial-gradient(65% 55% at 18% -10%, rgba(0, 112, 209, 0.4), transparent 72%),
+    radial-gradient(50% 45% at 94% 6%, rgba(52, 224, 161, 0.12), transparent 70%),
+    linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-void) 45%, var(--bg-void) 100%);
+}
+
+/* Light Mode Body Gradient */
+html:not(.dark)[data-template="evnesia-v2"] body,
+html.light[data-template="evnesia-v2"] body,
+html.light.theme-evnesia-v2 body {
+  background:
+    radial-gradient(65% 55% at 18% -10%, rgba(14, 165, 233, 0.12), transparent 72%),
+    radial-gradient(50% 45% at 94% 6%, rgba(16, 185, 129, 0.08), transparent 70%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 45%, #f1f5f9 100%);
+}
+
+@media (min-width: 1024px) {
+  html[data-template="evnesia-v2"] body,
+  html.theme-evnesia-v2 body {
+    padding-bottom: 0;
+  }
+}
+
+/* -------------------------------------------------------------
+   LIGHT MODE CARD & ELEMENT ADAPTATIONS
+   Menjamin tidak ada card atau elemen yang gelap di mode terang
+   ------------------------------------------------------------- */
+html:not(.dark) .glass,
+html.light .glass {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(226, 232, 240, 0.95);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+}
+
+html:not(.dark) .glass-card,
+html.light .glass-card {
+  background: #ffffff !important;
+  border-color: rgba(226, 232, 240, 0.95) !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 24px -4px rgba(15, 23, 42, 0.08), 0 2px 6px -1px rgba(15, 23, 42, 0.04) !important;
+}
+
+html:not(.dark) .glass-card h1,
+html:not(.dark) .glass-card h2,
+html:not(.dark) .glass-card h3,
+html:not(.dark) .glass-card h4,
+html.light .glass-card h1,
+html.light .glass-card h2,
+html.light .glass-card h3,
+html.light .glass-card h4 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .glass-card .text-white,
+html.light .glass-card .text-white {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .glass-card .text-slate-300,
+html:not(.dark) .glass-card .text-slate-400,
+html.light .glass-card .text-slate-300,
+html.light .glass-card .text-slate-400 {
+  color: #64748b !important;
+}
+
+html:not(.dark) .glass-card .border-white\/10,
+html:not(.dark) .glass-card .border-white\/5,
+html.light .glass-card .border-white\/10,
+html.light .glass-card .border-white\/5 {
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) .glass-card .bg-white\/5,
+html:not(.dark) .glass-card .bg-white\/10,
+html.light .glass-card .bg-white\/5,
+html.light .glass-card .bg-white\/10 {
+  background-color: #f8fafc !important;
+}
+
+html:not(.dark) .glass-card .bg-slate-900,
+html:not(.dark) .glass-card .bg-slate-950,
+html.light .glass-card .bg-slate-900,
+html.light .glass-card .bg-slate-950 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) #v2-header .glass,
+html.light #v2-header .glass {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08) !important;
+}
+
+html:not(.dark) #v2-mobile-dock .glass,
+html.light #v2-mobile-dock .glass {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(203, 213, 225, 0.9) !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12) !important;
+}
+
+html:not(.dark) section#ringkasan,
+html.light section#ringkasan {
+  background: linear-gradient(180deg, #f1f5f9 0%, #ffffff 50%, #f8fafc 100%) !important;
+  border-color: #e2e8f0 !important;
+}
+
+html:not(.dark) section#ringkasan h1,
+html.light section#ringkasan h1,
+html:not(.dark) section#ringkasan .text-white,
+html.light section#ringkasan .text-white {
+  color: #0f172a !important;
+}
+
+html:not(.dark) section#ringkasan .text-slate-400,
+html.light section#ringkasan .text-slate-400 {
+  color: #64748b !important;
+}
+
+html:not(.dark) #car-nav-prev,
+html:not(.dark) #car-nav-next,
+html.light #car-nav-prev,
+html.light #car-nav-next {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.1) !important;
+}
+
+html:not(.dark) #car-detail-sticky-tabs,
+html.light #car-detail-sticky-tabs {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+html:not(.dark) #car-detail-sticky-tabs .sticky-tab-btn[aria-selected="false"],
+html.light #car-detail-sticky-tabs .sticky-tab-btn[aria-selected="false"] {
+  color: #64748b !important;
+}
+
+html:not(.dark) #car-detail-sticky-tabs .sticky-tab-btn[aria-selected="false"]:hover,
+html.light #car-detail-sticky-tabs .sticky-tab-btn[aria-selected="false"]:hover {
+  color: #0f172a !important;
+  background-color: #f1f5f9 !important;
+}
+
+html:not(.dark) #btn-toggle-dense-collapse,
+html.light #btn-toggle-dense-collapse {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+/* Adaptasi card mobil, tabel varian & input di mode terang */
+html:not(.dark) .catalog-card,
+html.light .catalog-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05) !important;
+}
+
+html:not(.dark) .catalog-card h3,
+html.light .catalog-card h3,
+html:not(.dark) .catalog-card span.font-metric,
+html.light .catalog-card span.font-metric {
+  color: #0f172a !important;
+}
+
+html:not(.dark) table thead,
+html.light table thead {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+html:not(.dark) table tbody tr:hover,
+html.light table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* ==========================================================================
+   ANIMATION KEYFRAMES & STAGGER SYSTEM
+   ========================================================================== */
+
+@keyframes fadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes shimmerSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* High-Visibility Electric Cyber Skeleton Shimmer (Mobile-First) */
+@keyframes skeletonShimmerGlow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: #0c1527;
+  background-image: linear-gradient(
+    90deg,
+    rgba(13, 22, 40, 0.95) 0%,
+    rgba(26, 43, 76, 0.95) 20%,
+    rgba(56, 189, 248, 0.32) 50%,
+    rgba(26, 43, 76, 0.95) 80%,
+    rgba(13, 22, 40, 0.95) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmerGlow 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  box-shadow: inset 0 0 16px rgba(46, 155, 255, 0.12);
+}
+
+@keyframes popSpring {
+  0% {
+    transform: scale(0.92);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Stagger Classes */
+.animate-fade-up {
+  animation: fadeSlideUp var(--dur-slow) var(--ease-fluid) forwards;
+}
+
+.stagger-1 { animation-delay: 60ms; }
+.stagger-2 { animation-delay: 130ms; }
+.stagger-3 { animation-delay: 200ms; }
+.stagger-4 { animation-delay: 270ms; }
+.stagger-5 { animation-delay: 340ms; }
+
+/* ==========================================================================
+   INTERACTIVE TACTILE & HOVER STYLES
+   ========================================================================== */
+
+/* Card Hover Lift with Fluid Shadow */
+.card-hover-lift {
+  transition: transform var(--dur-base) var(--ease-fluid), box-shadow var(--dur-base) var(--ease-fluid), border-color var(--dur-base) var(--ease-fluid);
+  will-change: transform, box-shadow;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-4px) scale(1.012);
+  box-shadow: 0 16px 36px -8px rgba(0, 112, 209, 0.35), 0 0 20px rgba(46, 155, 255, 0.2);
+  border-color: rgba(46, 155, 255, 0.45);
+}
+
+/* Tactile Spring Press (Mobile Haptic Feel) */
+.touch-spring {
+  transition: transform var(--dur-fast) var(--ease-spring), opacity var(--dur-fast) var(--ease-fluid);
+  will-change: transform;
+}
+
+.touch-spring:active {
+  transform: scale(0.93);
+}
+
+/* Shimmer Button Effect */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    60deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 80%
+  );
+  transform: rotate(30deg) translateX(-100%);
+  transition: transform 700ms var(--ease-fluid);
+}
+
+.btn-shimmer:hover::after {
+  transform: rotate(30deg) translateX(100%);
+}
+
+/* Fluid Smooth Transitions */
+.fluid-transition {
+  transition: all var(--dur-base) var(--ease-fluid);
+}
+
+.spring-transition {
+  transition: all var(--dur-base) var(--ease-spring);
+}
+
+/* ==========================================================================
+   MATERIALS & CONTAINERS
+   ========================================================================== */
+
+/* Utility Material Kaca */
+.glass {
+  background: var(--glass-fill);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-stroke);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 8px 32px rgba(0, 0, 0, 0.45);
+  transition: border-color var(--dur-base) var(--ease-fluid), background-color var(--dur-base) var(--ease-fluid);
+}
+
+.glass-pill {
+  border-radius: var(--r-pill);
+}
+
+.glass-card {
+  border-radius: var(--r-card);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, rgba(17, 26, 48, 0.6) 100%);
+  border: 1px solid var(--glass-stroke);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: transform var(--dur-base) var(--ease-fluid), box-shadow var(--dur-base) var(--ease-fluid), border-color var(--dur-base) var(--ease-fluid);
+}
+
+/* Rail Horizontal dengan Efek Momentum Peek (Mobile: Kartu Fokus 82% Layar, Gap 12px) */
+.rail {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  padding-left: 16px;
+  padding-right: 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.rail > * {
+  flex: 0 0 min(82%, 315px);
+  width: min(82%, 315px);
+  scroll-snap-align: start;
+}
+
+@media (min-width: 768px) {
+  .rail {
+    gap: 16px;
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+  .rail > * {
+    flex: 0 0 295px;
+    width: 295px;
+  }
+}
+
+/* Tipografi Angka Tabular Metric */
+.font-metric {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* Reduced Motion & Transparency */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .glass-card {
+    background: rgba(10, 16, 32, 0.96) !important;
+    backdrop-filter: none !important;
+  }
+}

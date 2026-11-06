@@ -1,0 +1,27 @@
+---
+import { formatPublicationTime, isoDate, formatViews } from "@/lib/format";
+interface Props {
+  date: string;
+  readingTime?: number;
+  views?: number;
+  class?: string;
+}
+const { date, views, class: cls = "" } = Astro.props;
+---
+
+<div
+  class:list={[
+    "flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted",
+    cls,
+  ]}
+>
+  <time datetime={isoDate(date)}>{formatPublicationTime(date)}</time>
+  {
+    views != null && (
+      <>
+        <span aria-hidden="true">·</span>
+        <span>{formatViews(views)} dibaca</span>
+      </>
+    )
+  }
+</div>

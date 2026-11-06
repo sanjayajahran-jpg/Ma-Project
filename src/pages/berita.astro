@@ -1,0 +1,8 @@
+---
+import { resolveThemePage } from "@/lib/theme-resolver";
+
+const params = { slug: "berita" };
+const { default: Page, siteConfig } = await resolveThemePage(Astro.request, "category");
+---
+
+<Page request={Astro.request} params={params} url={Astro.url} siteConfig={siteConfig} />

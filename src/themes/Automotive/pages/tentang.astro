@@ -1,0 +1,56 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import StaticPage from "@/components/StaticPage.astro";
+import { fetchSiteConfigFromApi, portalDomainFromScope } from "@/lib/api";
+import { portalIdentityForDomain } from "@/site";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, params, url } = Astro.props;
+
+const siteConfig = await fetchSiteConfigFromApi(request);
+const identity = portalIdentityForDomain(portalDomainFromScope(request), siteConfig?.portal?.name);
+const hasCustomDescription = identity.description && !identity.description.includes("menyajikan berita, analisis");
+---
+
+<PageLayout
+  title="Tentang Kami"
+  lead={identity.tagline ?? "Media digital profesional dengan informasi cepat, relevan, dan bertanggung jawab."}
+>
+  <StaticPage request={request} slug="tentang">
+  {hasCustomDescription ? (
+    <p class="first-letter:text-2xl">{identity.description}</p>
+  ) : (
+    <p>
+      <strong>{identity.name}</strong> adalah media digital profesional dari {identity.publisher} yang
+      menyajikan analisis mendalam seputar kendaraan elektrifikasi (EV/PHEV/HEV), teknologi baterai, ekosistem SPKLU,
+      uji jalan komprehensif, dan perkembangan industri otomotif Indonesia. Kami percaya pembaca berhak atas liputan yang tidak hanya cepat,
+      tetapi juga akurat, kontekstual, berbasis data brosur resmi APM, dan jujur.
+    </p>
+  )}
+
+  <h2 id="misi">Misi kami</h2>
+  <p>
+    Menjernihkan kabar di tengah kebisingan. Setiap artikel profesional disusun
+    dengan riset, verifikasi, dan penyuntingan yang ketat agar Anda dapat
+    mengambil keputusan dengan informasi terbaik.
+  </p>
+
+  <h2 id="independensi">Independensi editorial</h2>
+  <p>
+    Konten editorial kami independen dari kepentingan komersial. Artikel
+    kerjasama (bersponsor) selalu ditandai jelas dan dipisahkan dari liputan
+    redaksi. Pelajari <a href="/disclosure">pedoman konten bersponsor</a> kami.
+  </p>
+
+  <h2 id="kontak">Hubungi kami</h2>
+  <p>
+    Punya masukan, koreksi, atau ide liputan? Kirim ke
+    <a href={`mailto:${identity.email}`}>{identity.email}</a> atau lihat halaman
+    <a href="/kontak">kontak</a>.
+  </p>
+  </StaticPage>
+</PageLayout>

@@ -1,0 +1,211 @@
+---
+import { fetchBannersFromApi, type BannerPlacement } from "@/lib/api";
+
+interface Props {
+  placement: BannerPlacement;
+  format?: "leaderboard" | "rectangle" | "inline";
+  class?: string;
+}
+const { placement, format = "leaderboard", class: cls = "" } = Astro.props;
+const banners = await fetchBannersFromApi(placement, Astro.request);
+const banner = banners[0];
+const defaultSizes: Record<string, { desktop: string; mobile: string }> = {
+  header: { desktop: "970 × 90", mobile: "320 × 100" },
+  article_top: { desktop: "970 × 90", mobile: "320 × 100" },
+  article_middle: { desktop: "728 × 90", mobile: "300 × 250" },
+  homepage_middle: { desktop: "970 × 250", mobile: "320 × 100" },
+  homepage_sidebar: { desktop: "300 × 250", mobile: "300 × 250" },
+  article_sidebar: { desktop: "300 × 250", mobile: "300 × 250" },
+};
+if (!banner) return null;
+const desktop = banner.desktop_image_url ?? banner.mobile_image_url;
+const mobile = banner.mobile_image_url ?? desktop;
+const size = defaultSizes[placement];
+---
+
+<aside
+  class:list={["my-3 transition-all", cls]}
+  aria-label="Iklan"
+  data-banner-function={banner.functions_enabled ? "true" : undefined}
+  data-effect={banner.hide_effect}
+  data-display-ms={banner.display_duration_ms}
+  data-transition-ms={banner.transition_duration_ms}
+>
+  <p
+    class="kicker mb-1 text-center text-faint"
+    style="font-size:10px;letter-spacing:.12em"
+  >
+    Iklan
+  </p>
+  {
+    banner.ad_type === "html" && banner.html_code ? (
+      <div class="lazy-ad-wrapper overflow-hidden" data-ad-slot={placement}>
+        <template class="lazy-ad-template" set:html={banner.html_code} />
+        <div class="lazy-ad-placeholder flex items-center justify-center p-6 bg-slate-50 border border-dashed border-slate-200 text-slate-400 text-xs rounded-xl min-h-22.5">
+          <span class="flex items-center gap-2">
+            <svg
+              class="animate-spin h-4 w-4 text-slate-400"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+            Memuat Iklan...
+          </span>
+        </div>
+      </div>
+    ) : (
+      <a
+        href={banner.target_url}
+        target="_blank"
+        rel="sponsored noopener"
+        class:list={[
+          "block overflow-hidden rounded-card",
+          format === "rectangle" ? "mx-auto max-w-75" : "mx-auto max-w-242.5",
+        ]}
+        data-ad-slot={placement}
+        data-banner-id={banner.id}
+        data-banner-click
+      >
+        <picture>
+          <source media="(max-width: 639px)" srcset={mobile} />
+          <img
+            src={desktop}
+            alt={banner.name}
+            class="h-auto w-full"
+            width={placement.includes("sidebar") ? 300 : 970}
+            loading="lazy"
+          />
+        </picture>
+      </a>
+    )
+  }
+  {
+    size ? (
+      <span class="sr-only">
+        Ukuran standar: desktop {size.desktop}, mobile {size.mobile}
+      </span>
+    ) : null
+  }
+</aside>
+
+<script>
+  function initBanners() {
+    // Auto-hide function banners
+    document
+      .querySelectorAll<HTMLElement>("[data-banner-function='true']")
+      .forEach((banner) => {
+        const displayMs = Number(banner.dataset.displayMs || 10000);
+        const transitionMs = Number(banner.dataset.transitionMs || 600);
+        const effect = banner.dataset.effect || "fade";
+        if (displayMs <= 0) return;
+        window.setTimeout(() => {
+          banner.style.transitionDuration = `${transitionMs}ms`;
+          banner.style.overflow = "hidden";
+          banner.style.opacity = "0";
+          const transform = {
+            slide_top: "translateY(-100%)",
+            slide_bottom: "translateY(100%)",
+            slide_left: "translateX(-100%)",
+            slide_right: "translateX(100%)",
+          }[effect];
+          if (transform) banner.style.transform = transform;
+          window.setTimeout(() => {
+            banner.style.display = "none";
+          }, transitionMs);
+        }, displayMs);
+      });
+
+    // Click tracking
+    document
+      .querySelectorAll<HTMLAnchorElement>("[data-banner-click]")
+      .forEach((link) => {
+        link.addEventListener("click", () => {
+          const bannerId = link.dataset.bannerId;
+          if (!bannerId) return;
+          try {
+            fetch("/api/v1/banner-clicks", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                banner_id: bannerId,
+                referrer: location.href,
+              }),
+              keepalive: true,
+            }).catch(() => {});
+          } catch {}
+        });
+      });
+
+    // Lazy loading HTML banners via template
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(
+        (entries, obs) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const wrapper = entry.target as HTMLElement;
+              const template = wrapper.querySelector(
+                ".lazy-ad-template",
+              ) as HTMLTemplateElement;
+              const placeholder = wrapper.querySelector(
+                ".lazy-ad-placeholder",
+              ) as HTMLElement;
+              if (template && placeholder) {
+                const content = document.importNode(template.content, true);
+                // Execute any scripts inside template
+                const scripts = content.querySelectorAll("script");
+                placeholder.replaceWith(content);
+                scripts.forEach((oldScript) => {
+                  const newScript = document.createElement("script");
+                  Array.from(oldScript.attributes).forEach((attr) => {
+                    newScript.setAttribute(attr.name, attr.value);
+                  });
+                  newScript.appendChild(
+                    document.createTextNode(oldScript.innerHTML),
+                  );
+                  if (oldScript.parentNode) {
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                  }
+                });
+              }
+              obs.unobserve(wrapper);
+            }
+          });
+        },
+        { rootMargin: "200px" },
+      );
+
+      document.querySelectorAll(".lazy-ad-wrapper").forEach((el) => {
+        observer.observe(el);
+      });
+    } else {
+      document.querySelectorAll(".lazy-ad-wrapper").forEach((wrapper) => {
+        const template = wrapper.querySelector(
+          ".lazy-ad-template",
+        ) as HTMLTemplateElement;
+        const placeholder = wrapper.querySelector(
+          ".lazy-ad-placeholder",
+        ) as HTMLElement;
+        if (template && placeholder) {
+          const content = document.importNode(template.content, true);
+          placeholder.replaceWith(content);
+        }
+      });
+    }
+  }
+
+  // Setup listeners for first load and view transitions
+  document.addEventListener("astro:page-load", initBanners);
+</script>

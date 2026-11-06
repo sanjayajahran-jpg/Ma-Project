@@ -1,0 +1,14 @@
+---
+import { resolveThemePage } from "@/lib/theme-resolver";
+import { authors } from "@/data";
+import { fetchAuthorsFromApi, isFallbackDataEnabled } from "@/lib/api";
+
+const slug = Astro.params.slug ?? "";
+const apiAuthors = await fetchAuthorsFromApi(Astro.request);
+const authorExists = apiAuthors.some((author) => author.slug === slug)
+  || (isFallbackDataEnabled() && authors.some((author) => author.slug === slug));
+const pageName = authorExists ? "author" : "notFound";
+if (!authorExists) Astro.response.status = 404;
+const { default: Page, siteConfig } = await resolveThemePage(Astro.request, pageName);
+---
+<Page request={Astro.request} params={Astro.params} url={Astro.url} siteConfig={siteConfig} />

@@ -1,0 +1,37 @@
+---
+import type { Author } from "@/types";
+interface Props {
+  author: Author;
+  class?: string;
+}
+const { author, class: cls = "" } = Astro.props;
+---
+
+<div
+  class:list={[
+    "flex flex-col sm:flex-row gap-4 sm:gap-5 rounded-3xl border border-slate-200/80 dark:border-white/10 bg-white/70 dark:bg-slate-900/70 p-6 backdrop-blur-md shadow-sm",
+    cls,
+  ]}
+>
+  <img
+    src={author.avatar}
+    alt={`Foto ${author.name}`}
+    width="64"
+    height="64"
+    loading="lazy"
+    class="h-16 w-16 shrink-0 rounded-2xl ring-2 ring-cyan-500/30 object-cover bg-slate-900 shadow-sm"
+  />
+  <div class="space-y-1">
+    <span class="text-[10px] font-bold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 block">
+      Ditulis oleh
+    </span>
+    <a
+      href={`/penulis/${author.slug}`}
+      class="font-headline font-bold text-lg text-slate-900 dark:text-white hover:text-cyan-600 dark:hover:text-cyan-400 transition inline-block"
+    >
+      {author.name}
+    </a>
+    <p class="text-xs font-semibold text-slate-400">{author.role}</p>
+    <p class="mt-2 text-xs sm:text-sm leading-relaxed text-slate-500 dark:text-slate-400">{author.bio}</p>
+  </div>
+</div>

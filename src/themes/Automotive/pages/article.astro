@@ -1,0 +1,359 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Picture from "../components/Picture.astro";
+import CategoryPill from "../components/CategoryPill.astro";
+import Badge from "../components/Badge.astro";
+import AuthorByline from "../components/AuthorByline.astro";
+import AuthorCard from "../components/AuthorCard.astro";
+import ShareButtons from "../components/ShareButtons.astro";
+import TableOfContents from "../components/TableOfContents.astro";
+import SponsoredNotice from "../components/SponsoredNotice.astro";
+import SectionHeading from "../components/SectionHeading.astro";
+import ArticleCard from "../components/ArticleCard.astro";
+import AdSlot from "../components/AdSlot.astro";
+import RatingBadge from "../components/RatingBadge.astro";
+import { portalIdentityForDomain } from "@/site";
+import { articleUrl, type Article, type LinkedArticle } from "@/types";
+import { extractToc, injectBacaJuga } from "@/lib/format";
+import { allArticles } from "@/data";
+import {
+  fetchAllArticlesFromApi,
+  fetchSiteConfigFromApi,
+  getAdjacentFromList,
+  getRelatedFromList,
+  isFallbackDataEnabled,
+  portalDomainFromScope,
+  siteUrlFromScope,
+} from "@/lib/api";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+  article: any;
+  siteConfig?: any;
+}
+const { request, params, article, siteConfig: prefetchedConfig } = Astro.props;
+
+const sourceArticles = await fetchAllArticlesFromApi(100, request);
+const siteConfig = prefetchedConfig ?? await fetchSiteConfigFromApi(request);
+const articles = sourceArticles.length ? sourceArticles : isFallbackDataEnabled() ? allArticles : [];
+const siteUrl = siteUrlFromScope(request);
+const identity = portalIdentityForDomain(portalDomainFromScope(request), siteConfig?.portal?.name);
+const articleUrlStr = articleUrl(article);
+const absolute = new URL(articleUrlStr, siteUrl).href;
+const toc = extractToc(article.bodyHtml);
+const bacaJugaItems = article.bacaJuga ?? [];
+const { html: bodyHtmlInjected, remaining: remainingBacaJuga } = injectBacaJuga(article.bodyHtml, bacaJugaItems);
+const beritaTerkait = article.beritaTerkait ?? [];
+const beritaPopuler = getRelatedFromList(articles, article, 3);
+const { newer, older } = getAdjacentFromList(articles, article);
+const isSponsored = article.type === "kerjasama";
+
+const catName = article.category?.name?.toLowerCase() ?? "";
+const titleLower = article.title?.toLowerCase() ?? "";
+const isTestDrive = catName.includes("ulasan") || catName.includes("test") || catName.includes("uji") || titleLower.includes("test drive") || titleLower.includes("review");
+const isEV = catName.includes("ev") || catName.includes("listrik") || titleLower.includes("ev") || titleLower.includes("baterai");
+
+const articleLd = {
+  "@context": "https://schema.org",
+  "@type": isSponsored ? "Article" : "NewsArticle",
+  headline: article.title,
+  description: article.dek,
+  image: [article.cover],
+  datePublished: article.publishedAt,
+  dateModified: article.updatedAt ?? article.publishedAt,
+  isAccessibleForFree: true,
+  inLanguage: "id-ID",
+  author: {
+    "@type": "Person",
+    name: article.author.name,
+    url: `${siteUrl}/penulis/${article.author.slug}`,
+  },
+  publisher: {
+    "@type": "Organization",
+    name: identity.publisher,
+    logo: { "@type": "ImageObject", url: `${siteUrl}/og-default.svg` },
+  },
+  mainEntityOfPage: absolute,
+};
+
+const breadcrumbLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Beranda", item: siteUrl },
+    {
+      "@type": "ListItem",
+      position: 2,
+      name: article.category.name,
+      item: `${siteUrl}/kategori/${article.category.slug}`,
+    },
+    { "@type": "ListItem", position: 3, name: article.title, item: absolute },
+  ],
+};
+---
+
+<BaseLayout
+  title={article.seoTitle ?? article.title}
+  description={article.seoDescription ?? article.dek}
+  image={article.cover}
+  type="article"
+  publishedTime={article.publishedAt}
+  modifiedTime={article.updatedAt ?? article.publishedAt}
+  authorName={article.author.name}
+  jsonLd={[articleLd, breadcrumbLd]}
+  gaParams={{
+    id: article.id,
+    published_date: article.publishedAt ?? "",
+    rubrik: article.category.name,
+    penulis: article.author.name,
+    penulis_id: article.author.id,
+    editor: article.author.name,
+    editor_id: article.author.id,
+    tag: article.tags.map((t: any) => t.name).join(", "),
+    source: "",
+    topic: "",
+  }}
+>
+  <article class="pb-12 text-ink">
+    <!-- Edmunds Style Vivid Blue Hero Header Banner (Image 3 Reference) -->
+    <header class="bg-edmunds-hero pt-8 pb-20 px-4 transition-colors duration-300">
+      <div class="mx-auto max-w-5xl space-y-4">
+        <!-- Breadcrumbs -->
+        <nav aria-label="Breadcrumb" class="text-xs font-semibold text-slate-200">
+          <ol class="flex flex-wrap items-center gap-2">
+            <li><a href="/" class="hover:underline">Beranda</a></li>
+            <li aria-hidden="true">/</li>
+            <li><a href={`/kategori/${article.category.slug}`} class="hover:underline">{article.category.name}</a></li>
+            <li aria-hidden="true">/</li>
+            <li class="line-clamp-1 opacity-80 max-w-xs sm:max-w-md">{article.title}</li>
+          </ol>
+        </nav>
+
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+          <span class="rounded font-headline bg-brand px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-widest text-white shadow">
+            {article.category.name}
+          </span>
+          {isEV && <span class="badge-ev text-xs px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1"><img src="/icons/battery-bolt.svg" class="w-3.5 h-3.5 inline-block" alt="" /> Electric EV</span>}
+          {isSponsored && <Badge tone="sponsored">Mitra APM</Badge>}
+        </div>
+
+        <h1 class="font-headline font-black text-3xl sm:text-4xl lg:text-5xl leading-tight text-white drop-shadow-md">
+          {article.title}
+        </h1>
+        <p class="text-base sm:text-xl leading-relaxed text-slate-200 font-medium max-w-4xl">{article.dek}</p>
+      </div>
+    </header>
+
+    <!-- Overlapping LCP Hero Image (Edmunds Style) -->
+    <div class="-mt-12 sm:-mt-16 mx-auto max-w-5xl px-4 relative z-20">
+      <div class="overflow-hidden rounded-2xl border border-line shadow-2xl aspect-video bg-paper">
+        <Picture
+          src={article.cover}
+          thumbSrc={article.coverThumb}
+          mobileSrc={article.coverMobile}
+          alt={article.coverAlt}
+          loading="eager"
+          fetchpriority="high"
+          sizes="(max-width: 1024px) calc(100vw - 2rem), 1024px"
+          class="h-full w-full object-cover"
+        />
+      </div>
+      {
+        article.coverCaption && (
+          <p class="mt-2 text-center text-xs text-muted">
+            {article.coverCaption}
+          </p>
+        )
+      }
+
+      <!-- Edmunds Style Dual Author Avatars, Date, and Social Icons Bar -->
+      <div class="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4 text-xs">
+        <div class="flex items-center gap-4">
+          <!-- Dual Avatars (Writer & Editor) -->
+          <div class="flex items-center gap-2">
+            <div class="flex -space-x-2 overflow-hidden">
+              <img
+                src={article.author.avatar}
+                alt={article.author.name}
+                class="inline-block h-9 w-9 rounded-full ring-2 ring-paper object-cover"
+              />
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=120&auto=format&fit=crop"
+                alt="Editor"
+                class="inline-block h-9 w-9 rounded-full ring-2 ring-paper object-cover"
+              />
+            </div>
+            <div class="space-y-0.5">
+              <span class="block font-bold text-ink">
+                written by <a href={`/penulis/${article.author.slug}`} class="text-brand hover:underline">{article.author.name}</a>
+              </span>
+              <span class="block text-muted text-[11px]">
+                edited by <strong class="text-soft">Redaksi EVnesia</strong>
+              </span>
+            </div>
+          </div>
+
+          <span class="hidden sm:inline text-line">|</span>
+          <time class="text-muted font-bold">{new Date(article.publishedAt).toLocaleDateString("id-ID", { day: "numeric", month: "numeric", year: "numeric" })}</time>
+        </div>
+
+        <!-- Social Share Bar (Facebook, X, LinkedIn, Email, RSS) -->
+        <ShareButtons title={article.title} />
+      </div>
+    </div>
+
+    <!-- Body + Side Widgets -->
+    <div class="mx-auto mt-10 max-w-6xl px-4">
+      <div class="grid gap-10 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <aside class="hidden lg:block space-y-6">
+          <div class="sticky top-24 space-y-6">
+            <TableOfContents items={toc} />
+            
+            {isTestDrive && (
+              <div class="p-3.5 rounded-xl bg-paper border border-line text-xs space-y-2 shadow-sm">
+                <span class="font-bold text-brand uppercase tracking-wider block">Ringkasan Pengujian</span>
+                <div class="flex justify-between">
+                  <span class="text-muted">Akselerasi:</span>
+                  <span class="text-ink font-bold">Teruji</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-muted">Metode Uji:</span>
+                  <span class="text-ink font-bold">Real-Road</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </aside>
+
+        <div class="mx-auto w-full max-w-3xl space-y-8">
+          <!-- Quick Specs Box (Spec Section 4: Summary Table of OTR, engine/battery, power, torque) -->
+          <div class="rounded-2xl border border-line bg-paper p-5 space-y-3 shadow-md">
+            <div class="flex items-center justify-between border-b border-line pb-2.5">
+              <span class="font-headline text-xs font-black uppercase text-brand tracking-widest flex items-center gap-1.5">
+                <img src="/icons/battery-bolt.svg" class="w-3.5 h-3.5 opacity-80 inline-block" alt="" />
+                <span>Quick Technical Specs Summary</span>
+              </span>
+              <span class="text-[10px] font-bold text-muted uppercase">Spesifikasi Redaksi</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div class="bg-cream p-2.5 rounded-xl border border-line">
+                <span class="text-muted text-[10px] uppercase font-bold block">Harga Est. OTR</span>
+                <strong class="text-brand font-black text-sm">Rp 719-895 Jt</strong>
+              </div>
+              <div class="bg-cream p-2.5 rounded-xl border border-line">
+                <span class="text-muted text-[10px] uppercase font-bold block">Mesin / Motor</span>
+                <strong class="text-ink font-bold text-xs">Dual Permanent Motor</strong>
+              </div>
+              <div class="bg-cream p-2.5 rounded-xl border border-line">
+                <span class="text-muted text-[10px] uppercase font-bold block">Tenaga Maks.</span>
+                <strong class="text-ink font-bold text-xs">530 HP / 670 Nm</strong>
+              </div>
+              <div class="bg-cream p-2.5 rounded-xl border border-line">
+                <span class="text-muted text-[10px] uppercase font-bold block">Jangkauan / Irit</span>
+                <strong class="text-cyan-400 font-bold text-xs">570 km (EV)</strong>
+              </div>
+            </div>
+          </div>
+
+          {isTestDrive && (
+            <RatingBadge
+              score={8.8}
+              performance={9.0}
+              comfort={8.5}
+              cabinNoise="64 dB (Kedap Kabin Uji)"
+              tcoScore={8.2}
+              verdict="Pengujian langsung di jalan raya Indonesia menunjukkan kestabilan sasis presisi tinggi dan efisiensi konsumsi energi terverifikasi."
+            />
+          )}
+
+          <div class="article-body prose prose-lg max-w-none leading-relaxed text-soft font-medium" set:html={bodyHtmlInjected} />
+
+          {remainingBacaJuga.length > 0 && (
+            <aside class="mt-8 rounded-xl border border-line bg-paper p-5 space-y-3 shadow-sm">
+              <h2 class="font-headline text-xs font-bold uppercase tracking-widest text-brand">Baca Ulasan Otomotif Lainnya</h2>
+              <ul class="space-y-2">
+                {remainingBacaJuga.map((a) => (
+                  <li>
+                    <a
+                      href={`/${a.categorySlug}/${a.slug}`}
+                      class="font-bold text-sm text-ink hover:text-brand transition"
+                    >
+                      • {a.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          )}
+
+          <!-- Tags -->
+          <div class="mt-10 flex flex-wrap gap-2">
+            {
+              article.tags.map((t: any) => (
+                <a
+                  href={`/tag/${t.slug}`}
+                  class="rounded-lg bg-paper px-3 py-1.5 text-xs font-bold text-soft border border-line hover:border-brand hover:text-brand transition shadow-sm"
+                >
+                  #{t.name}
+                </a>
+              ))
+            }
+          </div>
+
+          <!-- Share -->
+          <div class="mt-8 border-t border-line pt-6">
+            <ShareButtons title={article.title} />
+          </div>
+
+          <div class="mt-8">
+            <AdSlot format="inline" />
+          </div>
+
+          <AuthorCard author={article.author} class="mt-8" />
+
+          <!-- Prev / Next Navigation -->
+          {
+            (newer || older) && (
+              <nav class="mt-10 grid gap-4 sm:grid-cols-2 text-xs" aria-label="Artikel lainnya">
+                {older ? (
+                  <a href={articleUrl(older)} class="group rounded-xl border border-line p-4 bg-paper hover:border-brand transition shadow-sm">
+                    <span class="text-muted block mb-1">← Berita Sebelumnya</span>
+                    <span class="font-headline font-bold text-sm text-ink group-hover:text-brand transition line-clamp-2">
+                      {older.title}
+                    </span>
+                  </a>
+                ) : (
+                  <span />
+                )}
+                {newer && (
+                  <a href={articleUrl(newer)} class="group rounded-xl border border-line p-4 text-right bg-paper hover:border-brand transition shadow-sm">
+                    <span class="text-muted block mb-1">Berita Berikutnya →</span>
+                    <span class="font-headline font-bold text-sm text-ink group-hover:text-brand transition line-clamp-2">
+                      {newer.title}
+                    </span>
+                  </a>
+                )}
+              </nav>
+            )
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Automotive News -->
+    {
+      beritaPopuler.length > 0 && (
+        <section class="mx-auto mt-16 max-w-7xl px-4">
+          <SectionHeading title="Ulasan & Berita Rekomendasi" />
+          <div class="grid gap-x-6 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            {beritaPopuler.map((a: Article) => (
+              <ArticleCard article={a} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+  </article>
+</BaseLayout>

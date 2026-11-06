@@ -1,0 +1,163 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import StaticPage from "@/components/StaticPage.astro";
+import { fetchSiteConfigFromApi, portalDomainFromScope } from "@/lib/api";
+import { portalIdentityForDomain } from "@/site";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, params, url } = Astro.props;
+
+const siteConfig = await fetchSiteConfigFromApi(request);
+const identity = portalIdentityForDomain(portalDomainFromScope(request), siteConfig?.portal?.name);
+---
+
+<PageLayout
+  title="Kebijakan Privasi"
+  lead="Bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi Anda."
+>
+  <StaticPage request={request} slug="privasi">
+  <p><em>Terakhir diperbarui: 30 Juni 2026.</em></p>
+
+  <p>
+    {identity.publisher} (beroperasi di domain {identity.domain})
+    berkomitmen untuk melindungi privasi pengunjung. Kebijakan ini menjelaskan informasi
+    apa yang kami kumpulkan, bagaimana kami menggunakannya, dan pilihan apa yang
+    Anda miliki.
+  </p>
+
+  <h2 id="informasi-dikumpulkan">1. Informasi yang Kami Kumpulkan</h2>
+  <p>Kami mengumpulkan dua jenis informasi:</p>
+  <h3>a. Informasi yang Anda berikan secara langsung</h3>
+  <ul>
+    <li>
+      <strong>Formulir kontak:</strong> nama dan alamat surel saat Anda menghubungi
+      redaksi.
+    </li>
+    <li>
+      <strong>Newsletter:</strong> alamat surel bila Anda mendaftar untuk menerima
+      pembaruan artikel.
+    </li>
+  </ul>
+  <h3>b. Informasi yang dikumpulkan secara otomatis</h3>
+  <ul>
+    <li>
+      <strong>Log server:</strong> alamat IP, jenis peramban, halaman yang dikunjungi,
+      dan waktu kunjungan — digunakan untuk keamanan dan pemeliharaan teknis.
+    </li>
+    <li>
+      <strong>Analitik:</strong> kami menggunakan layanan analitik yang menghormati
+      privasi (tanpa pelacakan lintas situs, tanpa sidik jari perangkat) untuk memahami
+      artikel mana yang bermanfaat. Data ini diproses secara agregat dan anonim.
+    </li>
+  </ul>
+
+  <h2 id="penggunaan-informasi">2. Cara Kami Menggunakan Informasi</h2>
+  <ul>
+    <li>Merespons pertanyaan, koreksi, atau hak jawab dari Anda.</li>
+    <li>Mengirimkan pembaruan artikel (hanya jika Anda mendaftar newsletter).</li>
+    <li>Meningkatkan kualitas konten berdasarkan data agregat pengunjung.</li>
+    <li>Menjaga keamanan sistem dan mendeteksi penyalahgunaan.</li>
+  </ul>
+  <p>
+    <strong>Kami tidak menjual, menyewakan, atau memperdagangkan data pribadi
+    Anda kepada pihak ketiga.</strong>
+  </p>
+
+  <h2 id="cookie">3. Cookie</h2>
+  <p>
+    Situs ini menggunakan cookie dalam jumlah minimal:
+  </p>
+  <ul>
+    <li>
+      <strong>Cookie fungsional:</strong> menyimpan preferensi tampilan (misalnya
+      mode gelap) agar pilihan Anda tidak hilang saat menutup peramban.
+    </li>
+    <li>
+      <strong>Cookie analitik:</strong> dikonfigurasi tanpa melacak pengguna lintas
+      situs dan dinonaktifkan untuk wilayah yang memerlukan persetujuan eksplisit.
+    </li>
+  </ul>
+  <p>
+    Anda dapat menonaktifkan cookie melalui pengaturan peramban. Menonaktifkan
+    cookie tidak akan mengurangi kemampuan Anda membaca artikel kami.
+  </p>
+
+  <h2 id="pihak-ketiga">4. Layanan Pihak Ketiga</h2>
+  <p>
+    Situs ini dapat memuat konten dari pihak ketiga berikut yang memiliki
+    kebijakan privasi masing-masing:
+  </p>
+  <ul>
+    <li>
+      <strong>Jaringan iklan:</strong> iklan yang tampil di situs kami mungkin
+      menggunakan cookie dari jaringan iklan untuk menampilkan iklan yang relevan.
+    </li>
+    <li>
+      <strong>Media sosial:</strong> tombol berbagi artikel menghubungi layanan
+      Twitter/X, WhatsApp, dan Facebook saat diklik.
+    </li>
+    <li>
+      <strong>Gambar dan video:</strong> sebagian konten multimedia dimuat dari
+      CDN atau platform pihak ketiga.
+    </li>
+  </ul>
+  <p>
+    Kami menyarankan Anda membaca kebijakan privasi layanan tersebut secara
+    terpisah.
+  </p>
+
+  <h2 id="keamanan">5. Keamanan Data</h2>
+  <p>
+    Kami menerapkan langkah-langkah teknis dan organisasional yang wajar untuk
+    melindungi informasi Anda dari akses tidak sah, kehilangan, atau
+    pengungkapan. Seluruh komunikasi antara peramban Anda dan situs ini
+    dienkripsi menggunakan HTTPS.
+  </p>
+
+  <h2 id="hak-anda">6. Hak Anda</h2>
+  <p>
+    Sesuai dengan ketentuan yang berlaku, Anda berhak untuk:
+  </p>
+  <ul>
+    <li>Mengakses informasi pribadi yang kami simpan tentang Anda.</li>
+    <li>Meminta koreksi atas data yang tidak akurat.</li>
+    <li>Meminta penghapusan data Anda dari sistem kami.</li>
+    <li>Berhenti berlangganan newsletter kapan saja melalui tautan berhenti berlangganan di surel.</li>
+  </ul>
+  <p>
+    Untuk menggunakan hak-hak tersebut, hubungi kami di <a
+      href={`mailto:${identity.email}`}>{identity.email}</a
+    >.
+  </p>
+
+  <h2 id="anak">7. Perlindungan Anak</h2>
+  <p>
+    Layanan kami tidak ditujukan untuk anak-anak di bawah usia 13 tahun. Kami
+    tidak dengan sengaja mengumpulkan informasi pribadi dari anak-anak. Jika
+    Anda mengetahui bahwa anak Anda telah memberikan informasi pribadi kepada
+    kami, harap hubungi kami agar dapat kami hapus.
+  </p>
+
+  <h2 id="perubahan">8. Perubahan Kebijakan</h2>
+  <p>
+    Kami dapat memperbarui kebijakan privasi ini sewaktu-waktu. Perubahan
+    signifikan akan diinformasikan melalui pemberitahuan di situs atau surel
+    (bagi pelanggan newsletter). Tanggal "Terakhir diperbarui" di bagian atas
+    halaman ini akan selalu mencerminkan versi terkini.
+  </p>
+
+  <h2 id="kontak-privasi">9. Pertanyaan &amp; Pengaduan</h2>
+  <p>
+    Pertanyaan, permintaan, atau pengaduan terkait privasi dapat disampaikan ke:
+  </p>
+  <address style="font-style: normal; line-height: 1.8; margin-top: 0.5rem;">
+    <strong>{identity.publisher} — Tim Privasi</strong><br />
+    Surel: <a href={`mailto:${identity.email}`}>{identity.email}</a><br />
+    Indonesia
+  </address>
+  </StaticPage>
+</PageLayout>

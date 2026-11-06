@@ -1,0 +1,51 @@
+---
+// BrandStripRow.astro — Circular Brand Strip with Official SVG Logos (No Emojis)
+import { getOfficialBrands } from "../lib/brand-utils";
+
+const brandData = getOfficialBrands();
+const themePreview = Astro.url.searchParams.get("theme_preview") || "";
+---
+
+<section class="my-3 sm:my-5" aria-label="Jelajahi Merek Mobil">
+  <div class="px-1 sm:px-2 mb-2 flex items-center justify-between">
+    <div class="flex items-center gap-1.5">
+      <span class="w-1.5 h-3.5 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
+      <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
+        Pabrikan Mobil Listrik Resmi
+      </h2>
+    </div>
+    <span class="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{brandData.length} Merek Terdaftar</span>
+  </div>
+
+  <!-- Horizontal Circular Strip of 44px Badges with Real SVG Logos -->
+  <div class="flex items-center gap-2 overflow-x-auto scrollbar-none px-1 sm:px-2 py-1 -mx-1 sm:mx-0 no-scrollbar">
+    {brandData.map((brand) => (
+      <a
+        href={`/katalog-mobil?brand=${encodeURIComponent(brand.name)}${themePreview ? `&theme_preview=${encodeURIComponent(themePreview)}` : ''}`}
+        class="touch-spring shrink-0 flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-white dark:bg-white/5 border border-slate-200/80 dark:border-white/10 hover:border-sky-400/60 hover:bg-slate-50 dark:hover:bg-white/10 shadow-xs dark:shadow-none hover:shadow-[0_0_14px_rgba(46,155,255,0.25)] hover:-translate-y-0.5 transition-all duration-300 group"
+      >
+        <!-- 32px circular icon with SVG logo on high-contrast white badge -->
+        <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center p-1.5 shadow-xs shrink-0 border border-slate-200 group-hover:scale-110 group-hover:-rotate-2 transition-transform duration-300">
+          <img
+            src={brand.logo}
+            alt={`Logo ${brand.name}`}
+            class="w-full h-full object-contain"
+            loading="lazy"
+            onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='block';"
+          />
+          <span class="text-[9px] font-black text-slate-900 hidden">
+            {brand.name.slice(0, 3).toUpperCase()}
+          </span>
+        </div>
+        <div class="text-left pr-1">
+          <span class="block text-xs font-bold text-slate-800 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-300 transition-colors leading-tight">
+            {brand.name}
+          </span>
+          <span class="block text-[9px] text-slate-500 dark:text-slate-400 font-metric leading-tight">
+            {brand.count} Model
+          </span>
+        </div>
+      </a>
+    ))}
+  </div>
+</section>

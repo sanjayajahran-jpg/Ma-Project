@@ -1,0 +1,134 @@
+---
+// QuickRecommendations.astro — V2 Quick Recommendation Rail (Section 5.3 of UI_DESIGN_SPEC_EVNESIA_V2_MOBILE_FIRST.md)
+import CarCardRail from "./CarCardRail.astro";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+
+// Filter subsets
+const hematCars = ELECTRIFIED_CARS_DATA.filter((c: any) => (c.priceVal || 999) <= 450).slice(0, 6);
+const keluargaCars = ELECTRIFIED_CARS_DATA.filter((c: any) => ((c.bodyType || "").toLowerCase().includes("mpv") && (c.specs?.seating_capacity || 7) >= 7) || (c.specs?.seating_capacity || 0) >= 7).slice(0, 6);
+const jarakJauhCars = ELECTRIFIED_CARS_DATA.filter((c: any) => (c.specs?.electric_range_km || 400) >= 500).slice(0, 6);
+const budgetCars = ELECTRIFIED_CARS_DATA.filter((c: any) => (c.priceVal || 999) <= 350).slice(0, 6);
+const fastChargingCars = ELECTRIFIED_CARS_DATA.filter((c: any) => (c.badge || "").toLowerCase().includes("fast") || (c.specs?.charging_time || "").includes("DC")).slice(0, 6);
+
+const ALL_CARS = [
+  ...hematCars.map(c => ({ ...c, tag: "hemat" })),
+  ...keluargaCars.map(c => ({ ...c, tag: "keluarga" })),
+  ...jarakJauhCars.map(c => ({ ...c, tag: "jarak-jauh" })),
+  ...budgetCars.map(c => ({ ...c, tag: "budget" })),
+  ...fastChargingCars.map(c => ({ ...c, tag: "fast-charge" })),
+];
+---
+
+<section class="my-4 sm:my-6" aria-label="Rekomendasi Cepat">
+  <div class="mb-2.5 flex items-center justify-between">
+    <div class="flex items-center gap-1.5">
+      <span class="w-1.5 h-3.5 rounded-full bg-sky-500 dark:bg-sky-400"></span>
+      <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
+        Rekomendasi Mobil Sesuai Kebutuhan
+      </h2>
+    </div>
+    <a href="/katalog-mobil" class="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline">
+      Semua →
+    </a>
+  </div>
+
+  <!-- 32px Capsule Filter Chips -->
+  <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mb-1 no-scrollbar">
+    <button
+      type="button"
+      class="recom-chip active-recom shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all cursor-pointer bg-blue-600 text-white shadow-sm"
+      data-filter="hemat"
+    >
+      Paling Hemat
+    </button>
+    <button
+      type="button"
+      class="recom-chip shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10"
+      data-filter="keluarga"
+    >
+      Keluarga 7-Seater
+    </button>
+    <button
+      type="button"
+      class="recom-chip shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10"
+      data-filter="jarak-jauh"
+    >
+      Jarak Jauh (>500 km)
+    </button>
+    <button
+      type="button"
+      class="recom-chip shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10"
+      data-filter="budget"
+    >
+      Di Bawah 350 Jt
+    </button>
+    <button
+      type="button"
+      class="recom-chip shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-white/10"
+      data-filter="fast-charge"
+    >
+      Ultra-Fast Charging
+    </button>
+  </div>
+
+  <!-- Rail with horizontal peek -->
+  <div class="rail py-2.5 mt-1" id="recom-rail">
+    {ALL_CARS.map((car: any) => (
+      <div class="recom-card-wrapper shrink-0" data-tag={car.tag}>
+        <CarCardRail
+          slug={car.slug}
+          brand={car.brand}
+          name={car.name}
+          category={car.bodyType?.toUpperCase() || "SUV"}
+          engineType={car.engineType || "BEV"}
+          price={car.price}
+          range={car.consumption || `${car.specs?.electric_range_km || 400} km`}
+          img={car.img}
+          badge={car.tag === "hemat" ? "Hemat Listrik" : car.tag === "keluarga" ? "7 Penumpang" : car.tag === "jarak-jauh" ? "Long Range" : car.tag === "budget" ? "Best Budget" : "Fast DC"}
+          matchScore={car.tag === "hemat" ? 96 : car.tag === "keluarga" ? 92 : 89}
+        />
+      </div>
+    ))}
+  </div>
+</section>
+
+<script>
+  function initRecomChips() {
+    const chips = document.querySelectorAll<HTMLButtonElement>('.recom-chip');
+    const cards = document.querySelectorAll<HTMLElement>('.recom-card-wrapper');
+    const rail = document.getElementById('recom-rail');
+
+    function applyFilter(filter: string) {
+      cards.forEach((card) => {
+        const tag = card.getAttribute('data-tag');
+        if (tag === filter) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+      if (rail) {
+        rail.scrollTo({ left: 0, behavior: 'smooth' });
+      }
+    }
+
+    // Initial state: hemat
+    applyFilter('hemat');
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const filter = chip.getAttribute('data-filter') || 'hemat';
+        chips.forEach((c) => {
+          c.classList.remove('bg-blue-600', 'text-white', 'font-bold', 'shadow-sm');
+          c.classList.add('bg-slate-100', 'dark:bg-white/5', 'text-slate-700', 'dark:text-slate-300', 'border', 'border-slate-200/80', 'dark:border-white/10', 'font-semibold');
+        });
+        chip.classList.add('bg-blue-600', 'text-white', 'font-bold', 'shadow-sm');
+        chip.classList.remove('bg-slate-100', 'dark:bg-white/5', 'text-slate-700', 'dark:text-slate-300', 'border-slate-200/80');
+        applyFilter(filter);
+      });
+    });
+  }
+
+  initRecomChips();
+  document.addEventListener('astro:page-load', initRecomChips);
+</script>

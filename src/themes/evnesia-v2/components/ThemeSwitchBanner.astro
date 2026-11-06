@@ -1,0 +1,54 @@
+---
+// ThemeSwitchBanner.astro — Switcher between Versi 2 (Mobile-First) and Versi 1
+---
+
+<aside id="theme-switch-banner-v2" aria-label="Theme Switcher Banner" class="fixed top-1.5 right-2 z-50 transition-transform duration-300">
+  <div class="px-2.5 py-1 flex items-center gap-2 rounded-full border border-emerald-400/35 bg-slate-950/90 shadow-xl text-[10px] sm:text-xs text-white backdrop-blur-md">
+    <span class="inline-flex items-center gap-1.5 font-bold text-emerald-400">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span class="hidden sm:inline">Tema:</span> V2 Mobile-First
+    </span>
+    <span class="text-white/20">|</span>
+    <a
+      href="/?theme_preview=Automotive"
+      id="btn-to-v1"
+      class="text-sky-300 hover:text-white transition-colors underline font-medium inline-flex items-center gap-1"
+      title="Beralih ke Desain Utama (Automotive)"
+    >
+      <span>Ke Desain Utama</span>
+      <svg class="w-3 h-3 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+    </a>
+    <button
+      type="button"
+      id="btn-dismiss-v2"
+      class="w-4 h-4 ml-0.5 text-slate-400 hover:text-white inline-flex items-center justify-center rounded-full hover:bg-white/10"
+      aria-label="Tutup"
+    >
+      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+</aside>
+
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const themeParam = urlParams.get('theme_preview');
+  if (themeParam === 'evnesia-v2') {
+    document.cookie = "theme_preview=evnesia-v2; path=/; max-age=604800; SameSite=Lax";
+  }
+
+  const btnV1 = document.getElementById('btn-to-v1');
+  if (btnV1) {
+    btnV1.addEventListener('click', () => {
+      document.cookie = "theme_preview=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+      document.cookie = "theme_preview=Automotive; path=/; max-age=0; SameSite=Lax";
+    });
+  }
+
+  const dismissBtn = document.getElementById('btn-dismiss-v2');
+  const banner = document.getElementById('theme-switch-banner-v2');
+  if (dismissBtn && banner) {
+    dismissBtn.addEventListener('click', () => {
+      banner.style.display = 'none';
+    });
+  }
+</script>

@@ -1,0 +1,13 @@
+---
+import { resolveThemePage } from "@/lib/theme-resolver";
+import { fetchCategoriesFromApi } from "@/lib/api";
+import { categories as fallbackCategories } from "@/data/categories";
+
+const slug = Astro.params.slug ?? "";
+const apiCats = await fetchCategoriesFromApi(Astro.request);
+const allCats = apiCats.length > 0 ? [...apiCats, ...fallbackCategories] : fallbackCategories;
+const pageName = allCats.some((category) => category.slug === slug) ? "category" : "notFound";
+if (pageName === "notFound") Astro.response.status = 404;
+const { default: Page, siteConfig } = await resolveThemePage(Astro.request, pageName);
+---
+<Page request={Astro.request} params={Astro.params} url={Astro.url} siteConfig={siteConfig} />

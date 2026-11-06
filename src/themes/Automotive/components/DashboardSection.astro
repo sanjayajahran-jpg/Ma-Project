@@ -1,0 +1,551 @@
+---
+import type { Article } from "@/types";
+import { articleUrl } from "@/types";
+
+interface Props {
+  articles?: Article[];
+}
+
+const { articles = [] } = Astro.props;
+
+const SPOTLIGHT_ITEMS = [
+  {
+    id: "charging",
+    tabLabel: "Home Charging",
+    title: "Panduan Pasang Wallbox Charger 7.7 kW PLN: Hemat Listrik Diskon 30% Jam Malam",
+    brand: "Ekosistem PLN & EVnesia",
+    tag: "HOME CHARGING PLN",
+    img: "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?q=80&w=1000&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    id: "battery",
+    tabLabel: "Tips Baterai",
+    title: "Perbedaan Kimia Baterai LFP vs NMC: Karakteristik, Suhu & Daya Tahan 8 Tahun",
+    brand: "Pusat Edukasi EVnesia",
+    tag: "TEKNOLOGI BATERAI EV",
+    img: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=1000&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    id: "terbaru",
+    tabLabel: "EV Terpopuler",
+    title: "Wuling Cloud EV & BinguoEV: Solusi Mobilitas Listrik Cerdas Perkotaan 2026",
+    brand: "Wuling Motors Indonesia",
+    tag: "MOBIL LISTRIK BARU",
+    img: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    id: "hybrid",
+    tabLabel: "Ulasan Hybrid",
+    title: "All-New Honda CR-V RS e:HEV: Sensasi Berkendara Hybrid Flagship Efisiensi 20 km/L",
+    brand: "Honda Indonesia",
+    tag: "ULASAN TEST DRIVE",
+    img: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1000&auto=format&fit=crop",
+    link: "/kategori/ulasan-test-drive"
+  }
+];
+
+const DEFAULT_NEWS_ITEMS = [
+  {
+    title: "BYD Denza D9 EV Resmi Mengaspal: MPV Listrik Mewah Jarak 600 KM",
+    category: "Mobil Listrik",
+    date: "23 Agustus 2026",
+    img: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=400&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    title: "Uji Efisiensi Nyata Hyundai Ioniq 5 Jakarta - Surabaya Tanpa Emisi",
+    category: "Ulasan EV",
+    date: "22 Agustus 2026",
+    img: "https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?q=80&w=400&auto=format&fit=crop",
+    link: "/kategori/ulasan-test-drive"
+  },
+  {
+    title: "Daftar Lokasi SPKLU Ultra Fast Charging 200 kW di Tol Trans-Jawa 2026",
+    category: "Jaringan SPKLU",
+    date: "21 Agustus 2026",
+    img: "https://images.unsplash.com/photo-1555215695-3004980adade?q=80&w=400&auto=format&fit=crop",
+    link: "/kategori/ev-teknologi"
+  },
+  {
+    title: "Skema Insentif PPN DTP 1% & Pembebasan PKB 0% untuk Mobil Listrik CKD",
+    category: "Regulasi Pajak",
+    date: "20 Agustus 2026",
+    img: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80&w=400&auto=format&fit=crop",
+    link: "/kategori/mobil-terbaik"
+  },
+  {
+    title: "Tips Mengoptimalkan Regenerative Braking (One-Pedal Drive) Agar Baterai Awet",
+    category: "Tips & Edukasi",
+    date: "19 Agustus 2026",
+    img: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?q=80&w=400&auto=format&fit=crop",
+    link: "/kategori/ulasan-test-drive"
+  }
+];
+
+const displayNews = articles.length >= 5
+  ? articles.slice(0, 5).map((a) => ({
+      title: a.title,
+      category: a.category?.name || "Elektrifikasi",
+      date: "Redaksi EVnesia",
+      img: a.cover || DEFAULT_NEWS_ITEMS[0].img,
+      link: articleUrl(a)
+    }))
+  : DEFAULT_NEWS_ITEMS;
+---
+
+<div class="grid gap-6 lg:grid-cols-2 items-stretch">
+  <!-- KIRI: EV Calculator & Spotlight Showcase (H-Full Equalized Grid Column) -->
+  <div class="flex flex-col justify-between space-y-6 h-full">
+    <!-- 1. EV vs Gasoline Savings Calculator (Clean & Crisp Glass Card with Hidden Steppers) -->
+    <div class="rounded-3xl apple-liquid-glass p-5 sm:p-6 space-y-4 shadow-2xl transition-all duration-300">
+      <div class="border-b border-line pb-3">
+        <span class="text-[10px] font-extrabold text-brand uppercase tracking-widest block">Kalkulator Hemat Energi</span>
+        <h3 class="font-headline text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+          Hitung Kehematan BBM vs Listrik (EV)
+        </h3>
+        <p class="text-[11px] text-slate-600 dark:text-sky-200 font-medium mt-0.5">Bandingkan perkiraan biaya operasional bulanan kendaraan Anda</p>
+      </div>
+
+      <!-- Controls & Input Sliders Grid -->
+      <div class="grid gap-5 sm:grid-cols-2 items-center">
+        <div class="space-y-3">
+          <!-- Distance Input Slider (Prominent Range Track & Knob) -->
+          <div class="space-y-1.5">
+            <div class="flex justify-between items-center text-[11px] font-bold">
+              <label for="dash-calc-dist" class="text-slate-700 dark:text-sky-200">Jarak Tempuh Harian:</label>
+              <span class="font-headline text-xs font-black text-brand shrink-0 px-2.5 py-0.5 rounded-full bg-brand/10 border border-brand/30" id="dash-calc-dist-val">50 km</span>
+            </div>
+            <div>
+              <input
+                type="range"
+                id="dash-calc-dist"
+                min="10"
+                max="200"
+                step="5"
+                value="50"
+                class="w-full cursor-pointer"
+              />
+            </div>
+            <div class="flex justify-between text-[9px] font-bold text-slate-500 dark:text-sky-300">
+              <span>10 km</span>
+              <span>100 km</span>
+              <span>200 km</span>
+            </div>
+          </div>
+
+          <!-- Price Row Inputs (Clean Inputs without default spinners) -->
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1 flex flex-col justify-between">
+              <label for="dash-calc-fuel-price" class="block text-[10px] font-bold text-slate-700 dark:text-sky-200 leading-tight">Harga Bensin (Rp/L):</label>
+              <input
+                type="number"
+                id="dash-calc-fuel-price"
+                value="13700"
+                class="inner-glass-input w-full rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-brand shadow-inner text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div class="space-y-1 flex flex-col justify-between">
+              <label for="dash-calc-ev-price" class="block text-[10px] font-bold text-slate-700 dark:text-sky-200 leading-tight">Tarif Listrik (Rp/kWh):</label>
+              <input
+                type="number"
+                id="dash-calc-ev-price"
+                value="2466"
+                class="inner-glass-input w-full rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-brand shadow-inner text-slate-900 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <!-- Average Consumption Efficiency Row Inputs (Perfect Alignment & Clean Inputs) -->
+          <div class="grid grid-cols-2 gap-2 border-t border-line pt-2">
+            <div class="space-y-1 flex flex-col justify-between">
+              <label for="dash-calc-fuel-kml" class="block text-[10px] font-bold text-slate-700 dark:text-sky-200 leading-tight">Konsumsi BBM (km/L):</label>
+              <input
+                type="number"
+                id="dash-calc-fuel-kml"
+                value="12"
+                step="0.5"
+                min="5"
+                max="30"
+                class="inner-glass-input w-full rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-brand shadow-inner text-slate-900 dark:text-white"
+              />
+            </div>
+
+            <div class="space-y-1 flex flex-col justify-between">
+              <label for="dash-calc-ev-kwh" class="block text-[10px] font-bold text-slate-700 dark:text-sky-200 leading-tight">Konsumsi EV (km/kWh):</label>
+              <input
+                type="number"
+                id="dash-calc-ev-kwh"
+                value="6.5"
+                step="0.1"
+                min="3"
+                max="15"
+                class="inner-glass-input w-full rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-brand shadow-inner text-slate-900 dark:text-white"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side Results Card (Nominal Savings - Single Line Layout & Dark Glass) -->
+        <div class="inner-result-card rounded-2xl p-4 flex flex-col justify-between space-y-3 shadow-md backdrop-blur-md">
+          <div>
+            <span class="text-[9px] font-extrabold text-slate-500 dark:text-sky-300 uppercase tracking-wider block">ESTIMASI PENGHEMATAN ENERGI:</span>
+            <!-- Nominal Rupiah & Angka DiBuat SEBARIS -->
+            <div class="font-headline text-lg sm:text-xl xl:text-2xl font-black text-brand tracking-tight whitespace-nowrap flex items-baseline gap-1 mt-1 tabular-nums" id="dash-calc-result-savings">
+              Rp 18.000.000
+            </div>
+            <span class="text-[11px] font-bold text-slate-600 dark:text-sky-200 block mt-0.5">Hemat per tahun jika beralih ke EV</span>
+          </div>
+
+          <!-- Volume & Monthly Costs Breakdown -->
+          <div class="space-y-1.5 text-[10px] sm:text-[11px] border-t border-line pt-2.5 font-semibold">
+            <div class="flex justify-between items-center text-slate-500 dark:text-sky-300 text-[9px]">
+              <span>Konsumsi Bulanan:</span>
+              <span class="font-bold text-slate-700 dark:text-sky-200" id="dash-calc-result-volume">125 L vs 231 kWh</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-sky-300">Biaya BBM / Bulan:</span>
+              <span class="text-slate-900 dark:text-white font-bold whitespace-nowrap" id="dash-calc-result-bbm">Rp 2.250.000</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-500 dark:text-sky-300">Biaya EV / Bulan:</span>
+              <span class="text-brand font-black whitespace-nowrap" id="dash-calc-result-ev">Rp 750.000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Tabbed Spotlight / Brand Sponsorship (Equalized Height to match Right Column Exactly) -->
+    <div class="rounded-3xl apple-liquid-glass p-5 sm:p-6 space-y-4 shadow-2xl transition-all duration-300 flex-1 flex flex-col justify-between">
+      <!-- Top Category Tabs -->
+      <div class="flex items-center justify-center sm:justify-start gap-2 border-b border-line pb-2.5 overflow-x-auto scrollbar-none">
+        {SPOTLIGHT_ITEMS.map((item, index) => (
+          <button
+            type="button"
+            data-spot-tab={item.id}
+            data-spot-index={index}
+            data-active={index === 0 ? "true" : "false"}
+            class="px-3.5 py-1 rounded-full text-[11px] font-extrabold transition shadow-sm border border-line data-[active=true]:bg-brand data-[active=true]:text-white uppercase tracking-wider shrink-0"
+          >
+            {item.tabLabel}
+          </button>
+        ))}
+      </div>
+
+      <!-- Main Spotlight Card Container (Flex-1 to stretch height to match right column 100%) -->
+      <div class="relative overflow-hidden rounded-2xl border border-line shadow-xl min-h-72.5 flex-1 flex items-end group bg-slate-900">
+        <!-- Up-Down Slide Animated Image Wrapper -->
+        <div id="spotlight-image-wrapper" class="absolute inset-0 h-full w-full transition-transform duration-500 ease-in-out">
+          <img
+            id="spotlight-card-img"
+            src={SPOTLIGHT_ITEMS[0].img}
+            alt={SPOTLIGHT_ITEMS[0].title}
+            class="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
+          />
+          <div class="absolute inset-0 bg-linear-to-t from-black/95 via-black/40 to-transparent"></div>
+        </div>
+
+        <!-- Vertical Dots Navigation Indicator -->
+        <div class="absolute right-3.5 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-1.5 p-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 shadow-lg">
+          {SPOTLIGHT_ITEMS.map((item, idx) => (
+            <button
+              type="button"
+              data-dot-index={idx}
+              data-active={idx === 0 ? "true" : "false"}
+              title={`Pindah ke ${item.tabLabel}`}
+              class="spotlight-nav-dot w-2.5 h-2.5 rounded-full bg-white/50 border border-white/40 transition-all duration-300 hover:bg-white"
+            ></button>
+          ))}
+        </div>
+
+        <!-- Lowered Headline Content Block at the Bottom -->
+        <div id="spotlight-content-block" class="relative z-10 p-4 sm:p-5 pr-14 space-y-1 text-white transition-all duration-500">
+          <span class="inline-block rounded-full bg-brand px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md" id="spotlight-card-tag">
+            {SPOTLIGHT_ITEMS[0].tag}
+          </span>
+          <!-- Headline Title Lowered & Formatted -->
+          <h4 class="font-headline text-base sm:text-lg font-black text-white leading-tight drop-shadow-md pt-0.5" id="spotlight-card-title">
+            {SPOTLIGHT_ITEMS[0].title}
+          </h4>
+          <div class="text-[11px] font-bold text-cyan-200" id="spotlight-card-brand">
+            Mitra Resmi: {SPOTLIGHT_ITEMS[0].brand}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KANAN: BERITA OTOMOTIF TERKINI & WIDGET POLLING (H-Full Equalized Height Column) -->
+  <div class="rounded-3xl apple-liquid-glass p-5 sm:p-6 space-y-4 shadow-2xl transition-all duration-300 flex flex-col justify-between h-full">
+    <div class="space-y-3">
+      <div class="border-b border-line pb-3 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-extrabold text-brand uppercase tracking-widest block">Update Terdepan Redaksi</span>
+          <h3 class="font-headline text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+            Berita Otomotif Terkini
+          </h3>
+        </div>
+        <a href="/kategori/berita" class="rounded-full bg-brand/10 border border-brand/30 px-3 py-1 text-xs font-black text-brand hover:bg-brand hover:text-white transition shadow-sm">
+          Lihat Semua →
+        </a>
+      </div>
+
+      <!-- News Items Vertical Stack (5 Items compact stack) -->
+      <div class="space-y-2">
+        {displayNews.map((item, idx) => (
+          <a
+            href={item.link}
+            class="inner-glass-card group flex gap-3 items-center p-2.5 rounded-2xl border transition-all duration-300 shadow-sm backdrop-blur-md hover:border-brand"
+          >
+            <!-- Thumbnail Image -->
+            <div class="relative h-14 w-18 sm:h-15 sm:w-20 shrink-0 overflow-hidden rounded-xl border border-line bg-paper">
+              <img
+                src={item.img}
+                alt={item.title}
+                class="h-full w-full object-cover group-hover:scale-105 transition duration-500"
+                loading="lazy"
+              />
+              <span class="absolute top-1 left-1 rounded bg-brand/90 px-1 py-0.5 text-[8px] font-extrabold text-white uppercase shadow">
+                #{idx + 1}
+              </span>
+            </div>
+
+            <!-- Content -->
+            <div class="space-y-0.5 min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 text-[9px] font-bold">
+                <span class="text-brand uppercase">{item.category}</span>
+                <span class="text-slate-400 dark:text-slate-500">•</span>
+                <span class="text-slate-500 dark:text-sky-300">{item.date}</span>
+              </div>
+              <h4 class="font-headline text-xs sm:text-xs font-extrabold text-slate-900 dark:text-white group-hover:text-brand transition line-clamp-2 leading-tight">
+                {item.title}
+              </h4>
+            </div>
+          </a>
+        ))}
+      </div>
+
+      <!-- Feature Widget: Interactive Reader Poll -->
+      <div class="inner-glass-card rounded-2xl p-3 border border-brand/30 space-y-2 shadow-sm backdrop-blur-md bg-brand/5">
+        <div class="flex items-center justify-between">
+          <span class="text-[9px] font-extrabold uppercase tracking-wider text-brand flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-brand animate-ping"></span>
+            POLLING PEMBACA EVNESIA 2026
+          </span>
+          <span class="text-[9px] font-bold text-slate-500 dark:text-sky-300">1.240 Responden</span>
+        </div>
+        <h4 class="font-headline text-[11px] font-black text-slate-900 dark:text-white">
+          Jika Membeli Mobil Baru Tahun Ini, Teknologi Mana Pilihan Utama Anda?
+        </h4>
+
+        <div class="grid grid-cols-3 gap-1.5 text-[10px] font-bold">
+          <button type="button" class="rounded-xl border border-brand/40 bg-white/80 dark:bg-slate-900/80 px-1.5 py-1 text-center text-slate-900 dark:text-white hover:bg-brand hover:text-white transition shadow-sm flex flex-col items-center justify-center">
+            <span class="flex items-center gap-1"><img src="/icons/battery-bolt.svg" class="w-3 h-3 opacity-80 inline-block" alt="" /> BEV</span>
+            <span class="block text-[9px] text-brand hover:text-white font-extrabold">48%</span>
+          </button>
+          <button type="button" class="rounded-xl border border-brand/40 bg-white/80 dark:bg-slate-900/80 px-1.5 py-1 text-center text-slate-900 dark:text-white hover:bg-brand hover:text-white transition shadow-sm flex flex-col items-center justify-center">
+            <span class="flex items-center gap-1"><img src="/icons/plug.svg" class="w-3 h-3 opacity-80 inline-block" alt="" /> PHEV</span>
+            <span class="block text-[9px] text-brand hover:text-white font-extrabold">35%</span>
+          </button>
+          <button type="button" class="rounded-xl border border-brand/40 bg-white/80 dark:bg-slate-900/80 px-1.5 py-1 text-center text-slate-900 dark:text-white hover:bg-brand hover:text-white transition shadow-sm flex flex-col items-center justify-center">
+            <span class="flex items-center gap-1"><img src="/icons/leaf.svg" class="w-3 h-3 opacity-80 inline-block" alt="" /> HEV</span>
+            <span class="block text-[9px] text-brand hover:text-white font-extrabold">17%</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Verification Badge Banner -->
+    <div class="inner-glass-card rounded-2xl p-2.5 flex items-center gap-3 mt-2 backdrop-blur-md">
+      <div class="grid h-7 w-7 place-items-center rounded-xl bg-brand text-white font-black text-xs shrink-0 shadow-md">
+        <img src="/icons/zap.svg" class="w-4 h-4 invert dark:invert-0" alt="" />
+      </div>
+      <div class="text-[10px]">
+        <span class="font-extrabold text-slate-900 dark:text-white block">Berita & Ulasan Redaksi EVnesia</span>
+        <span class="text-slate-600 dark:text-sky-200 font-medium text-[9px]">Pusat informasi dan uji nyata mobilitas elektrifikasi Indonesia.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initDashboardSection() {
+    // 1. Dynamic Calculator Logic with Average Consumption Rate
+    const distInput = document.getElementById('dash-calc-dist') as HTMLInputElement | null;
+    const distVal = document.getElementById('dash-calc-dist-val');
+    const fuelPriceInput = document.getElementById('dash-calc-fuel-price') as HTMLInputElement | null;
+    const evPriceInput = document.getElementById('dash-calc-ev-price') as HTMLInputElement | null;
+    const fuelKmlInput = document.getElementById('dash-calc-fuel-kml') as HTMLInputElement | null;
+    const evKwhInput = document.getElementById('dash-calc-ev-kwh') as HTMLInputElement | null;
+
+    const resSavings = document.getElementById('dash-calc-result-savings');
+    const resBbm = document.getElementById('dash-calc-result-bbm');
+    const resEv = document.getElementById('dash-calc-result-ev');
+    const resVolume = document.getElementById('dash-calc-result-volume');
+
+    function calculate() {
+      if (!distInput || !fuelPriceInput || !evPriceInput || !fuelKmlInput || !evKwhInput) return;
+      const dist = parseFloat(distInput.value) || 50;
+      const fuelPrice = parseFloat(fuelPriceInput.value) || 13700;
+      const evPrice = parseFloat(evPriceInput.value) || 2466;
+      const fuelKml = parseFloat(fuelKmlInput.value) || 12;
+      const evKwh = parseFloat(evKwhInput.value) || 6.5;
+
+      if (distVal) distVal.textContent = `${dist} km`;
+
+      // Monthly volume calculations (30 days) based on user's average consumption
+      const bbmLitersMonth = (dist / fuelKml) * 30;
+      const bbmCostMonth = bbmLitersMonth * fuelPrice;
+
+      const evKwhMonth = (dist / evKwh) * 30;
+      const evCostMonth = evKwhMonth * evPrice;
+
+      const savingsYear = Math.max(0, (bbmCostMonth - evCostMonth) * 12);
+
+      const fmt = (n: number) => `Rp ${Math.round(n).toLocaleString('id-ID')}`;
+
+      if (resSavings) resSavings.textContent = fmt(savingsYear);
+      if (resBbm) resBbm.textContent = fmt(bbmCostMonth);
+      if (resEv) resEv.textContent = fmt(evCostMonth);
+      if (resVolume) resVolume.textContent = `${Math.round(bbmLitersMonth)} L vs ${Math.round(evKwhMonth)} kWh`;
+    }
+
+    if (distInput) distInput.addEventListener('input', calculate);
+    if (fuelPriceInput) fuelPriceInput.addEventListener('input', calculate);
+    if (evPriceInput) evPriceInput.addEventListener('input', calculate);
+    if (fuelKmlInput) fuelKmlInput.addEventListener('input', calculate);
+    if (evKwhInput) evKwhInput.addEventListener('input', calculate);
+
+    // 2. Up-Down Slide Animated Spotlight & Vertical Dots Navigation
+    const spotTabs = document.querySelectorAll<HTMLButtonElement>('[data-spot-tab]');
+    const navDots = document.querySelectorAll<HTMLButtonElement>('[data-dot-index]');
+    const spotImgWrapper = document.getElementById('spotlight-image-wrapper');
+    const spotImg = document.getElementById('spotlight-card-img') as HTMLImageElement | null;
+    const spotTitle = document.getElementById('spotlight-card-title');
+    const spotBrand = document.getElementById('spotlight-card-brand');
+    const spotTag = document.getElementById('spotlight-card-tag');
+    const spotContentBlock = document.getElementById('spotlight-content-block');
+
+    const SPOT_DATA = [
+      {
+        id: "charging",
+        tabLabel: "Home Charging",
+        title: "Panduan Pasang Wallbox Charger 7.7 kW PLN: Hemat Listrik Diskon 30% Jam Malam",
+        brand: "Ekosistem PLN & EVnesia",
+        tag: "HOME CHARGING PLN",
+        img: "https://images.unsplash.com/photo-1607860108855-64acf2078ed9?q=80&w=1000&auto=format&fit=crop"
+      },
+      {
+        id: "battery",
+        tabLabel: "Tips Baterai",
+        title: "Perbedaan Kimia Baterai LFP vs NMC: Karakteristik, Suhu & Daya Tahan 8 Tahun",
+        brand: "Pusat Edukasi EVnesia",
+        tag: "TEKNOLOGI BATERAI EV",
+        img: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?q=80&w=1000&auto=format&fit=crop"
+      },
+      {
+        id: "terbaru",
+        tabLabel: "EV Terpopuler",
+        title: "Wuling Cloud EV & BinguoEV: Solusi Mobilitas Listrik Cerdas Perkotaan 2026",
+        brand: "Wuling Motors Indonesia",
+        tag: "MOBIL LISTRIK BARU",
+        img: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1000&auto=format&fit=crop"
+      },
+      {
+        id: "hybrid",
+        tabLabel: "Ulasan Hybrid",
+        title: "All-New Honda CR-V RS e:HEV: Sensasi Berkendara Hybrid Flagship Efisiensi 20 km/L",
+        brand: "Honda Indonesia",
+        tag: "ULASAN TEST DRIVE",
+        img: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=1000&auto=format&fit=crop"
+      }
+    ];
+
+    let currentIndex = 0;
+    let isAnimating = false;
+
+    function switchToIndex(newIndex: number) {
+      if (newIndex === currentIndex || isAnimating) return;
+      isAnimating = true;
+
+      const direction = newIndex > currentIndex ? -1 : 1;
+      currentIndex = newIndex;
+
+      spotTabs.forEach((t, i) => t.setAttribute('data-active', String(i === currentIndex)));
+      navDots.forEach((d, i) => d.setAttribute('data-active', String(i === currentIndex)));
+
+      const item = SPOT_DATA[currentIndex];
+      if (!item) {
+        isAnimating = false;
+        return;
+      }
+
+      if (spotImgWrapper) {
+        spotImgWrapper.style.transform = `translateY(${direction * 100}%)`;
+        spotImgWrapper.style.opacity = '0';
+      }
+      if (spotContentBlock) {
+        spotContentBlock.style.opacity = '0';
+        spotContentBlock.style.transform = 'translateY(20px)';
+      }
+
+      setTimeout(() => {
+        if (spotImg) spotImg.src = item.img;
+        if (spotTitle) spotTitle.textContent = item.title;
+        if (spotBrand) spotBrand.textContent = `Mitra Resmi: ${item.brand}`;
+        if (spotTag) spotTag.textContent = item.tag;
+
+        if (spotImgWrapper) {
+          spotImgWrapper.style.transition = 'none';
+          spotImgWrapper.style.transform = `translateY(${-direction * 100}%)`;
+        }
+
+        void spotImgWrapper?.offsetWidth;
+
+        if (spotImgWrapper) {
+          spotImgWrapper.style.transition = 'transform 500ms ease-in-out, opacity 500ms ease-in-out';
+          spotImgWrapper.style.transform = 'translateY(0)';
+          spotImgWrapper.style.opacity = '1';
+        }
+        if (spotContentBlock) {
+          spotContentBlock.style.transition = 'transform 400ms ease-out 100ms, opacity 400ms ease-out 100ms';
+          spotContentBlock.style.opacity = '1';
+          spotContentBlock.style.transform = 'translateY(0)';
+        }
+
+        setTimeout(() => {
+          isAnimating = false;
+        }, 500);
+      }, 250);
+    }
+
+    spotTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const idx = parseInt(tab.dataset.spotIndex || '0', 10);
+        switchToIndex(idx);
+      });
+    });
+
+    navDots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        const idx = parseInt(dot.dataset.dotIndex || '0', 10);
+        switchToIndex(idx);
+      });
+    });
+  }
+
+  initDashboardSection();
+  document.addEventListener('astro:page-load', initDashboardSection);
+</script>
+
+<style>
+  .spotlight-nav-dot[data-active="true"] {
+    height: 1.5rem;
+    background-color: var(--brand, #0891b2);
+    border-color: #67e8f9;
+  }
+</style>

@@ -1,0 +1,85 @@
+---
+// Section: Ringkasan Pencarian Berdasarkan Teknologi Elektrifikasi (Compact & Mobile-Optimized)
+// Minimalist Vector Assets
+const ENGINE_TYPES = [
+  {
+    id: "bev",
+    label: "BEV (Listrik Murni)",
+    short: "100% Listrik",
+    tag: "Bebas Emisi & Ganjil Genap",
+    link: "/katalog-mobil?engine=bev",
+    icon: "/icons/battery-bolt.svg",
+    badgeColor: "text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 border-cyan-500/30"
+  },
+  {
+    id: "phev",
+    label: "PHEV (Plug-in)",
+    short: "Dual Power",
+    tag: "Colok Listrik + Bensin Jauh",
+    link: "/katalog-mobil?engine=phev",
+    icon: "/icons/plug.svg",
+    badgeColor: "text-blue-700 dark:text-blue-300 bg-blue-500/10 border-blue-500/30"
+  },
+  {
+    id: "hev",
+    label: "HEV (Full Hybrid)",
+    short: "Self-Charging",
+    tag: "Otomatis Isi • BBM Irit",
+    link: "/katalog-mobil?engine=hev",
+    icon: "/icons/leaf.svg",
+    badgeColor: "text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 border-emerald-500/30"
+  },
+  {
+    id: "fcev",
+    label: "FCEV (Hidrogen)",
+    short: "Zero Emission",
+    tag: "Energi Hidrogen Masa Depan",
+    link: "/katalog-mobil?engine=fcev",
+    icon: "/icons/droplet.svg",
+    badgeColor: "text-sky-700 dark:text-sky-300 bg-sky-500/10 border-sky-500/30"
+  }
+];
+---
+
+<div class="space-y-2.5 sm:space-y-3 py-1">
+  <!-- Minimal Section Title Header -->
+  <div class="flex items-center justify-between gap-2 sm:gap-3 border-b border-slate-200/60 dark:border-white/10 pb-2 sm:pb-2.5">
+    <div class="flex items-center gap-1.5 sm:gap-2">
+      <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+      <h3 class="font-headline text-xs sm:text-base font-bold tracking-tight text-slate-900 dark:text-white truncate">
+        Cari Mobil Berdasarkan Teknologi Elektrifikasi
+      </h3>
+    </div>
+    <a href="/katalog-mobil" class="text-[11px] sm:text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline shrink-0">
+      Lihat Semua →
+    </a>
+  </div>
+
+  <!-- Compact 4-Column Grid (Optimized for Mobile) -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+    {ENGINE_TYPES.map((type) => (
+      <a
+        href={type.link}
+        class="group flex flex-col justify-between p-2.5 sm:p-3 rounded-xl sm:rounded-2xl apple-liquid-glass border border-slate-200/80 dark:border-white/10 hover:border-cyan-400/60 hover:-translate-y-0.5 transition-all duration-200 shadow-2xs"
+      >
+        <div class="flex items-center justify-between mb-1 sm:mb-1.5">
+          <span class="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+            <img src={type.icon} alt="" class="w-4 h-4 opacity-75 dark:invert shrink-0" />
+          </span>
+          <span class={`text-[8px] sm:text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md border ${type.badgeColor}`}>
+            {type.short}
+          </span>
+        </div>
+
+        <div>
+          <span class="font-headline text-[11px] sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors block leading-snug">
+            {type.label}
+          </span>
+          <span class="text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-400 font-medium block truncate mt-0.5">
+            {type.tag}
+          </span>
+        </div>
+      </a>
+    ))}
+  </div>
+</div>

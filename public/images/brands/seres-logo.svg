@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 150" fill="none">
+  <defs>
+    <linearGradient id="seresGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <!-- Modern SERES emblem icon -->
+  <circle cx="55" cy="75" r="42" stroke="url(#seresGrad)" stroke-width="8" fill="none"/>
+  <path d="M35 65 C45 50 65 50 75 65 C85 80 65 100 45 95 C35 92 30 85 30 85" stroke="url(#seresGrad)" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <circle cx="55" cy="75" r="8" fill="url(#seresGrad)"/>
+  
+  <!-- Wordmark SERES -->
+  <text x="130" y="93" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="62" font-weight="900" fill="currentColor" letter-spacing="14">SERES</text>
+</svg>

@@ -1,0 +1,690 @@
+/* EVnesia Automotive Theme — Vivid Gradient Dashboard Design System */
+/* Inspirasi: Dark navy/obsidian base + electric cyan/sky-blue gradient vibrasi */
+
+/* =========================================================
+   Design Tokens
+   ========================================================= */
+:root,
+html[data-color-scheme="light"] {
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-headline: 'Plus Jakarta Sans Variable', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Outfit Variable', 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --color-paper: #ffffff;
+  --color-cream: #f0f7ff;
+  --color-brand: #0284c7;
+  --color-brand-hover: #0369a1;
+  --color-accent: #06b6d4;
+  --color-accent2: #0ea5e9;
+  --color-line: rgba(14, 165, 233, 0.15);
+  --color-ink: #090d16;
+  --color-soft: #1e3a5f;
+  --color-muted: #4b7fa3;
+
+  --grad-primary: linear-gradient(135deg, #001f3f 0%, #003366 40%, #0055a5 70%, #0284c7 100%);
+  --grad-hero: linear-gradient(135deg, #001020 0%, #002040 30%, #003d7a 60%, #005fac 85%, #06b6d4 100%);
+  --grad-accent: linear-gradient(90deg, #0284c7, #06b6d4);
+  --grad-glow: radial-gradient(ellipse at top, rgba(6, 182, 212, 0.25) 0%, transparent 60%);
+
+  color-scheme: light;
+}
+
+html[data-color-scheme="dark"] {
+  --color-paper: #050d1a;
+  --color-cream: #070f1f;
+  --color-brand: #38bdf8;
+  --color-brand-hover: #7dd3fc;
+  --color-accent: #06b6d4;
+  --color-accent2: #22d3ee;
+  --color-line: rgba(56, 189, 248, 0.12);
+  --color-ink: #e8f4ff;
+  --color-soft: #93c5fd;
+  --color-muted: #4b7fa3;
+
+  --grad-primary: linear-gradient(135deg, #020913 0%, #041525 30%, #072040 60%, #0a3060 100%);
+  --grad-hero: linear-gradient(135deg, #020913 0%, #05152b 25%, #0a2444 50%, #0d3566 75%, #0e4080 100%);
+  --grad-accent: linear-gradient(90deg, #0284c7, #06b6d4, #22d3ee);
+  --grad-glow: radial-gradient(ellipse at top, rgba(6, 182, 212, 0.35) 0%, rgba(2, 132, 199, 0.15) 40%, transparent 70%);
+
+  color-scheme: dark;
+}
+
+/* =========================================================
+   Base — Dynamic Gradient Background
+   ========================================================= */
+html[data-template="automotive"],
+html:not([data-template="evnesia-v2"]) {
+  background-color: #f0f7ff;
+}
+
+html[data-template="automotive"] body,
+html:not([data-template="evnesia-v2"]) body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  scroll-behavior: smooth;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+  font-synthesis-weight: none;
+  letter-spacing: -0.012em;
+  line-height: 1.58;
+  background-color: #f0f7ff !important;
+  background-image:
+    radial-gradient(ellipse at 10% 0%, rgba(6, 182, 212, 0.16) 0px, transparent 50%),
+    radial-gradient(ellipse at 90% 5%, rgba(2, 132, 199, 0.12) 0px, transparent 45%),
+    radial-gradient(ellipse at 50% 100%, rgba(14, 165, 233, 0.08) 0px, transparent 50%),
+    radial-gradient(ellipse at 20% 50%, rgba(6, 182, 212, 0.05) 0px, transparent 40%);
+  background-attachment: fixed;
+}
+
+html[data-color-scheme="dark"][data-template="automotive"],
+html.dark[data-template="automotive"] {
+  background-color: #020913;
+}
+
+html[data-color-scheme="dark"][data-template="automotive"] body,
+html.dark[data-template="automotive"] body {
+  background-color: #020913 !important;
+  color: #e8f4ff;
+  background-image:
+    radial-gradient(ellipse at 10% 0%, rgba(6, 182, 212, 0.22) 0px, transparent 50%),
+    radial-gradient(ellipse at 90% 5%, rgba(2, 100, 180, 0.28) 0px, transparent 45%),
+    radial-gradient(ellipse at 50% 100%, rgba(14, 165, 233, 0.15) 0px, transparent 50%),
+    radial-gradient(ellipse at 20% 60%, rgba(56, 189, 248, 0.10) 0px, transparent 40%),
+    radial-gradient(ellipse at 80% 70%, rgba(6, 182, 212, 0.08) 0px, transparent 35%);
+  background-attachment: fixed;
+}
+
+/* =========================================================
+   Typography
+   ========================================================= */
+h1, h2, h3, h4, h5, h6, .font-headline {
+  font-family: var(--font-headline);
+  font-synthesis: none;
+  font-synthesis-weight: none;
+  letter-spacing: -0.026em;
+  text-wrap: balance;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  line-height: 1.14;
+}
+
+p, li { text-wrap: pretty; }
+
+.tabular-nums, [data-metric], .spec-value, .price-value {
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.022em;
+}
+
+.kicker, .badge-kicker {
+  font-family: var(--font-headline);
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+  font-weight: 750;
+}
+
+/* =========================================================
+   Gradient UI Elements
+   ========================================================= */
+
+/* Gradient Hero Background */
+.gradient-hero-bg {
+  background: var(--grad-hero);
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-hero-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% -10%, rgba(6, 182, 212, 0.35) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 110%, rgba(2, 132, 199, 0.25) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Gradient Header — Clear white frosted glass by default for clean light theme */
+.gradient-header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  box-shadow:
+    0 4px 24px -4px rgba(2, 132, 199, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Dark mode header override */
+html[data-color-scheme="dark"] .gradient-header,
+html.dark .gradient-header {
+  background: linear-gradient(
+    135deg,
+    rgba(1, 14, 30, 0.97) 0%,
+    rgba(3, 25, 55, 0.96) 40%,
+    rgba(5, 40, 85, 0.95) 70%,
+    rgba(7, 50, 100, 0.95) 100%
+  );
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  box-shadow:
+    0 0 0 0.5px rgba(6, 182, 212, 0.15),
+    0 8px 40px -8px rgba(0, 0, 0, 0.7),
+    0 0 80px -20px rgba(6, 182, 212, 0.15),
+    inset 0 1px 0 rgba(56, 189, 248, 0.15);
+}
+
+/* Gradient Card */
+.gradient-card {
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(240, 249, 255, 0.88) 50%,
+    rgba(224, 242, 254, 0.85) 100%
+  );
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  box-shadow:
+    0 4px 24px -4px rgba(2, 132, 199, 0.12),
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gradient-card:hover {
+  border-color: rgba(6, 182, 212, 0.45);
+  box-shadow:
+    0 8px 40px -8px rgba(2, 132, 199, 0.25),
+    0 0 0 1px rgba(6, 182, 212, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+}
+
+html[data-color-scheme="dark"] .gradient-card {
+  background: linear-gradient(
+    145deg,
+    rgba(4, 15, 32, 0.92) 0%,
+    rgba(5, 22, 48, 0.90) 50%,
+    rgba(7, 30, 62, 0.88) 100%
+  );
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  box-shadow:
+    0 4px 24px -4px rgba(0, 0, 0, 0.5),
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(56, 189, 248, 0.08);
+}
+
+html[data-color-scheme="dark"] .gradient-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow:
+    0 8px 40px -8px rgba(6, 182, 212, 0.3),
+    0 0 0 1px rgba(56, 189, 248, 0.2),
+    inset 0 1px 0 rgba(56, 189, 248, 0.12);
+}
+
+/* Gradient Badge */
+.gradient-badge {
+  background: linear-gradient(90deg, #0284c7, #06b6d4);
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 16px rgba(6, 182, 212, 0.4), 0 0 0 1px rgba(6, 182, 212, 0.3);
+}
+
+/* Gradient Button */
+.gradient-btn {
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #0ea5e9 100%);
+  color: #ffffff;
+  font-weight: 700;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.4);
+}
+
+.gradient-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #22d3ee 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gradient-btn:hover::before { opacity: 1; }
+.gradient-btn:hover {
+  box-shadow: 0 6px 30px rgba(6, 182, 212, 0.55);
+  transform: translateY(-1px);
+}
+.gradient-btn > * { position: relative; z-index: 1; }
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(90deg, #0284c7, #06b6d4, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+html[data-color-scheme="dark"] .gradient-text {
+  background: linear-gradient(90deg, #38bdf8, #06b6d4, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gradient Divider */
+.gradient-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(6, 182, 212, 0.4) 30%, rgba(14, 165, 233, 0.6) 50%, rgba(6, 182, 212, 0.4) 70%, transparent 100%);
+  border: none;
+  margin: 0;
+}
+
+/* Gradient Stat Card */
+.gradient-stat-card {
+  background: linear-gradient(135deg, #0369a1 0%, #0284c7 60%, #0ea5e9 100%);
+  color: white;
+  box-shadow: 0 6px 30px rgba(2, 132, 199, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.gradient-stat-card-teal {
+  background: linear-gradient(135deg, #0e7490 0%, #0891b2 60%, #06b6d4 100%);
+  color: white;
+  box-shadow: 0 6px 30px rgba(6, 182, 212, 0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* =========================================================
+   Floating Glass Header (legacy + new gradient)
+   ========================================================= */
+.floating-glass-header {
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 12px 35px -10px rgba(0, 0, 0, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.03);
+  transform: translateZ(0);
+}
+
+html[data-color-scheme="dark"] .floating-glass-header {
+  background: rgba(2, 9, 19, 0.92);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(56, 189, 248, 0.12);
+}
+
+/* =========================================================
+   Liquid Glass Cards
+   ========================================================= */
+.figma-liquid-glass,
+.liquid-glass-capsule {
+  border-radius: 23px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.02),
+    0 4px 20px -2px rgba(2, 132, 199, 0.08);
+  transform: translateZ(0);
+}
+
+html[data-color-scheme="dark"] .figma-liquid-glass,
+html[data-color-scheme="dark"] .liquid-glass-capsule {
+  background: linear-gradient(145deg, rgba(8, 22, 44, 0.88) 0%, rgba(4, 14, 30, 0.92) 100%);
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(56, 189, 248, 0.08),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.4),
+    0 8px 30px -4px rgba(0, 0, 0, 0.6),
+    0 0 40px -15px rgba(6, 182, 212, 0.12);
+}
+
+.apple-liquid-glass {
+  border-radius: 23px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.02),
+    0 4px 20px -2px rgba(2, 132, 199, 0.08);
+  transform: translateZ(0);
+}
+
+html[data-color-scheme="dark"] .apple-liquid-glass {
+  background: linear-gradient(145deg, rgba(8, 22, 44, 0.88) 0%, rgba(4, 14, 30, 0.92) 100%);
+  backdrop-filter: blur(16px) saturate(200%);
+  -webkit-backdrop-filter: blur(16px) saturate(200%);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  box-shadow:
+    inset 0 1px 1px 0 rgba(56, 189, 248, 0.08),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.4),
+    0 8px 30px -4px rgba(0, 0, 0, 0.6),
+    0 0 40px -15px rgba(6, 182, 212, 0.12);
+}
+
+.inner-glass-card {
+  background: rgba(255, 255, 255, 0.93);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(14, 165, 233, 0.2);
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.05);
+}
+
+html[data-color-scheme="dark"] .inner-glass-card {
+  background: rgba(5, 20, 45, 0.82) !important;
+  color: #e8f4ff !important;
+  border-color: rgba(56, 189, 248, 0.15) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.inner-glass-input {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1.5px solid rgba(14, 165, 233, 0.25);
+  color: #090d16;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.inner-glass-input:focus {
+  border-color: rgba(6, 182, 212, 0.6);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+}
+
+html[data-color-scheme="dark"] .inner-glass-input {
+  background: rgba(5, 18, 40, 0.88) !important;
+  border-color: rgba(56, 189, 248, 0.22) !important;
+  color: #e8f4ff !important;
+}
+
+.inner-result-card {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.08) 0%, rgba(6, 182, 212, 0.06) 100%);
+  border: 1.5px solid rgba(6, 182, 212, 0.3);
+  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.1);
+}
+
+html[data-color-scheme="dark"] .inner-result-card {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(6, 182, 212, 0.1) 100%) !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+  box-shadow: 0 8px 30px rgba(6, 182, 212, 0.15) !important;
+}
+
+/* =========================================================
+   Automotive EV Badges
+   ========================================================= */
+.badge-ev {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.18), rgba(2, 132, 199, 0.14));
+  color: #0284c7;
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+html[data-color-scheme="dark"] .badge-ev {
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.25), rgba(2, 132, 199, 0.2));
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+/* =========================================================
+   Edmunds Style Editorial Hero
+   ========================================================= */
+.bg-edmunds-hero {
+  background: linear-gradient(135deg, #001020 0%, #001f35 30%, #002b49 60%, #003d6b 80%, #005090 100%);
+  border-bottom: 1px solid rgba(6, 182, 212, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-edmunds-hero::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -15%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.2) 0%, rgba(2, 132, 199, 0.1) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.bg-edmunds-hero::after {
+  content: "";
+  position: absolute;
+  bottom: -30%;
+  left: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* =========================================================
+   Global Dark Mode Overrides
+   ========================================================= */
+html[data-color-scheme="dark"] h1,
+html[data-color-scheme="dark"] h2,
+html[data-color-scheme="dark"] h3,
+html[data-color-scheme="dark"] h4,
+html[data-color-scheme="dark"] h5,
+html[data-color-scheme="dark"] h6,
+html[data-color-scheme="dark"] .text-ink,
+html[data-color-scheme="dark"] .text-slate-900,
+html[data-color-scheme="dark"] .text-slate-800 {
+  color: #e8f4ff !important;
+}
+
+html[data-color-scheme="dark"] .text-soft,
+html[data-color-scheme="dark"] .text-slate-600,
+html[data-color-scheme="dark"] .text-slate-500 {
+  color: #93c5fd !important;
+}
+
+html[data-color-scheme="dark"] .text-muted {
+  color: #4b7fa3 !important;
+}
+
+html[data-color-scheme="dark"] .car-card {
+  background-color: rgba(4, 15, 32, 0.88) !important;
+  color: #e8f4ff !important;
+  border-color: rgba(56, 189, 248, 0.15) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* =========================================================
+   Range Slider
+   ========================================================= */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(6, 182, 212, 0.3), rgba(148, 215, 255, 0.2));
+  outline: none;
+}
+
+html[data-color-scheme="dark"] input[type="range"] {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0284c7, #06b6d4);
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 2px 12px rgba(6, 182, 212, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-color-scheme="dark"] input[type="range"]::-webkit-slider-thumb {
+  background: linear-gradient(135deg, #0ea5e9, #22d3ee);
+  border-color: #020913;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.7);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+
+/* =========================================================
+   Scroll Reveal Animations
+   ========================================================= */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal-on-scroll.is-revealed { opacity: 1; transform: translateY(0); }
+
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.96) translateY(20px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+.reveal-scale.is-revealed { opacity: 1; transform: scale(1) translateY(0); }
+
+.reveal-delay-100 { transition-delay: 0.1s; }
+.reveal-delay-200 { transition-delay: 0.2s; }
+.reveal-delay-300 { transition-delay: 0.3s; }
+.reveal-delay-400 { transition-delay: 0.4s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll, .reveal-scale {
+    opacity: 1 !important; transform: none !important; transition: none !important;
+  }
+}
+
+/* =========================================================
+   Glow Effects & Animations
+   ========================================================= */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.3), 0 0 40px rgba(2, 132, 199, 0.15); }
+  50% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.5), 0 0 60px rgba(2, 132, 199, 0.25); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.glow-cyan { box-shadow: 0 0 20px rgba(6, 182, 212, 0.35), 0 0 40px rgba(2, 132, 199, 0.2); }
+.glow-pulse { animation: glowPulse 3s ease-in-out infinite; }
+
+/* =========================================================
+   Article Gradient Card
+   ========================================================= */
+.article-gradient-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.92) 0%, rgba(240,249,255,0.88) 100%);
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(2, 132, 199, 0.08), inset 0 1px 0 rgba(255,255,255,0.8);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.article-gradient-card::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #0284c7, #06b6d4, #22d3ee);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.article-gradient-card:hover::after { opacity: 1; }
+
+.article-gradient-card:hover {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 8px 40px rgba(2, 132, 199, 0.2), inset 0 1px 0 rgba(255,255,255,0.9);
+  transform: translateY(-3px);
+}
+
+html[data-color-scheme="dark"] .article-gradient-card {
+  background: linear-gradient(145deg, rgba(4, 15, 32, 0.93) 0%, rgba(5, 22, 48, 0.9) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(56, 189, 248, 0.07);
+}
+
+html[data-color-scheme="dark"] .article-gradient-card:hover {
+  border-color: rgba(56, 189, 248, 0.38);
+  box-shadow: 0 8px 40px rgba(6, 182, 212, 0.25), inset 0 1px 0 rgba(56, 189, 248, 0.1);
+}
+
+/* =========================================================
+   Footer Gradient
+   ========================================================= */
+.footer-gradient {
+  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-top: 1px solid rgba(14, 165, 233, 0.22);
+}
+
+html[data-color-scheme="dark"] .footer-gradient {
+  background: linear-gradient(180deg, #020913 0%, #030d1e 100%);
+  border-top: 1px solid rgba(56, 189, 248, 0.15);
+}
+
+/* Footer Newsletter — light mode: clear cyan gradient */
+.footer-newsletter-gradient {
+  background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 40%, #e0f2fe 100%);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.footer-newsletter-gradient::before {
+  content: "";
+  position: absolute;
+  top: -50%; right: -10%;
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.15) 0%, transparent 65%);
+  pointer-events: none;
+}
+
+/* Footer Newsletter — dark mode: deep navy gradient */
+html[data-color-scheme="dark"] .footer-newsletter-gradient {
+  background: linear-gradient(135deg, #001f3f 0%, #003366 50%, #0055a5 100%);
+  border: none;
+}
+
+/* Gradient Accent Bar */
+.gradient-accent-bar {
+  position: relative;
+}
+.gradient-accent-bar::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 5%; right: 5%;
+  height: 2px;
+  background: linear-gradient(90deg, #0284c7, #06b6d4, #22d3ee);
+  border-radius: 0 0 4px 4px;
+  opacity: 0.8;
+}

@@ -1,0 +1,578 @@
+{
+  "info": {
+    "name": "Inova CMS Open API — Indosatu",
+    "description": "Open API CMS untuk integrasi sistem pihak ketiga. Isi variabel koleksi base_url, access_key, secret, portal_id, lalu jalankan Health. Signature HMAC dihitung otomatis oleh pre-request script koleksi. Dokumentasi lengkap: PANDUAN-OPEN-API-INDOSATU.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Menandatangani setiap request dengan HMAC-SHA256 (lihat PANDUAN-OPEN-API.md bagian 3).",
+          "const CryptoJS = require('crypto-js');",
+          "",
+          "const accessKey = pm.variables.get('access_key');",
+          "const secret = pm.variables.get('secret');",
+          "if (!accessKey || !secret) {",
+          "  throw new Error('Isi variabel koleksi access_key dan secret terlebih dahulu.');",
+          "}",
+          "",
+          "const SAFE = /[A-Za-z0-9*\\-._]/;",
+          "function formEncode(s) {",
+          "  const bytes = unescape(encodeURIComponent(s)); // string UTF-8 per byte",
+          "  let out = '';",
+          "  for (let i = 0; i < bytes.length; i++) {",
+          "    const ch = bytes[i];",
+          "    if (SAFE.test(ch)) out += ch;",
+          "    else if (ch === ' ') out += '+';",
+          "    else out += '%' + ch.charCodeAt(0).toString(16).toUpperCase().padStart(2, '0');",
+          "  }",
+          "  return out;",
+          "}",
+          "function formDecode(s) {",
+          "  try { return decodeURIComponent(s.replace(/\\+/g, ' ')); } catch (e) { return s; }",
+          "}",
+          "",
+          "// Path lengkap setelah variabel {{base_url}} diganti, mis. /openapi/v1/articles",
+          "const resolvedUrl = pm.variables.replaceIn(pm.request.url.toString());",
+          "const path = resolvedUrl.replace(/^[a-z]+:\\/\\/[^/]+/i, '').split('#')[0].split('?')[0];",
+          "",
+          "// Canonical query: decode, urutkan key lalu value, encode form-urlencoded",
+          "const pairs = pm.request.url.query.all()",
+          "  .filter((q) => !q.disabled && q.key)",
+          "  .map((q) => [formDecode(pm.variables.replaceIn(q.key)), formDecode(pm.variables.replaceIn(q.value || ''))])",
+          "  .sort((a, b) => (a[0] === b[0] ? (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0) : a[0] < b[0] ? -1 : 1));",
+          "const canonicalQuery = pairs.map(([k, v]) => formEncode(k) + '=' + formEncode(v)).join('&');",
+          "",
+          "const body = pm.request.body && pm.request.body.mode === 'raw'",
+          "  ? pm.variables.replaceIn(pm.request.body.raw || '')",
+          "  : '';",
+          "const contentSha = CryptoJS.SHA256(body).toString(CryptoJS.enc.Hex);",
+          "const timestamp = new Date().toISOString().replace(/\\.\\d{3}Z$/, 'Z');",
+          "const nonce = pm.variables.replaceIn('{{$guid}}');",
+          "",
+          "const canonical = [pm.request.method.toUpperCase(), path, canonicalQuery, timestamp, nonce, contentSha].join('\\n');",
+          "const signature = CryptoJS.HmacSHA256(canonical, secret).toString(CryptoJS.enc.Hex);",
+          "",
+          "pm.request.headers.upsert({ key: 'X-AIV-Access-Key', value: accessKey });",
+          "pm.request.headers.upsert({ key: 'X-AIV-Timestamp', value: timestamp });",
+          "pm.request.headers.upsert({ key: 'X-AIV-Nonce', value: nonce });",
+          "pm.request.headers.upsert({ key: 'X-AIV-Content-SHA256', value: contentSha });",
+          "pm.request.headers.upsert({ key: 'X-AIV-Signature', value: signature });",
+          "pm.request.headers.upsert({ key: 'Accept', value: 'application/json' });",
+          "if (body) pm.request.headers.upsert({ key: 'Content-Type', value: 'application/json' });",
+          "",
+          "console.log('Canonical string:\\n' + canonical);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api-cms.bukin.id/openapi/v1",
+      "description": "Base URL Open API grup Indosatu"
+    },
+    {
+      "key": "access_key",
+      "value": "",
+      "description": "oak_..."
+    },
+    {
+      "key": "secret",
+      "value": "",
+      "description": "osk_... (rahasia, jangan dibagikan)"
+    },
+    {
+      "key": "portal_id",
+      "value": "",
+      "description": "UUID portal"
+    },
+    {
+      "key": "article_id",
+      "value": ""
+    },
+    {
+      "key": "media_id",
+      "value": ""
+    },
+    {
+      "key": "agent_id",
+      "value": ""
+    },
+    {
+      "key": "job_id",
+      "value": ""
+    },
+    {
+      "key": "generated_article_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Cek koneksi & kredensial. Scope: apa saja."
+      }
+    },
+    {
+      "name": "List Portals",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/portals",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "portals"
+          ]
+        },
+        "description": "Scope: media:read"
+      }
+    },
+    {
+      "name": "Articles",
+      "item": [
+        {
+          "name": "List Articles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/articles?portal_id={{portal_id}}&limit=10&include=contentHtml",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "articles"
+              ],
+              "query": [
+                {
+                  "key": "portal_id",
+                  "value": "{{portal_id}}",
+                  "description": "Filter satu portal (disarankan)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "1-100"
+                },
+                {
+                  "key": "include",
+                  "value": "contentHtml",
+                  "description": "Sertakan isi HTML lengkap"
+                },
+                {
+                  "key": "order_by",
+                  "value": "updated_at",
+                  "description": "published_at (default) atau updated_at",
+                  "disabled": true
+                },
+                {
+                  "key": "updated_after",
+                  "value": "2026-10-01T00:00:00Z",
+                  "description": "RFC3339",
+                  "disabled": true
+                },
+                {
+                  "key": "query",
+                  "value": "ekonomi",
+                  "description": "Cari judul & isi",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "page.nextCursor dari response sebelumnya",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Scope: articles:read. Hanya artikel published. Variabel article_id terisi otomatis dari item pertama."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.items && d.items.length) pm.collectionVariables.set('article_id', d.items[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Article",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/articles/{{article_id}}?include=contentHtml",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "articles",
+                "{{article_id}}"
+              ],
+              "query": [
+                {
+                  "key": "include",
+                  "value": "contentHtml",
+                  "description": "Sertakan isi HTML lengkap"
+                }
+              ]
+            },
+            "description": "Scope: articles:read"
+          }
+        },
+        {
+          "name": "Extract Article from URL",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/articles/extract",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "articles",
+                "extract"
+              ]
+            },
+            "description": "Scope: articles:read. Maks. 10 request/menit per key.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://contoh-media.com/berita/judul-berita\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Media",
+      "item": [
+        {
+          "name": "List Media",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/media?portal_id={{portal_id}}&limit=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media"
+              ],
+              "query": [
+                {
+                  "key": "portal_id",
+                  "value": "{{portal_id}}",
+                  "description": "Filter satu portal"
+                },
+                {
+                  "key": "limit",
+                  "value": "30",
+                  "description": "1-100"
+                },
+                {
+                  "key": "query",
+                  "value": "bawaslu",
+                  "description": "Cari nama file, alt, caption",
+                  "disabled": true
+                },
+                {
+                  "key": "mime_type",
+                  "value": "image/jpeg",
+                  "description": "image/jpeg | image/png | image/webp",
+                  "disabled": true
+                },
+                {
+                  "key": "updated_after",
+                  "value": "2026-10-01T00:00:00Z",
+                  "description": "RFC3339 (berdasarkan waktu dibuat)",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "page.nextCursor dari response sebelumnya",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Scope: media:read. Variabel media_id terisi otomatis dari item pertama."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.items && d.items.length) pm.collectionVariables.set('media_id', d.items[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Media",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/media/{{media_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media",
+                "{{media_id}}"
+              ]
+            },
+            "description": "Scope: media:read"
+          }
+        },
+        {
+          "name": "Get Media Content (302 redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/media/{{media_id}}/content",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media",
+                "{{media_id}}",
+                "content"
+              ]
+            },
+            "description": "Scope: media:content. Response 302 ke URL CDN. Matikan \"Automatically follow redirects\" di Settings request untuk melihat header Location."
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Writer",
+      "item": [
+        {
+          "name": "List Agents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/agents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "agents"
+              ]
+            },
+            "description": "Scope: agents:read. Variabel agent_id terisi otomatis dengan agen default."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "const a = (d.items || []).find((x) => x.isDefault) || (d.items || [])[0];",
+                  "if (a) pm.collectionVariables.set('agent_id', a.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Credits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/credits",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "credits"
+              ]
+            },
+            "description": "Scope: credits:read"
+          }
+        },
+        {
+          "name": "Generate Article",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ai/articles/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ai",
+                "articles",
+                "generate"
+              ]
+            },
+            "description": "Scope: ai:generate. Asinkron — lanjutkan dengan Get Generate Job sampai status succeeded/failed. agent_id kosong = agen default. Memotong saldo kredit.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bank Jateng salurkan KUR Rp 2 triliun\",\n  \"agent_id\": \"{{agent_id}}\",\n  \"angle\": \"\",\n  \"keywords\": \"bank jateng, kur, umkm\",\n  \"tone\": \"\",\n  \"instructions\": \"Tulis sekitar 600 kata.\",\n  \"source_url\": \"\",\n  \"source_content\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = pm.response.json();",
+                  "if (d.jobId) pm.collectionVariables.set('job_id', d.jobId);",
+                  "if (d.articleId) pm.collectionVariables.set('generated_article_id', d.articleId);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Generate Job",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ai/generate-jobs/{{job_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ai",
+                "generate-jobs",
+                "{{job_id}}"
+              ]
+            },
+            "description": "Scope: ai:generate. status: queued → running → succeeded | failed."
+          }
+        },
+        {
+          "name": "Get Generated Article",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/articles/{{generated_article_id}}?include=contentHtml",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "articles",
+                "{{generated_article_id}}"
+              ],
+              "query": [
+                {
+                  "key": "include",
+                  "value": "contentHtml",
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Scope: articles:read. Jalankan setelah job succeeded. Artikel berstatus draft di CMS."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Billing",
+      "item": [
+        {
+          "name": "Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/billing/payment-methods?amount=100000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "billing",
+                "payment-methods"
+              ],
+              "query": [
+                {
+                  "key": "amount",
+                  "value": "100000",
+                  "description": "Minimal 10000"
+                }
+              ]
+            },
+            "description": "Scope: credits:topup"
+          }
+        },
+        {
+          "name": "Create Top-up",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/billing/topup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "billing",
+                "topup"
+              ]
+            },
+            "description": "Scope: credits:topup. Body camelCase. Arahkan pengguna ke paymentUrl.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100000,\n  \"paymentMethod\": \"BC\",\n  \"customerEmail\": \"finance@contoh.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

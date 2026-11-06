@@ -1,0 +1,142 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ArticleCard from "../components/ArticleCard.astro";
+import { portalIdentityForDomain } from "@/site";
+import { authors, getByAuthor } from "@/data";
+import {
+  fetchAllArticlesFromApi,
+  fetchAuthorsFromApi,
+  fetchSiteConfigFromApi,
+  isFallbackDataEnabled,
+  portalDomainFromScope,
+  siteUrlFromScope,
+} from "@/lib/api";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, params, url } = Astro.props;
+
+const slug = params.slug ?? "";
+const sourceArticles = await fetchAllArticlesFromApi(100, request);
+const sourceAuthors = await fetchAuthorsFromApi(request);
+const siteConfig = await fetchSiteConfigFromApi(request);
+const allowFallback = isFallbackDataEnabled();
+let notFound = false;
+const _author = (sourceAuthors.length ? sourceAuthors : allowFallback ? authors : []).find(
+  (item) => item.slug === slug,
+);
+if (!_author) {
+  notFound = true;
+}
+const author = _author!;
+
+let siteUrl = "";
+let identity: ReturnType<typeof portalIdentityForDomain> | undefined;
+let items: typeof sourceArticles = [];
+let personLd: Record<string, any> = {};
+
+if (!notFound) {
+  siteUrl = siteUrlFromScope(request);
+  identity = portalIdentityForDomain(portalDomainFromScope(request), siteConfig?.portal?.name);
+  items = sourceArticles?.length
+    ? sourceArticles.filter((article) => article.author.slug === author.slug)
+    : allowFallback
+      ? getByAuthor(author.slug)
+      : [];
+
+  personLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: author.name,
+    jobTitle: author.role,
+    description: author.bio,
+    image: author.avatar,
+    url: `${siteUrl}/penulis/${author.slug}`,
+    worksFor: { "@type": "Organization", name: identity.publisher },
+  };
+}
+---
+
+{notFound ? (
+  <BaseLayout title="Halaman tidak ditemukan - EVnesia" noindex>
+    <div class="mx-auto max-w-5xl px-4 py-20 text-center">
+      <div class="figma-liquid-glass rounded-3xl border border-slate-200/90 dark:border-white/20 p-12 backdrop-blur-2xl">
+        <h1 class="font-headline font-black text-6xl text-cyan-600 dark:text-cyan-400">404</h1>
+        <p class="mt-2 text-slate-500 dark:text-slate-400">Profil penulis tidak ditemukan.</p>
+        <a href="/" class="mt-5 inline-flex items-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-cyan-600/20 transition">
+          Kembali ke Beranda →
+        </a>
+      </div>
+    </div>
+  </BaseLayout>
+) : (
+  <BaseLayout
+    title={`${author.name} — Profil Jurnalis Otomotif EVnesia`}
+    description={`${author.name} — ${author.role}. ${author.bio}`}
+    jsonLd={personLd}
+  >
+  <div class="mx-auto max-w-7xl px-4 pt-4 pb-16 space-y-8">
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="Breadcrumb" class="text-xs font-semibold text-slate-400">
+      <ol class="flex items-center gap-2">
+        <li><a href="/" class="hover:text-cyan-500 transition">Beranda</a></li>
+        <li aria-hidden="true">/</li>
+        <li><a href="/redaksi" class="hover:text-cyan-500 transition">Redaksi</a></li>
+        <li aria-hidden="true">/</li>
+        <li class="text-slate-900 dark:text-white font-bold">{author.name}</li>
+      </ol>
+    </nav>
+
+    <!-- Author Profile Hero Card (Figma Liquid Glass) -->
+    <header class="figma-liquid-glass rounded-3xl border border-slate-200/90 dark:border-white/20 p-6 sm:p-10 backdrop-blur-2xl shadow-xl relative overflow-hidden">
+      <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+
+      <div class="flex flex-col items-center sm:items-start md:flex-row gap-6 sm:gap-8 relative z-10 text-center sm:text-left">
+        <img
+          src={author.avatar}
+          alt={`Foto ${author.name}`}
+          width="112"
+          height="112"
+          loading="eager"
+          class="h-28 w-28 rounded-3xl ring-4 ring-cyan-500/30 object-cover shadow-xl shrink-0 bg-slate-900"
+        />
+        <div class="space-y-3 flex-1 min-w-0">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-[11px] font-bold uppercase tracking-wider">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+            Dewan Jurnalis & Penulis
+          </div>
+          <div>
+            <h1 class="font-headline font-black text-3xl sm:text-4xl text-slate-900 dark:text-white tracking-tight">
+              {author.name}
+            </h1>
+            <p class="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 mt-1">
+              {author.role}
+            </p>
+          </div>
+          <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-normal leading-relaxed max-w-3xl">
+            {author.bio}
+          </p>
+          <div class="pt-1 flex items-center justify-center sm:justify-start gap-4 text-xs font-semibold text-slate-400">
+            <span class="flex items-center gap-1.5"><img src="/icons/file-text.svg" class="w-3.5 h-3.5 opacity-70 inline-block" alt="" /> <strong class="text-slate-900 dark:text-white">{items.length}</strong> Artikel Terbit</span>
+            <span>•</span>
+            <span class="flex items-center gap-1.5"><img src="/icons/award.svg" class="w-3.5 h-3.5 opacity-70 inline-block" alt="" /> Kontributor Resmi EVnesia</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Author's Published Articles -->
+    <section class="space-y-4">
+      <h2 class="font-headline font-black text-xl sm:text-2xl text-slate-900 dark:text-white">
+        Daftar Artikel Ditulis oleh {author.name}
+      </h2>
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((a) => <ArticleCard article={a} showDek />)}
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+)}

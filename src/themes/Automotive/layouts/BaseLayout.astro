@@ -1,0 +1,156 @@
+---
+import "../styles/theme.css";
+
+import BaseHead from "../components/BaseHead.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import GoogleAnalytics from "@/components/GoogleAnalytics.astro";
+import { NAV, SITE, portalIdentityForDomain } from "@/site";
+import {
+  brandAsset,
+  brandConfig,
+  fetchCategoriesFromApi,
+  fetchMenusFromApi,
+  fetchSiteConfigFromApi,
+  isFallbackDataEnabled,
+  portalDomainFromScope,
+  portalSettingFromConfig,
+  socialLinksFromConfig,
+  siteConfigToCssVars,
+  siteUrlFromScope,
+} from "@/lib/api";
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  type?: "website" | "article";
+  publishedTime?: string;
+  modifiedTime?: string;
+  authorName?: string;
+  noindex?: boolean;
+  jsonLd?: object | object[];
+  gaParams?: object;
+  siteConfig?: Awaited<ReturnType<typeof fetchSiteConfigFromApi>>;
+  navCategories?: Awaited<ReturnType<typeof fetchCategoriesFromApi>>;
+}
+const props = Astro.props;
+const [siteConfig, navCategories, mainMenu] = await Promise.all([
+  props.siteConfig ?? fetchSiteConfigFromApi(Astro.request),
+  props.navCategories ?? fetchCategoriesFromApi(Astro.request),
+  fetchMenusFromApi("main", Astro.request),
+]);
+const themeStyle = siteConfigToCssVars(siteConfig);
+const brand = brandConfig(siteConfig);
+const siteUrl = siteConfig?.portal?.public_site_url ?? siteUrlFromScope(Astro.request);
+const siteName = siteConfig?.config?.site_title ?? siteConfig?.portal?.name ?? SITE.name;
+const portalIdentity = portalIdentityForDomain(portalDomainFromScope(Astro.request), siteName);
+const socialLinks = socialLinksFromConfig(siteConfig);
+const logoUrl = brandAsset(brand.logo_url);
+const darkLogoUrl = brandAsset(brand.logo_dark_url, logoUrl);
+const faviconUrl = brandAsset(brand.favicon_url, "/favicon.svg");
+const defaultImageUrl = brandAsset(brand.default_image_url, "/og-default.svg");
+const templateKey = "automotive";
+const density = brandAsset(brand.density, "comfortable");
+const fallbackDescription =
+  siteName === SITE.name
+    ? SITE.description
+    : `${siteName} menyajikan ulasan teruji, berita kendaraan listrik (EV), kalkulator hemat BBM, dan pembanding spesifikasi otomotif Indonesia.`;
+// Footer/meta description: pakai default_meta_title dari System > Settings bila diisi,
+// jatuh ke deskripsi generik bila belum dikonfigurasi.
+const siteDescription = portalSettingFromConfig(siteConfig, "default_meta_title") || fallbackDescription;
+const siteAddress = portalSettingFromConfig(siteConfig, "alamat");
+const sitePhone = portalSettingFromConfig(siteConfig, "phone");
+const siteEmail = portalSettingFromConfig(siteConfig, "email");
+const headProps = {
+  ...props,
+  title: props.title === SITE.name ? siteName : props.title,
+  description: props.description === SITE.description ? siteDescription : props.description,
+  siteName,
+  siteDescription,
+  siteTagline: siteConfig?.config?.tagline ?? SITE.tagline,
+  faviconUrl,
+  themeColor: brandAsset(brand.primary_color, "#0b0c0e"),
+  defaultImageUrl,
+};
+const navItems = navCategories.length
+  ? navCategories.map((category) => ({ label: category.name, href: `/kategori/${category.slug}` }))
+  : isFallbackDataEnabled()
+    ? NAV
+    : [];
+
+// JSON-LD Organization + WebSite default di setiap halaman (S7-2).
+const baseLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "NewsMediaOrganization",
+    name: siteName,
+    url: siteUrl,
+    parentOrganization: portalIdentity.publisher,
+    sameAs: socialLinks.map((link) => link.url),
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: siteName,
+    url: siteUrl,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${siteUrl}/cari?q={query}`,
+      "query-input": "required name=query",
+    },
+  },
+];
+const jsonLd = props.jsonLd
+  ? [...baseLd, ...(Array.isArray(props.jsonLd) ? props.jsonLd : [props.jsonLd])]
+  : baseLd;
+---
+
+<!doctype html>
+<html lang="id" class="scroll-smooth" data-template={templateKey} data-density={density} data-color-scheme="light" style={themeStyle}>
+  <head>
+    <script is:inline>
+      (() => {
+        const storageKey = "automotive-color-scheme";
+        function applyPersistedTheme() {
+          let scheme = "light";
+          try {
+            const saved = localStorage.getItem(storageKey);
+            scheme = saved === "light" || saved === "dark" ? saved : "light";
+          } catch {
+            scheme = "light";
+          }
+          document.documentElement.setAttribute("data-color-scheme", scheme);
+          document.documentElement.dataset.colorScheme = scheme;
+          document.documentElement.style.colorScheme = scheme;
+          if (scheme === "dark") {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        }
+        // 1. Initial page load (runs immediately in head before paint)
+        applyPersistedTheme();
+        // 2. ClientRouter / ViewTransitions: restore immediately on DOM swap before render
+        document.addEventListener("astro:after-swap", applyPersistedTheme);
+        if (window.location.search.includes("theme_preview=Automotive")) {
+          document.cookie = "theme_preview=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        }
+      })();
+    </script>
+    <BaseHead {...headProps} jsonLd={jsonLd} />
+    <GoogleAnalytics
+      gaMeasurementId={siteConfig?.analytics?.ga_measurement_id}
+      articleParams={props.gaParams as any}
+      pageNotFound={props.noindex && props.title === "Halaman tidak ditemukan"}
+    />
+  </head>
+  <body class="min-h-screen overflow-x-hidden w-full">
+    <a href="#main" class="skip-link">Lewati ke konten</a>
+    <Header siteName={siteName} logoUrl={logoUrl} darkLogoUrl={darkLogoUrl} navItems={navItems} menuTree={mainMenu} socialLinks={socialLinks} />
+    <main id="main" class="w-full overflow-x-hidden">
+      <slot />
+    </main>
+    <Footer siteName={siteName} logoUrl={logoUrl} darkLogoUrl={darkLogoUrl} siteDescription={siteDescription} publisher={portalIdentity.publisher} socialLinks={socialLinks} address={siteAddress} phone={sitePhone} email={siteEmail} />
+  </body>
+</html>

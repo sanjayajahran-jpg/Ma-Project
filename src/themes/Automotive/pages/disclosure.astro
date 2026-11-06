@@ -1,0 +1,50 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import StaticPage from "@/components/StaticPage.astro";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, params, url } = Astro.props;
+---
+
+<PageLayout
+  title="Pedoman Konten Bersponsor"
+  lead="Komitmen kami terhadap transparansi konten kerjasama."
+>
+  <StaticPage request={request} slug="disclosure">
+  <p>
+    Redaksi memisahkan dengan tegas antara liputan editorial independen dan
+    konten komersial. Halaman ini menjelaskan bagaimana kami menandai dan
+    mengelola konten kerjasama.
+  </p>
+
+  <h2 id="label">Pelabelan</h2>
+  <p>
+    Setiap artikel kerjasama diberi label <strong>“Bersponsor”</strong> yang
+    jelas pada kartu artikel maupun di halaman artikel, beserta kotak
+    keterangan di awal tulisan.
+  </p>
+
+  <h2 id="editorial">Pemisahan editorial</h2>
+  <p>
+    Konten bersponsor disusun untuk tujuan promosi dan tidak melalui proses
+    editorial independen yang sama dengan liputan redaksi. Redaksi tidak
+    bertanggung jawab atas klaim produk/jasa di dalamnya.
+  </p>
+
+  <h2 id="tautan">Tautan komersial</h2>
+  <p>
+    Tautan menuju mitra menggunakan atribut
+    <code>rel="sponsored nofollow"</code> sesuai pedoman mesin pencari.
+  </p>
+
+  <h2 id="independensi">Independensi</h2>
+  <p>
+    Keputusan liputan editorial tidak dipengaruhi oleh hubungan komersial. Jika
+    Anda menemukan pelanggaran pedoman ini, beri tahu kami.
+  </p>
+  </StaticPage>
+</PageLayout>

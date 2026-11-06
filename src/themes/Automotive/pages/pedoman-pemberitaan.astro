@@ -1,0 +1,262 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import StaticPage from "@/components/StaticPage.astro";
+import { fetchSiteConfigFromApi, portalDomainFromScope } from "@/lib/api";
+import { portalIdentityForDomain } from "@/site";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, params, url } = Astro.props;
+
+const siteConfig = await fetchSiteConfigFromApi(request);
+const identity = portalIdentityForDomain(portalDomainFromScope(request), siteConfig?.portal?.name);
+---
+
+<PageLayout
+  title="Pedoman Pemberitaan Media Siber"
+  lead="Pedoman yang ditetapkan Dewan Pers pada 3 Februari 2012, yang menjadi landasan operasional redaksi Insight — Pojok Satu."
+>
+  <StaticPage request={request} slug="pedoman-pemberitaan">
+  <p>
+    <em
+      >Kemerdekaan berpendapat, berekspresi, dan pers adalah hak asasi manusia
+      yang dilindungi Pancasila, Undang-Undang Dasar 1945, dan Deklarasi
+      Universal Hak Asasi Manusia PBB. Kemerdekaan pers adalah sarana masyarakat
+      untuk memperoleh informasi dan berkomunikasi, guna memenuhi kebutuhan
+      hakiki dan meningkatkan kualitas kehidupan manusia. Dalam mewujudkan
+      kemerdekaan pers itu, wartawan Indonesia juga menyadari adanya kepentingan
+      bangsa, tanggung jawab sosial, keberagaman masyarakat, dan norma-norma
+      agama.</em
+    >
+  </p>
+  <p>
+    <em
+      >Dalam melaksanakan fungsi, hak, kewajiban dan peranannya, pers menghormati
+      hak asasi setiap orang, karena itu pers dituntut profesional dan terbuka
+      untuk dikontrol oleh masyarakat.</em
+    >
+  </p>
+  <p>
+    <em
+      >Untuk menjamin kemerdekaan pers dan memenuhi hak publik untuk memperoleh
+      informasi yang benar, wartawan Indonesia memerlukan landasan moral dan
+      etika profesi sebagai pedoman operasional dalam menjaga kepercayaan publik
+      dan menegakkan integritas serta profesionalisme.</em
+    >
+  </p>
+
+  <h2 id="ruang-lingkup">1. Ruang Lingkup</h2>
+  <ol type="a">
+    <li>
+      Media Siber adalah segala bentuk media yang menggunakan wahana internet
+      dan melaksanakan kegiatan jurnalistik, serta memenuhi persyaratan
+      Undang-Undang Pers dan Standar Perusahaan Pers yang ditetapkan Dewan Pers.
+    </li>
+    <li>
+      Isi Buatan Pengguna (<em>User Generated Content</em>) adalah segala isi
+      yang dibuat dan atau disebarkan oleh pengguna media siber, antara lain,
+      artikel, gambar, komentar, suara, video dan berbagai bentuk unggahan yang
+      melekat pada media siber, seperti blog, forum, komentar pembaca atau
+      pemirsa, dan berbagai bentuk lain.
+    </li>
+    <li>
+      Media siber wajib mencantumkan syarat dan ketentuan mengenai Isi Buatan
+      Pengguna yang tidak bertentangan dengan Undang-Undang No. 40 tahun 1999
+      tentang Pers dan Kode Etik Jurnalistik, yang ditempatkan secara terang
+      dan jelas.
+    </li>
+    <li>
+      Media siber yang menyediakan ruang bagi Isi Buatan Pengguna wajib
+      menyediakan mekanisme pengaduan yang disediakan di tempat yang dengan
+      mudah dapat diakses pengguna.
+    </li>
+    <li>
+      Media siber wajib menyunting, menghapus, dan melakukan tindakan koreksi
+      setiap Isi Buatan Pengguna yang dilaporkan dan melanggar ketentuan pada
+      butir (c), sesegera mungkin secara proporsional selambat-lambatnya 2×24
+      jam setelah pengaduan diterima.
+    </li>
+    <li>
+      Isi Buatan Pengguna yang melanggar ketentuan pada butir (c) menjadi
+      tanggung jawab pengguna, sepanjang media siber yang bersangkutan telah
+      memenuhi kewajiban pada butir (d) dan (e).
+    </li>
+    <li>
+      Media Siber bertanggung jawab atas Isi Buatan Pengguna yang dilaporkan
+      bila tidak mengambil tindakan koreksi setelah batas waktu sebagaimana
+      tersebut pada butir (e).
+    </li>
+  </ol>
+
+  <h2 id="verifikasi">2. Verifikasi dan Keberimbangan Berita</h2>
+  <ol type="a">
+    <li>Pada prinsipnya setiap berita harus melalui verifikasi.</li>
+    <li>
+      Berita yang dapat merugikan pihak lain memerlukan verifikasi pada berita
+      yang sama untuk memenuhi prinsip akurasi dan keberimbangan.
+    </li>
+    <li>
+      Ketentuan dalam butir (a) di atas dikecualikan, dengan syarat:
+      <ol>
+        <li>
+          Berita benar-benar mengandung kepentingan publik yang bersifat
+          mendesak;
+        </li>
+        <li>
+          Sumber berita yang pertama adalah sumber yang jelas identitasnya,
+          kredibel dan kompeten;
+        </li>
+        <li>
+          Subyek berita yang harus dikonfirmasi tidak diketahui keberadaannya
+          atau tidak dapat diwawancarai;
+        </li>
+        <li>
+          Media siber memberikan penjelasan kepada pembaca bahwa berita tersebut
+          masih memerlukan verifikasi lebih lanjut yang diupayakan dalam waktu
+          secepatnya. Penjelasan dimuat pada bagian akhir dari berita yang sama,
+          diulang pada setiap pemutakhiran berita, dan dihapus setelah
+          verifikasi selesai.
+        </li>
+      </ol>
+    </li>
+    <li>
+      Berita yang berisi foto, gambar, suara, dan video atas seseorang yang
+      sedang dalam kondisi yang mempermalukan dirinya juga memerlukan verifikasi
+      untuk memenuhi prinsip akurasi dan keberimbangan.
+    </li>
+  </ol>
+
+  <h2 id="isi-pengguna">3. Isi Buatan Pengguna</h2>
+  <ol type="a">
+    <li>
+      Media siber wajib mencantumkan syarat dan ketentuan mengenai Isi Buatan
+      Pengguna yang tidak bertentangan dengan Undang-Undang No. 40 tahun 1999
+      tentang Pers dan Kode Etik Jurnalistik, yang ditempatkan secara terang
+      dan jelas.
+    </li>
+    <li>
+      Media siber yang menyediakan ruang bagi Isi Buatan Pengguna wajib
+      menyediakan mekanisme pengaduan yang disediakan di tempat yang dengan
+      mudah dapat diakses pengguna.
+    </li>
+    <li>
+      Media siber wajib menyunting, menghapus, dan melakukan tindakan koreksi
+      setiap Isi Buatan Pengguna yang dilaporkan dan melanggar ketentuan pada
+      butir (a), sesegera mungkin secara proporsional selambat-lambatnya 2×24
+      jam setelah pengaduan diterima.
+    </li>
+    <li>
+      Isi Buatan Pengguna yang melanggar ketentuan pada butir (a) menjadi
+      tanggung jawab pengguna, sepanjang media siber yang bersangkutan telah
+      memenuhi kewajiban pada butir (b) dan (c).
+    </li>
+    <li>
+      Media Siber bertanggung jawab atas Isi Buatan Pengguna yang dilaporkan
+      bila tidak mengambil tindakan koreksi setelah batas waktu sebagaimana
+      tersebut pada butir (c).
+    </li>
+  </ol>
+
+  <h2 id="ralat">4. Ralat, Koreksi, dan Hak Jawab</h2>
+  <ol type="a">
+    <li>
+      Ralat, koreksi, dan atau hak jawab wajib ditautkan pada berita yang
+      diralat, dikoreksi atau yang menjadi dasar hak jawab.
+    </li>
+    <li>
+      Di setiap berita ralat, koreksi, dan hak jawab wajib mencantumkan waktu
+      pemuatan ralat, koreksi, dan atau hak jawab tersebut.
+    </li>
+    <li>
+      Bila suatu berita media siber tertentu disebarluaskan media siber lain,
+      maka:
+      <ol>
+        <li>
+          Tanggung jawab media siber pembuat berita terbatas pada berita yang
+          dibuatnya.
+        </li>
+        <li>
+          Koreksi berita yang dilakukan oleh pembuat berita wajib disebarluaskan
+          oleh media siber yang menyebarluaskan berita tersebut.
+        </li>
+        <li>
+          Media yang menyebarluaskan berita wajib meneruskan atau melakukan
+          sendiri ralat dari media siber sumber berita.
+        </li>
+      </ol>
+    </li>
+    <li>
+      Media siber yang tidak melakukan kewajiban dalam butir (c) bertanggung
+      jawab atas kerugian yang ditimbulkan.
+    </li>
+  </ol>
+
+  <h2 id="pencabutan">5. Pencabutan Berita</h2>
+  <ol type="a">
+    <li>
+      Berita yang sudah dipublikasikan tidak dapat dicabut karena alasan
+      penyensoran dari pihak luar redaksi, kecuali terkait masalah SARA,
+      kesusilaan, masa depan anak, pengalaman traumatik korban atau berdasarkan
+      pertimbangan khusus lain yang ditetapkan Dewan Pers.
+    </li>
+    <li>
+      Media siber lain wajib mengikuti pencabutan kutipan berita dari media
+      siber sumber yang telah dicabut.
+    </li>
+    <li>
+      Pencabutan berita wajib disertai dengan alasannya dan diumumkan kepada
+      publik.
+    </li>
+  </ol>
+
+  <h2 id="iklan">6. Iklan dan Isi Berbayar</h2>
+  <ol type="a">
+    <li>
+      Media siber wajib membedakan dengan tegas antara produk berita yang dibuat
+      redaksi dengan iklan dan isi berbayar.
+    </li>
+    <li>
+      Setiap berita/artikel/konten yang merupakan iklan dan atau isi berbayar
+      wajib mencantumkan keterangan <em>"advertorial"</em>, <em>"iklan"</em>,
+      <em>"ads"</em>, <em>"sponsored"</em>, atau kata lain yang sejenis.
+    </li>
+  </ol>
+  <p>
+    Lihat juga: <a href="/disclosure">Pedoman Konten Bersponsor Insight</a> untuk
+    kebijakan spesifik kami dalam menandai konten kerjasama.
+  </p>
+
+  <h2 id="hak-cipta">7. Hak Cipta</h2>
+  <p>
+    Media siber wajib menghormati hak cipta sebagaimana diatur dalam peraturan
+    perundang-undangan yang berlaku.
+  </p>
+
+  <h2 id="pencantuman">8. Pencantuman Pedoman</h2>
+  <p>
+    Media siber wajib mencantumkan Pedoman Pemberitaan Media Siber ini di
+    medianya secara terang dan jelas.
+  </p>
+
+  <h2 id="sengketa">9. Sengketa</h2>
+  <p>
+    Penilaian akhir atas sengketa mengenai pelaksanaan Pedoman Pemberitaan Media
+    Siber ini diselesaikan oleh Dewan Pers melalui laman resmi <a
+      href="https://dewanpers.or.id"
+      target="_blank"
+      rel="noopener noreferrer">dewanpers.or.id</a
+    >.
+  </p>
+
+  <hr />
+  <p class="text-sm text-[--color-ink]/60">
+    Ditetapkan oleh Dewan Pers, Jakarta, 3 Februari 2012.<br />
+    Pertanyaan terkait pedoman ini dapat dikirimkan ke <a
+      href={`mailto:${identity.email}`}>{identity.email}</a
+    >.
+  </p>
+  </StaticPage>
+</PageLayout>

@@ -1,0 +1,30 @@
+---
+interface Props {
+  title: string;
+  href?: string;
+  class?: string;
+}
+const { title, href, class: cls = "" } = Astro.props;
+---
+
+<div
+  class:list={[
+    "mb-6 flex items-end justify-between gap-4 border-b border-slate-200/60 dark:border-white/10 pb-3",
+    cls,
+  ]}
+>
+  <div class="flex items-center gap-2.5">
+    <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+    <h2 class="font-headline font-black text-2xl text-slate-900 dark:text-white tracking-tight">{title}</h2>
+  </div>
+  {
+    href && (
+      <a
+        href={href}
+        class="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 transition shrink-0"
+      >
+        Lihat semua →
+      </a>
+    )
+  }
+</div>

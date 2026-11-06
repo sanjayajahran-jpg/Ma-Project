@@ -1,0 +1,241 @@
+---
+const { request } = Astro.props as any;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CarFinderHero from "../components/CarFinderHero.astro";
+import XpengBrandShowcase from "../components/XpengBrandShowcase.astro";
+import CatalogGuideSection from "../components/CatalogGuideSection.astro";
+import AdSlot from "../components/AdSlot.astro";
+import { SITE } from "@/site";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+import {
+  fetchCategoriesFromApi,
+  fetchSiteConfigFromApi,
+  fetchArticlesFromApi,
+  siteUrlFromScope
+} from "@/lib/api";
+
+const [apiCategories, siteConfig, recentArticles] = await Promise.all([
+  fetchCategoriesFromApi(request),
+  fetchSiteConfigFromApi(request),
+  fetchArticlesFromApi({ limit: 6 }, request)
+]);
+
+// Read URL brand and model parameter
+const selectedBrand = Astro.url.searchParams.get("brand") || "";
+const selectedModel = Astro.url.searchParams.get("model") || "";
+
+// Unique list of all brands
+const allUniqueBrands = Array.from(new Set(ELECTRIFIED_CARS_DATA.map((c: any) => c.brand))).filter(Boolean).sort();
+
+// Helper normalize brand for matching
+const norm = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, "");
+
+// Filter cars for active brand if specified
+const brandCars = selectedBrand
+  ? ELECTRIFIED_CARS_DATA.filter((c: any) => {
+      const cb = norm(c.brand);
+      const sb = norm(selectedBrand);
+      return cb === sb || cb.startsWith(sb) || sb.startsWith(cb);
+    })
+  : [];
+
+const siteUrl = siteConfig?.portal?.public_site_url ?? siteUrlFromScope(request || Astro.request);
+const activeCarsList = selectedBrand && brandCars.length > 0 ? brandCars : ELECTRIFIED_CARS_DATA.slice(0, 15);
+
+// Schema.org/CollectionPage & ItemList Structured Data
+const catalogLd = {
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  name: selectedBrand ? `Katalog Mobil Listrik & Hybrid ${selectedBrand} Indonesia` : "Katalog Lengkap Mobil Listrik & Hybrid Indonesia 2026",
+  description: `Database spesifikasi resmi, harga OTR, dan perbandingan varian mobil listrik di Indonesia.`,
+  url: new URL(Astro.url.pathname, siteUrl).href,
+  mainEntity: {
+    "@type": "ItemList",
+    numberOfItems: activeCarsList.length,
+    itemListElement: activeCarsList.map((c: any, idx: number) => ({
+      "@type": "ListItem",
+      position: idx + 1,
+      name: c.name,
+      url: `${siteUrl}/mobil/${c.slug}`,
+      image: c.img || "/images/cars/default-car.webp",
+    })),
+  },
+};
+
+// Schema.org/BreadcrumbList
+const breadcrumbLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Beranda", item: siteUrl },
+    { "@type": "ListItem", position: 2, name: "Katalog Mobil", item: `${siteUrl}/katalog-mobil` },
+    ...(selectedBrand ? [{ "@type": "ListItem", position: 3, name: selectedBrand, item: `${siteUrl}/katalog-mobil?brand=${encodeURIComponent(selectedBrand)}` }] : []),
+  ],
+};
+
+// Brand curated news / insights
+const brandNewsArticles = [
+  {
+    title: `Daftar Harga & Spesifikasi Lengkap Lini Mobil Listrik ${selectedBrand || 'Elektrifikasi'} 2026`,
+    excerpt: `Simak ulasan mendalam perbedaan kapasitas baterai, teknologi charging, dan garansi resmi ${selectedBrand || 'mobil listrik'} di Indonesia.`,
+    category: "Panduan Pembeli",
+    date: "24 Agustus 2026",
+    readTime: "4 mnt baca",
+    img: "https://images.unsplash.com/photo-1563720223185-11003d516935?q=80&w=800&auto=format&fit=crop"
+  },
+  {
+    title: `Uji Jarak Tempuh Nyata & Efisiensi Energi ${selectedBrand || 'EV'} di Rute Tol Trans Jawa`,
+    excerpt: `Pengujian langsung konsumsi kWh per 100 km, kenyamanan suspensi, dan performa akselerasi di medan harian.`,
+    category: "Test Drive & Review",
+    date: "22 Agustus 2026",
+    readTime: "6 mnt baca",
+    img: "https://images.unsplash.com/photo-1617788138017-80ad40651399?q=80&w=800&auto=format&fit=crop"
+  },
+  {
+    title: `Ekspansi Jaringan Dealer & Fasilitas Fast Charging ${selectedBrand || 'Otomotif'} di Berbagai Kota`,
+    excerpt: `Daftar lokasi service center resmi, ketersediaan suku cadang, dan promo pemasangan home charger gratis.`,
+    category: "Ekosistem & SPKLU",
+    date: "19 Agustus 2026",
+    readTime: "3 mnt baca",
+    img: "https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=800&auto=format&fit=crop"
+  }
+];
+---
+
+<BaseLayout
+  title={selectedBrand ? `Showroom Mobil ${selectedBrand} 2026 - ${SITE.name}` : `Katalog Mobil Listrik & Hybrid 2026 - ${SITE.name}`}
+  description={`Katalog dan database spesifikasi mobil listrik (BEV) dan hybrid (HEV/PHEV) resmi ${selectedBrand || ''} di Indonesia. Bandingkan trim, kapasitas baterai, dan harga OTR.`}
+  siteConfig={siteConfig}
+  navCategories={apiCategories}
+  jsonLd={[catalogLd, breadcrumbLd]}
+>
+  <div class="mx-auto max-w-7xl px-4 pt-1 pb-8 space-y-4 sm:space-y-6">
+    <!-- Breadcrumb & Studio Action (Hidden on brand showroom to let car card move up) -->
+    {!selectedBrand && (
+      <div class="flex items-center justify-between gap-4">
+        <nav aria-label="Breadcrumb" class="text-xs font-semibold text-slate-400">
+          <ol class="flex items-center gap-2">
+            <li><a href="/" class="hover:text-cyan-500 transition">Beranda</a></li>
+            <li aria-hidden="true">/</li>
+            <li><a href="/katalog-mobil" class="hover:text-cyan-500 transition">Katalog Mobil</a></li>
+          </ol>
+        </nav>
+      </div>
+    )}
+
+    {/* CASE 1: SPECIFIC BRAND SELECTED -> RENDER XPENG-STYLE MINIMALIST SHOWROOM STAGE */}
+    {selectedBrand && brandCars.length > 0 ? (
+      <section class="reveal-on-scroll">
+        <XpengBrandShowcase
+          brandName={selectedBrand}
+          cars={brandCars}
+          allBrands={allUniqueBrands}
+          initialModelSlug={selectedModel}
+        />
+      </section>
+    ) : (
+      /* CASE 2: NO SPECIFIC BRAND -> Show Car Finder & Filter Grid Directly */
+      <section id="car-finder-section" class="reveal-on-scroll">
+        <CarFinderHero />
+      </section>
+    )}
+
+    {/* BRAND SPECIFIC NEWS & ARTICLES SECTION */}
+    {selectedBrand && (
+      <section class="reveal-on-scroll space-y-6 pt-6 border-t border-slate-200/60 dark:border-white/10">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-[11px] font-bold uppercase tracking-wider mb-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
+              Liputan Khusus
+            </div>
+            <h2 class="font-headline text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Berita & Ulasan Terbaru Seputar {selectedBrand}
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-normal mt-1">
+              Artikel uji jalan, analisis teknologi baterai, dan perkembangan jaringan purna jual {selectedBrand} di Indonesia.
+            </p>
+          </div>
+          <a
+            href={`/kategori/ulasan?q=${selectedBrand}`}
+            class="text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:underline uppercase tracking-wider shrink-0"
+          >
+            Lihat Semua Artikel {selectedBrand} →
+          </a>
+        </div>
+
+        <div class="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 overflow-x-auto sm:overflow-visible snap-x snap-mandatory no-scrollbar pb-2">
+          {brandNewsArticles.map((art) => (
+            <article class="group rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/10 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between w-62.5 sm:w-auto shrink-0 snap-start">
+              <div class="space-y-2.5 sm:space-y-4">
+                <div class="aspect-16/10 overflow-hidden bg-slate-900 relative">
+                  <img
+                    src={art.img}
+                    alt={art.title}
+                    class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    loading="lazy"
+                  />
+                  <span class="absolute top-2.5 left-2.5 rounded-full bg-slate-900/80 backdrop-blur-md px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-white border border-white/20">
+                    {art.category}
+                  </span>
+                </div>
+                <div class="p-3 sm:p-5 pt-0 space-y-1.5 sm:space-y-2">
+                  <div class="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-slate-400 font-medium">
+                    <span>{art.date}</span>
+                    <span>•</span>
+                    <span>{art.readTime}</span>
+                  </div>
+                  <h3 class="font-headline font-extrabold text-xs sm:text-base text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition line-clamp-2">
+                    {art.title}
+                  </h3>
+                  <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                    {art.excerpt}
+                  </p>
+                </div>
+              </div>
+              <div class="px-3 pb-3 pt-2 sm:px-5 sm:pb-5 sm:pt-3 border-t border-slate-100 dark:border-slate-800/80 mt-1 sm:mt-3 flex items-center justify-between text-[11px] sm:text-xs font-bold text-cyan-600 dark:text-cyan-400">
+                <span>Baca Selengkapnya</span>
+                <span class="group-hover:translate-x-1 transition-transform">→</span>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Leaderboard Ad Slot -->
+    <section class="reveal-on-scroll">
+      <AdSlot
+        format="leaderboard"
+        title="Slot Iklan Peluncuran EV & Ekosistem SPKLU"
+        description="Pemasangan banner informasi promo pembelian, cicilan, dan paket home charging gratis."
+      />
+    </section>
+
+    <!-- Catalog Enrichment Section: Buyer Guides, Specs Comparison & Interactive FAQ -->
+    <section class="reveal-on-scroll">
+      <CatalogGuideSection />
+    </section>
+  </div>
+
+  <!-- Scroll Fade-In-Up IntersectionObserver Script (Optimized with unobserve) -->
+  <script>
+    function initScrollReveal() {
+      const elements = document.querySelectorAll(".reveal-on-scroll:not(.is-revealed)");
+      if (!elements.length) return;
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-revealed");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.08, rootMargin: "0px 0px -30px 0px" });
+
+      elements.forEach((el) => observer.observe(el));
+    }
+
+    document.addEventListener("astro:page-load", initScrollReveal);
+  </script>
+</BaseLayout>

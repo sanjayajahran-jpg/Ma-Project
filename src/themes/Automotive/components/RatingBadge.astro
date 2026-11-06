@@ -1,0 +1,83 @@
+---
+interface Props {
+  score?: number;
+  performance?: number;
+  comfort?: number;
+  cabinNoise?: string;
+  tcoScore?: number;
+  verdict?: string;
+}
+
+const {
+  score = 8.8,
+  performance = 9.0,
+  comfort = 8.5,
+  cabinNoise = "64 dB (Kedap)",
+  tcoScore = 8.2,
+  verdict = "Hasil uji jalan riil menunjukkan kenyamanan suspensi luar biasa untuk jalanan Indonesia dengan efisiensi energi yang unggul.",
+} = Astro.props;
+---
+
+<div class="suede-texture rounded-xl border border-line p-5 shadow-lg space-y-4 text-ink transition-colors duration-300">
+  <div class="flex items-center justify-between border-b border-line pb-3">
+    <div class="flex items-center gap-2">
+      <span class="grid h-7 w-7 place-items-center rounded-full bg-cyan-600 dark:bg-cyan-500 text-xs font-bold text-white shadow shadow-cyan-500/30">
+        ✓
+      </span>
+      <div>
+        <span class="text-[10px] font-extrabold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">PENGUJIAN NYATA REDAKSI</span>
+        <h4 class="font-headline text-base font-extrabold text-ink">EVnesia Test Drive Score</h4>
+      </div>
+    </div>
+
+    <!-- Big Score Badge -->
+    <div class="flex items-baseline gap-1 rounded-xl bg-cyan-500/15 px-3.5 py-1.5 border border-cyan-500/40 text-cyan-600 dark:text-cyan-400">
+      <span class="font-headline text-2xl font-black">{score}</span>
+      <span class="text-xs font-bold opacity-80">/10</span>
+    </div>
+  </div>
+
+  <!-- Breakdown Bars -->
+  <div class="grid grid-cols-2 gap-3 text-xs">
+    <div class="rounded-lg bg-paper p-2.5 border border-line shadow-sm">
+      <div class="flex justify-between font-bold text-soft">
+        <span>Performa & 0-100</span>
+        <span class="text-ink font-extrabold">{performance}/10</span>
+      </div>
+      <div class="mt-1.5 h-1.5 w-full rounded-full bg-line overflow-hidden">
+        <div class="h-full rounded-full bg-cyan-600 dark:bg-cyan-400" style={`width: ${performance * 10}%`}></div>
+      </div>
+    </div>
+
+    <div class="rounded-lg bg-paper p-2.5 border border-line shadow-sm">
+      <div class="flex justify-between font-bold text-soft">
+        <span>Kenyamanan Suspensi</span>
+        <span class="text-ink font-extrabold">{comfort}/10</span>
+      </div>
+      <div class="mt-1.5 h-1.5 w-full rounded-full bg-line overflow-hidden">
+        <div class="h-full rounded-full bg-cyan-500" style={`width: ${comfort * 10}%`}></div>
+      </div>
+    </div>
+
+    <div class="rounded-lg bg-paper p-2.5 border border-line shadow-sm">
+      <div class="flex justify-between font-bold text-soft">
+        <span>Kekedapan Kabin</span>
+        <span class="text-cyan-500 font-extrabold">{cabinNoise}</span>
+      </div>
+    </div>
+
+    <div class="rounded-lg bg-paper p-2.5 border border-line shadow-sm">
+      <div class="flex justify-between font-bold text-soft">
+        <span>Biaya Servis & Pajak</span>
+        <span class="text-amber-500 font-extrabold">{tcoScore}/10</span>
+      </div>
+      <div class="mt-1.5 h-1.5 w-full rounded-full bg-line overflow-hidden">
+        <div class="h-full rounded-full bg-amber-500" style={`width: ${tcoScore * 10}%`}></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="text-xs text-soft font-medium italic bg-cream p-3 rounded-lg border border-line">
+    "{verdict}"
+  </p>
+</div>

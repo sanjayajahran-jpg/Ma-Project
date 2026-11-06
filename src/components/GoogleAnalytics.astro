@@ -1,0 +1,63 @@
+---
+interface GaArticleParams {
+  id?: string;
+  published_date?: string | null;
+  rubrik?: string;
+  penulis?: string;
+  penulis_id?: string;
+  editor?: string;
+  editor_id?: string;
+  tag?: string;
+  source?: string;
+  topic?: string;
+}
+
+interface Props {
+  gaMeasurementId?: string | null;
+  articleParams?: GaArticleParams;
+  pageNotFound?: boolean;
+}
+
+const { gaMeasurementId, articleParams, pageNotFound = false } = Astro.props;
+
+const hasGa = gaMeasurementId && gaMeasurementId.trim().startsWith("G-");
+const dataLayerPush = hasGa && articleParams
+  ? {
+      published_date: articleParams.published_date ?? "",
+      rubrik: articleParams.rubrik ?? "",
+      penulis: articleParams.penulis ?? "",
+      editor: articleParams.editor ?? "",
+      id: articleParams.id ?? "",
+      source: articleParams.source ?? "",
+      topic: articleParams.topic ?? "",
+      tag: articleParams.tag ?? "",
+      penulis_id: articleParams.penulis_id ?? "",
+      editor_id: articleParams.editor_id ?? "",
+    }
+  : null;
+---
+
+{hasGa && (
+  <>
+    <script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${gaMeasurementId}`} />
+    <script is:inline set:html={`
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${gaMeasurementId}');
+    `} />
+    {dataLayerPush && (
+      <script is:inline data-astro-rerun set:html={`
+        gtag('event', 'view_article', ${JSON.stringify(dataLayerPush)});
+      `} />
+    )}
+    {pageNotFound && (
+      <script is:inline data-astro-rerun set:html={`
+        gtag('event', 'page_not_found', {
+          page_path: window.location.pathname + window.location.search,
+          page_location: window.location.href
+        });
+      `} />
+    )}
+  </>
+)}

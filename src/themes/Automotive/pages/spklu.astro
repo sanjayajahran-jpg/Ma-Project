@@ -1,0 +1,37 @@
+---
+// spklu.astro — Halaman Simulasi SPKLU & Pengisian Daya (Theme: Automotive)
+import BaseLayout from "../layouts/BaseLayout.astro";
+import SpkluChargingHub from "../components/SpkluChargingHub.astro";
+import BuyingGuides from "../components/BuyingGuides.astro";
+---
+
+<BaseLayout
+  title="Peta & Simulasi Biaya Pengisian SPKLU PLN Indonesia | EVnesia"
+  description="Kalkulator durasi dan biaya pengisian baterai mobil listrik di SPKLU Fast Charging, Ultra Fast Charging, dan Home Charging PLN."
+>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+    
+    <!-- Hero Header -->
+    <div class="text-center space-y-3 max-w-3xl mx-auto">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 text-xs font-bold uppercase tracking-wider">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+        Infrastruktur Pengisian Daya Nasional
+      </div>
+      <h1 class="font-headline text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        Simulasi & Direktori SPKLU Indonesia
+      </h1>
+      <p class="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed">
+        Hitung estimasi durasi pengisian daya dan total biaya pengisian baterai kendaraan listrik Anda di berbagai tipe charger (AC 7kW, DC 50kW, DC 150kW Ultra Fast).
+      </p>
+    </div>
+
+    <!-- SPKLU Component -->
+    <SpkluChargingHub />
+
+    <!-- Buying Guides -->
+    <div class="pt-8">
+      <BuyingGuides />
+    </div>
+
+  </div>
+</BaseLayout>

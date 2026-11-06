@@ -1,0 +1,66 @@
+---
+interface Props {
+  format?: "leaderboard" | "rectangle" | "inline";
+  class?: string;
+  title?: string;
+  description?: string;
+}
+const {
+  format = "leaderboard",
+  class: cls = "",
+  title = "Promosikan brand Anda di portal ini",
+  description = "Banner responsif untuk campaign, publikasi, event, dan kemitraan media.",
+} = Astro.props;
+
+const sizes: Record<string, string> = {
+  leaderboard: "min-h-[96px] sm:min-h-[120px]",
+  rectangle: "min-h-[280px] w-full max-w-[336px] mx-auto",
+  inline: "min-h-[120px]",
+};
+
+const layout: Record<string, string> = {
+  leaderboard: "sm:flex-row sm:items-center sm:justify-between",
+  rectangle: "flex-col items-start justify-between",
+  inline: "sm:flex-row sm:items-center sm:justify-between",
+};
+---
+
+<aside class:list={["my-2", cls]} aria-label="Iklan dan kerja sama">
+  <p
+    class="kicker mb-1 text-center text-faint"
+    style="font-size:10px;letter-spacing:.12em"
+  >
+    Iklan
+  </p>
+  <div
+    class:list={[
+      "relative isolate flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 overflow-hidden rounded-2xl sm:rounded-3xl border border-line p-3.5 sm:p-5 text-white shadow-lg sm:shadow-xl bg-slate-900/90 dark:bg-slate-950/90 backdrop-blur-md",
+      sizes[format],
+    ]}
+    data-ad-slot={format}
+  >
+    <div class="absolute -right-10 -top-16 -z-10 h-44 w-44 rounded-full bg-cyan-600/30 blur-2xl"></div>
+    <div class="absolute -bottom-20 left-10 -z-10 h-48 w-48 rounded-full bg-cyan-400/20 blur-3xl"></div>
+    <div class="min-w-0">
+      <p class="kicker text-cyan-400 font-extrabold text-[9px] sm:text-[10px] uppercase tracking-wider">Iklan • Promosi Mitra</p>
+      <p class:list={[
+        "headline mt-1 sm:mt-2 leading-tight text-white font-black font-headline",
+        format === "rectangle" ? "text-xl sm:text-2xl" : "text-sm sm:text-xl",
+      ]}>
+        {title}
+      </p>
+      <p class:list={[
+        "mt-1 max-w-2xl text-[11px] sm:text-xs leading-relaxed text-slate-300 font-normal",
+        format === "rectangle" ? "" : "sm:max-w-xl",
+      ]}>
+        {description}
+      </p>
+    </div>
+    <a
+      href="/pasang-iklan"
+      class="inline-flex shrink-0 items-center justify-center rounded-xl bg-linear-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white px-4 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition shadow-md shadow-cyan-600/30 w-full sm:w-auto mt-1 sm:mt-0"
+    >
+      Pasang Iklan →
+    </a>
+  </div>
+</aside>

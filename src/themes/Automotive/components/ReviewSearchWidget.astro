@@ -1,0 +1,122 @@
+---
+// TopGear Style Car Reviews Search Widget
+const MANUFACTURERS = [
+  { name: "Toyota", models: ["Kijang Innova Zenix", "Fortuner", "GR Yaris", "bZ4X EV"] },
+  { name: "Honda", models: ["CR-V Hybrid", "Civic Type R", "HR-V", "City Hatchback"] },
+  { name: "Hyundai", models: ["Ioniq 5 Long Range", "Ioniq 6", "Santa Fe Hybrid", "Creta"] },
+  { name: "BYD", models: ["Seal Performance", "Atto 3", "Dolphin", "Sealion 7"] },
+  { name: "Wuling", models: ["Binguo EV", "Air EV", "Almaz Hybrid", "Cloud EV"] },
+  { name: "Porsche", models: ["911 GT3 RS", "Taycan Cross Turismo", "Macan EV"] },
+  { name: "BMW", models: ["M4 Competition", "i4 M50", "iX xDrive50", "Series 3"] },
+];
+---
+
+<div class="relative overflow-hidden rounded-2xl border border-line shadow-2xl min-h-115 flex items-center">
+  <!-- Supercar Track Background Image -->
+  <img
+    src="https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?q=80&w=1600&auto=format&fit=crop"
+    alt="Supercar Track Review Background"
+    class="absolute inset-0 h-full w-full object-cover object-center"
+    loading="lazy"
+  />
+  <div class="absolute inset-0 bg-linear-to-r from-black/85 via-black/50 to-transparent"></div>
+
+  <!-- Header Link Bar Top Right -->
+  <div class="absolute top-4 right-6 z-20 flex items-center gap-2 text-xs font-bold text-white uppercase tracking-wider">
+    <a href="/kategori/ulasan-test-drive" class="hover:text-cyan-400 flex items-center gap-1 transition">
+      <span>Lihat Semua Ulasan Mobil</span>
+      <span>›</span>
+    </a>
+  </div>
+
+  <!-- Floating Glassmorphic Card (Left-side) -->
+  <div class="relative z-10 m-6 sm:m-10 w-full max-w-md rounded-2xl bg-paper/90 backdrop-blur-md p-6 sm:p-8 border border-line shadow-2xl space-y-5 text-ink transition-colors duration-300">
+    <div>
+      <span class="text-[11px] font-extrabold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest block">Uji Jalan Redaksi</span>
+      <h3 class="font-headline text-2xl sm:text-3xl font-black text-ink tracking-tight mt-1">
+        Cari Ulasan Mobil
+      </h3>
+      <p class="text-xs text-soft mt-1">
+        Temukan hasil pengujian nyata 0-100 km/j, konsumsi BBM/listrik, dan skor kenyamanan.
+      </p>
+    </div>
+
+    <form action="/cari" method="get" class="space-y-4" id="review-search-form">
+      <div>
+        <label for="review-brand" class="block text-xs font-bold text-soft mb-1.5 uppercase tracking-wider">
+          Merek Kendaraan (Manufacturer):
+        </label>
+        <select
+          id="review-brand"
+          name="q"
+          class="w-full rounded-xl bg-cream border border-line px-3.5 py-2.5 text-xs font-bold text-ink outline-none focus:ring-2 focus:ring-cyan-500/40"
+        >
+          <option value="">Pilih Merek Kendaraan...</option>
+          {MANUFACTURERS.map((m) => (
+            <option value={m.name}>{m.name}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label for="review-model" class="block text-xs font-bold text-soft mb-1.5 uppercase tracking-wider">
+          Model / Seri Kendaraan:
+        </label>
+        <select
+          id="review-model"
+          class="w-full rounded-xl bg-cream border border-line px-3.5 py-2.5 text-xs font-bold text-ink outline-none focus:ring-2 focus:ring-cyan-500/40"
+        >
+          <option value="">Pilih Model Kendaraan...</option>
+        </select>
+      </div>
+
+      <button
+        type="submit"
+        class="w-full rounded-xl bg-cyan-400 py-3 text-xs font-black uppercase tracking-widest text-black shadow-lg shadow-cyan-400/30 hover:bg-cyan-300 transition active:scale-[0.98]"
+      >
+        CARI ULASAN (CONTINUE)
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  function initReviewSearch() {
+    const brandSelect = document.getElementById('review-brand') as HTMLSelectElement | null;
+    const modelSelect = document.getElementById('review-model') as HTMLSelectElement | null;
+
+    if (!brandSelect || !modelSelect) return;
+
+    const modelsMap: Record<string, string[]> = {
+      "Toyota": ["Kijang Innova Zenix", "Fortuner", "GR Yaris", "bZ4X EV"],
+      "Honda": ["CR-V Hybrid", "Civic Type R", "HR-V", "City Hatchback"],
+      "Hyundai": ["Ioniq 5 Long Range", "Ioniq 6", "Santa Fe Hybrid", "Creta"],
+      "BYD": ["Seal Performance", "Atto 3", "Dolphin", "Sealion 7"],
+      "Wuling": ["Binguo EV", "Air EV", "Almaz Hybrid", "Cloud EV"],
+      "Porsche": ["911 GT3 RS", "Taycan Cross Turismo", "Macan EV"],
+      "BMW": ["M4 Competition", "i4 M50", "iX xDrive50", "Series 3"],
+    };
+
+    brandSelect.addEventListener('change', () => {
+      const selected = brandSelect.value;
+      modelSelect.innerHTML = '<option value="">Pilih Model Kendaraan...</option>';
+      if (selected && modelsMap[selected]) {
+        modelsMap[selected].forEach((m) => {
+          const opt = document.createElement('option');
+          opt.value = `${selected} ${m}`;
+          opt.textContent = m;
+          modelSelect.appendChild(opt);
+        });
+      }
+    });
+
+    modelSelect.addEventListener('change', () => {
+      if (modelSelect.value) {
+        brandSelect.value = modelSelect.value;
+      }
+    });
+  }
+
+  initReviewSearch();
+  document.addEventListener('astro:page-load', initReviewSearch);
+</script>

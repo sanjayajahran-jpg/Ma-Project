@@ -1,0 +1,617 @@
+---
+// BrandShowcaseHero.astro — EVHub.id Dedicated Brand Showcase Hero with Center Car, Brief Specs, Related News & Similar Recommendations
+import { getBrandLogo, getOptimizedCarImg } from "../lib/brand-utils";
+import BrandStripRow from "./BrandStripRow.astro";
+
+interface Props {
+  brand: string;
+  cars: any[];
+  allCars?: any[];
+  articles?: any[];
+  initialIndex?: number;
+  themePreview?: string;
+}
+
+const {
+  brand,
+  cars = [],
+  allCars = [],
+  articles = [],
+  initialIndex = 0,
+  themePreview = "",
+} = Astro.props;
+
+const safeIndex = initialIndex >= 0 && initialIndex < cars.length ? initialIndex : 0;
+const currentCar = cars[safeIndex] || cars[0] || {};
+const currentSpecs: any = currentCar.specs || {};
+const brandLogo = getBrandLogo(brand || currentCar.brand || "");
+
+// 1. Berita terkait mobil / merek ini
+const brandNorm = (brand || currentCar.brand || "").toLowerCase();
+const carNameNorm = (currentCar.name || "").toLowerCase();
+
+const matchedNews = articles.filter((a: any) => {
+  const text = `${a.title || ""} ${a.dek || ""} ${a.lead || ""}`.toLowerCase();
+  return text.includes(brandNorm) || text.includes(carNameNorm);
+});
+const otherNews = articles.filter((a: any) => !matchedNews.includes(a));
+const displayNews = [...matchedNews, ...otherNews].slice(0, 3);
+
+// 2. Mobil rekomendasi lainnya dari merek lain (setara kelas / bujet)
+const targetPrice = currentCar.priceVal || 0;
+const targetBody = (currentCar.bodyType || "").toLowerCase();
+
+const candidates = allCars.filter((c: any) => {
+  const b = (c.brand || "").toLowerCase();
+  return b !== brandNorm && c.slug !== currentCar.slug;
+});
+
+const scored = candidates.map((c: any) => {
+  const pDiff = Math.abs((c.priceVal || 0) - targetPrice);
+  const bodyMatch = (c.bodyType || "").toLowerCase() === targetBody;
+  let score = pDiff;
+  if (bodyMatch) score -= 35;
+  return { car: c, score };
+});
+
+scored.sort((a, b) => a.score - b.score);
+const recommendedCars = scored.slice(0, 4).map((s) => s.car);
+---
+
+<div id="brand-showcase-container" class="space-y-4" data-brand={brand} data-initial-index={safeIndex} data-theme-preview={themePreview}>
+  <!-- Hidden data payload for client interaction -->
+  <textarea id="brand-cars-json" class="hidden" style="display:none;" aria-hidden="true" readonly>{JSON.stringify(cars)}</textarea>
+
+  <!-- Breadcrumb & Top Bar -->
+  <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+    <div class="flex items-center gap-1.5 sm:gap-2 min-w-0">
+      <a href={`/katalog-mobil${themePreview ? `?theme_preview=${encodeURIComponent(themePreview)}` : ''}`} class="hover:text-slate-900 dark:hover:text-white transition-colors shrink-0">
+        Katalog
+      </a>
+      <span class="text-slate-400">›</span>
+      <div class="w-5 h-5 rounded-full bg-white p-0.5 shrink-0 flex items-center justify-center shadow-xs border border-slate-200">
+        <img src={brandLogo} alt={`Logo ${currentCar.brand || brand}`} class="w-full h-full object-contain" />
+      </div>
+      <span class="font-bold text-slate-900 dark:text-white shrink-0">{currentCar.brand || brand}</span>
+      <span class="text-slate-400">›</span>
+      <span id="showcase-breadcrumb-name" class="text-sky-600 dark:text-sky-400 font-semibold truncate max-w-36 sm:max-w-xs">
+        {currentCar.name}
+      </span>
+    </div>
+
+    <div class="flex items-center gap-2 shrink-0">
+      <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+        Insentif PPN 1%
+      </span>
+      <a
+        href={`/katalog-mobil${themePreview ? `?theme_preview=${encodeURIComponent(themePreview)}` : ''}`}
+        class="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors ml-1"
+      >
+        ✕ Semua Merek
+      </a>
+    </div>
+  </div>
+
+  <!-- Model Selector Chips (Horizontal Scrollable) -->
+  {cars.length > 1 && (
+    <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 -mx-1 sm:mx-0 no-scrollbar" id="showcase-model-pills">
+      <span class="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 shrink-0 mr-1">Pilih Model:</span>
+      {cars.map((car: any, idx: number) => (
+        <button
+          type="button"
+          class={`model-pill-btn touch-spring shrink-0 px-3 py-1 rounded-xl text-xs transition-all cursor-pointer border ${
+            idx === safeIndex
+              ? 'bg-sky-500 text-white font-bold border-sky-400 shadow-md shadow-sky-500/20 active-model-pill'
+              : 'bg-white dark:bg-white/5 border-slate-200/70 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-sky-400/50 hover:text-sky-600 dark:hover:text-sky-300 font-medium'
+          }`}
+          data-index={idx}
+          data-slug={car.slug}
+        >
+          {car.name}
+        </button>
+      ))}
+    </div>
+  )}
+
+  <!-- Studio Stage Box (Tanpa border kaku agar terkesan menyatu dengan latar belakang) -->
+  <div id="brand-stage-box" class="w-full relative overflow-hidden rounded-3xl bg-slate-50/50 dark:bg-slate-900/30 p-2 sm:p-5">
+    <!-- Radial Ambient Glow -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 sm:w-125 h-48 sm:h-64 bg-sky-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <!-- Studio Stage Center Cutout -->
+    <div class="w-full h-[32svh] sm:h-[40vh] max-h-76 px-8 sm:px-14 relative flex flex-col items-center justify-center my-1 group/stage">
+      <div class="absolute bottom-6 w-3/4 h-8 bg-sky-500/20 blur-xl rounded-full"></div>
+
+      <!-- Tombol Ganti Mobil: Sebelumnya (Kiri) -->
+      {cars.length > 1 && (
+        <button
+          type="button"
+          id="brand-nav-prev"
+          class="touch-spring absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 dark:bg-slate-950/85 hover:bg-slate-100 dark:hover:bg-slate-900 flex items-center justify-center text-slate-700 dark:text-white transition-all shadow-md backdrop-blur-md cursor-pointer"
+          aria-label="Mobil Sebelumnya"
+          title="Mobil Sebelumnya"
+        >
+          <svg class="w-4 h-4 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+
+      <!-- Foto Mobil Tengah -->
+      <img
+        id="showcase-car-img"
+        src={getOptimizedCarImg(currentCar.img)}
+        alt={currentCar.name}
+        width="460"
+        height="260"
+        class="h-full w-auto max-w-[76vw] sm:max-w-none max-h-[22svh] sm:max-h-58 object-contain drop-shadow-2xl relative z-10 transition-all duration-300 ease-out"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+        onerror={`this.onerror=null; this.src='${currentCar.img || "/images/cars/default-car.png"}';`}
+      />
+
+      <!-- Tombol Ganti Mobil: Selanjutnya (Kanan) -->
+      {cars.length > 1 && (
+        <button
+          type="button"
+          id="brand-nav-next"
+          class="touch-spring absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/90 dark:bg-slate-950/85 hover:bg-slate-100 dark:hover:bg-slate-900 flex items-center justify-center text-slate-700 dark:text-white transition-all shadow-md backdrop-blur-md cursor-pointer"
+          aria-label="Mobil Selanjutnya"
+          title="Mobil Selanjutnya"
+        >
+          <svg class="w-4 h-4 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+
+      <!-- Indikator Posisi Mobil di Atas -->
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <span id="showcase-counter" class="px-2.5 py-0.5 rounded-full bg-slate-900/80 dark:bg-slate-950/80 text-[9px] font-mono text-slate-200 backdrop-blur-md">
+          {safeIndex + 1} / {cars.length}
+        </span>
+      </div>
+
+      <!-- Tombol Detail Lengkap Tepat di Bawah Foto Mobil -->
+      <div class="mt-2 relative z-20">
+        <a
+          id="showcase-detail-btn"
+          href={`/mobil/${currentCar.slug}${themePreview ? `?theme_preview=${encodeURIComponent(themePreview)}` : ''}`}
+          class="touch-spring inline-flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer whitespace-nowrap"
+          title={`Lihat Spesifikasi Lengkap ${currentCar.name}`}
+        >
+          <span>Detail Lengkap →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Title, Brand & Price Bar (Menyatu tanpa border kaku, ukuran teks proporsional) -->
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-3 mt-2 border-t border-slate-200/40 dark:border-white/5">
+      <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white flex items-center justify-center p-1.5 shrink-0 shadow-xs border border-slate-100">
+          <img id="showcase-brand-logo" src={brandLogo} alt={`Logo ${currentCar.brand || brand}`} class="w-full h-full object-contain" />
+        </div>
+        <div class="min-w-0">
+          <!-- HAPUS MEREK DI SAMPING TIPE: HANYA TAMPILKAN TIPE BODI & TIPE MESIN -->
+          <span id="showcase-category-tag" class="text-[9px] sm:text-[10px] font-extrabold text-sky-600 dark:text-sky-400 uppercase tracking-wider block truncate">
+            {(currentCar.bodyType || "SUV").toUpperCase()} · {(currentCar.engineType || "BEV").toUpperCase()}
+          </span>
+          <h1 id="showcase-car-name" class="text-sm sm:text-xl font-black text-slate-900 dark:text-white tracking-tight leading-tight truncate">
+            {currentCar.name}
+          </h1>
+          <p id="showcase-tagline" class="text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 font-normal truncate mt-0.5">
+            {currentCar.tagline || `${currentCar.name} resmi di Indonesia.`}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between sm:justify-end gap-3 pt-1.5 sm:pt-0 border-t border-slate-200/30 dark:border-white/5 sm:border-t-0">
+        <div class="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-1.5 min-w-0 pr-1">
+          <span id="showcase-price" class="text-lg sm:text-2xl font-black text-slate-900 dark:text-white font-metric whitespace-nowrap leading-tight">
+            {currentCar.price}
+          </span>
+          <span class="text-[9px] text-slate-400 uppercase font-mono">OTR Jakarta</span>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <a
+            id="showcase-brochure-btn"
+            href={currentCar.brochureUrl || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            class={`touch-spring inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 dark:bg-emerald-500/20 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 font-bold text-xs transition-all shrink-0 ${currentCar.brochureUrl ? '' : 'hidden'}`}
+            title={`Unduh Brosur Resmi PDF ${currentCar.name}`}
+          >
+            <svg class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Brosur PDF</span>
+          </a>
+          <a
+            id="showcase-compare-btn"
+            href={`/komparasi?car1=${currentCar.slug}${themePreview ? `&theme_preview=${encodeURIComponent(themePreview)}` : ''}`}
+            class="touch-spring inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 text-sky-700 dark:text-sky-300 font-bold text-xs transition-all shrink-0"
+            title={`Bandingkan ${currentCar.name}`}
+          >
+            <svg class="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+            </svg>
+            <span>+ Bandingkan</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- 6 SPESIFIKASI (Menyatu tanpa header tulisan "Spesifikasi Singkat" dan tanpa border kaku) -->
+  <!-- ======================================================== -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5 pt-1">
+    <!-- 1. Baterai -->
+    <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-50/70 dark:bg-white/5 flex flex-col justify-between">
+      <span class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">⚡ Baterai</span>
+      <div id="showcase-spec-battery" class="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-metric my-0.5">
+        {currentSpecs.battery_capacity_kwh ? `${currentSpecs.battery_capacity_kwh} kWh` : '-'}
+      </div>
+      <span id="showcase-spec-battery-type" class="text-[9px] text-slate-400 dark:text-slate-500 block truncate">
+        {currentSpecs.battery_type || 'Baterai EV'}
+      </span>
+    </div>
+
+    <!-- 2. Jarak Tempuh -->
+    <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-50/70 dark:bg-white/5 flex flex-col justify-between">
+      <span class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">🔋 Jarak Tempuh</span>
+      <div id="showcase-spec-range" class="text-xs sm:text-sm font-black text-sky-600 dark:text-sky-400 font-metric my-0.5">
+        {currentCar.consumption || (currentSpecs.electric_range_km ? `${currentSpecs.electric_range_km} km` : '-')}
+      </div>
+      <span id="showcase-spec-range-std" class="text-[9px] text-slate-400 dark:text-slate-500 block truncate">
+        {currentSpecs.range_standard ? `Standar ${currentSpecs.range_standard}` : 'Jarak Maks'}
+      </span>
+    </div>
+
+    <!-- 3. Tenaga / Motor -->
+    <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-50/70 dark:bg-white/5 flex flex-col justify-between">
+      <span class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">🚀 Tenaga</span>
+      <div id="showcase-spec-power" class="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-metric my-0.5">
+        {currentCar.hp || (currentSpecs.horsepower ? `${currentSpecs.horsepower} PS` : '-')}
+      </div>
+      <span id="showcase-spec-engine" class="text-[9px] text-slate-400 dark:text-slate-500 block truncate">
+        {currentSpecs.engine_name || 'Motor Listrik'}
+      </span>
+    </div>
+
+    <!-- 4. Torsi -->
+    <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-50/70 dark:bg-white/5 flex flex-col justify-between">
+      <span class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">🔄 Torsi</span>
+      <div id="showcase-spec-torque" class="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-metric my-0.5">
+        {currentSpecs.torque_nm ? `${currentSpecs.torque_nm} Nm` : (currentCar.torque || '-')}
+      </div>
+      <span class="text-[9px] text-slate-400 dark:text-slate-500 block truncate">
+        Torsi Maksimum
+      </span>
+    </div>
+
+    <!-- 5. Akselerasi -->
+    <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-50/70 dark:bg-white/5 flex flex-col justify-between">
+      <span class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">⏱️ 0-100 km/h</span>
+      <div id="showcase-spec-acc" class="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-metric my-0.5">
+        {currentSpecs.acceleration_0_100 ? `${currentSpecs.acceleration_0_100}s` : (currentCar.acc || '-')}
+      </div>
+      <span class="text-[9px] text-slate-400 dark:text-slate-500 block truncate">
+        Akselerasi Riil
+      </span>
+    </div>
+
+    <!-- 6. Penggerak -->
+    <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-50/70 dark:bg-white/5 flex flex-col justify-between">
+      <span class="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">⚙️ Penggerak</span>
+      <div id="showcase-spec-drivetrain" class="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-metric my-0.5">
+        {currentSpecs.drivetrain || 'RWD / FWD'}
+      </div>
+      <span id="showcase-spec-trans" class="text-[9px] text-slate-400 dark:text-slate-500 block truncate">
+        {currentSpecs.transmission || 'Single Speed'}
+      </span>
+    </div>
+  </div>
+
+  <!-- Deskripsi Resmi Model (jika ada) -->
+  {currentCar.description && (
+    <div id="showcase-description-box" class="p-3 rounded-2xl bg-slate-50/60 dark:bg-white/5 text-[11px] sm:text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+      <p id="showcase-description">{currentCar.description}</p>
+    </div>
+  )}
+
+  <!-- ======================================================== -->
+  <!-- BERITA TERKAIT MOBIL / MEREK -->
+  <!-- ======================================================== -->
+  {displayNews.length > 0 && (
+    <section class="pt-4 border-t border-slate-200/40 dark:border-white/5" aria-label="Berita Terkait">
+      <div class="mb-2.5 flex items-center justify-between">
+        <div class="flex items-center gap-1.5">
+          <span class="w-1.5 h-3.5 rounded-full bg-sky-500"></span>
+          <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Berita Terkait {currentCar.brand || brand}
+          </h2>
+        </div>
+        <a href="/kategori/berita" class="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline">
+          Semua Berita →
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {displayNews.map((art: any) => {
+          const catSlug = art.category?.slug || (typeof art.category === 'string' ? art.category.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'berita');
+          const artHref = `/${catSlug}/${art.slug || art.id}${themePreview ? `?theme_preview=${encodeURIComponent(themePreview)}` : ''}`;
+          const imgUrl = art.cover || art.image || art.cover_image || "/images/cars/default-car.png";
+          const pubDate = art.publishedAt || art.published_at;
+          const formattedDate = pubDate 
+            ? new Date(pubDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+            : "Terkini";
+
+          return (
+            <a
+              href={artHref}
+              class="group block p-2 rounded-2xl bg-slate-50/60 dark:bg-white/5 hover:bg-slate-100/80 dark:hover:bg-white/10 transition-all flex sm:flex-col gap-2.5 items-center sm:items-start"
+            >
+              <div class="w-24 sm:w-full aspect-video rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 shrink-0 relative">
+                <img
+                  src={imgUrl}
+                  alt={art.title}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                  onerror="this.onerror=null; this.src='/images/cars/default-car.png';"
+                />
+              </div>
+              <div class="min-w-0 flex-1">
+                <span class="text-[9px] font-bold text-sky-600 dark:text-sky-400 block mb-0.5">
+                  {formattedDate}
+                </span>
+                <h3 class="text-xs font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors line-clamp-2 leading-snug">
+                  {art.title}
+                </h3>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  <!-- ======================================================== -->
+  <!-- MOBIL REKOMENDASI LAINNYA (SETARA DARI MEREK LAIN) -->
+  <!-- ======================================================== -->
+  {recommendedCars.length > 0 && (
+    <section class="pt-4 border-t border-slate-200/40 dark:border-white/5" aria-label="Mobil Rekomendasi Lainnya">
+      <div class="mb-2.5 flex items-center justify-between">
+        <div class="flex items-center gap-1.5">
+          <span class="w-1.5 h-3.5 rounded-full bg-emerald-500"></span>
+          <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">
+            Mobil Rekomendasi Lainnya
+          </h2>
+        </div>
+        <a href={`/katalog-mobil${themePreview ? `?theme_preview=${encodeURIComponent(themePreview)}` : ''}`} class="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline">
+          Lihat Semua Mobil →
+        </a>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+        {recommendedCars.map((rec: any) => {
+          const recLogo = getBrandLogo(rec.brand);
+          const recRange = rec.consumption || (rec.specs?.electric_range_km ? `${rec.specs.electric_range_km} km` : 'EV');
+          return (
+            <a
+              href={`/mobil/${rec.slug}${themePreview ? `?theme_preview=${encodeURIComponent(themePreview)}` : ''}`}
+              class="group block p-2.5 rounded-2xl bg-slate-50/60 dark:bg-white/5 hover:bg-slate-100/80 dark:hover:bg-white/10 transition-all flex flex-col justify-between"
+            >
+              <div class="flex items-center gap-1.5 mb-1.5">
+                <div class="w-4 h-4 rounded-full bg-white p-0.5 shrink-0 flex items-center justify-center">
+                  <img src={recLogo} alt="" class="w-full h-full object-contain" />
+                </div>
+                <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase truncate">
+                  {rec.brand}
+                </span>
+              </div>
+              <div class="w-full h-20 flex items-center justify-center my-1">
+                <img
+                  src={getOptimizedCarImg(rec.img)}
+                  alt={rec.name}
+                  class="h-full w-auto max-h-16 object-contain group-hover:scale-105 transition-transform"
+                  loading="lazy"
+                  onerror="this.onerror=null; this.src='/images/cars/default-car.png';"
+                />
+              </div>
+              <div class="pt-1.5 border-t border-slate-200/40 dark:border-white/5">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                  {rec.name}
+                </h4>
+                <div class="flex items-center justify-between text-[10px] mt-1">
+                  <span class="font-black text-slate-900 dark:text-white font-metric">
+                    {rec.price}
+                  </span>
+                  <span class="text-sky-600 dark:text-sky-400 font-mono text-[9px]">
+                    {recRange}
+                  </span>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  <!-- JELAJAHI MEREK LAINNYA (BrandStripRow di Bawah Showcase) -->
+  <div class="pt-4 border-t border-slate-200/40 dark:border-white/5">
+    <BrandStripRow />
+  </div>
+
+  <!-- Tombol Lihat Semua Katalog Mobil -->
+  <div class="text-center pt-1 pb-2">
+    <a
+      href={`/katalog-mobil${themePreview ? `?theme_preview=${encodeURIComponent(themePreview)}` : ''}`}
+      class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-xs font-bold text-slate-700 dark:text-slate-200 transition-all"
+    >
+      <span>Lihat Seluruh Katalog 140+ Model Mobil Listrik →</span>
+    </a>
+  </div>
+</div>
+
+<script is:inline>
+  function initBrandShowcase() {
+    const showcaseContainer = document.getElementById('brand-showcase-container');
+    if (!showcaseContainer) return;
+
+    try {
+      const jsonEl = document.getElementById('brand-cars-json');
+      const brandCars = jsonEl ? JSON.parse(jsonEl.value || jsonEl.textContent || '[]') : [];
+      const themePreview = showcaseContainer.getAttribute('data-theme-preview') || '';
+      let currentIndex = parseInt(showcaseContainer.getAttribute('data-initial-index') || '0', 10);
+
+      const imgEl = document.getElementById('showcase-car-img');
+      const counterEl = document.getElementById('showcase-counter');
+      const breadcrumbNameEl = document.getElementById('showcase-breadcrumb-name');
+      const carNameEl = document.getElementById('showcase-car-name');
+      const categoryTagEl = document.getElementById('showcase-category-tag');
+      const taglineEl = document.getElementById('showcase-tagline');
+      const priceEl = document.getElementById('showcase-price');
+      const brochureBtn = document.getElementById('showcase-brochure-btn');
+      const compareBtn = document.getElementById('showcase-compare-btn');
+      const detailBtn = document.getElementById('showcase-detail-btn');
+      
+      const specBatteryEl = document.getElementById('showcase-spec-battery');
+      const specBatteryTypeEl = document.getElementById('showcase-spec-battery-type');
+      const specRangeEl = document.getElementById('showcase-spec-range');
+      const specRangeStdEl = document.getElementById('showcase-spec-range-std');
+      const specPowerEl = document.getElementById('showcase-spec-power');
+      const specEngineEl = document.getElementById('showcase-spec-engine');
+      const specTorqueEl = document.getElementById('showcase-spec-torque');
+      const specAccEl = document.getElementById('showcase-spec-acc');
+      const specDrivetrainEl = document.getElementById('showcase-spec-drivetrain');
+      const specTransEl = document.getElementById('showcase-spec-trans');
+      
+      const descBox = document.getElementById('showcase-description-box');
+      const descEl = document.getElementById('showcase-description');
+
+      const prevBtn = document.getElementById('brand-nav-prev');
+      const nextBtn = document.getElementById('brand-nav-next');
+      const pillButtons = Array.from(document.querySelectorAll('.model-pill-btn'));
+
+      function updateShowcase(newIndex) {
+        if (!brandCars || brandCars.length === 0) return;
+        if (newIndex < 0) newIndex = brandCars.length - 1;
+        if (newIndex >= brandCars.length) newIndex = 0;
+        currentIndex = newIndex;
+
+        const car = brandCars[currentIndex];
+        if (!car) return;
+
+        const specs = car.specs || {};
+
+        if (imgEl) {
+          imgEl.style.opacity = '0.3';
+          imgEl.style.transform = 'scale(0.96)';
+          setTimeout(function() {
+            imgEl.src = car.img || '/images/cars/default-car.webp';
+            imgEl.alt = car.name;
+            imgEl.style.opacity = '1';
+            imgEl.style.transform = 'scale(1)';
+          }, 120);
+        }
+
+        if (counterEl) counterEl.textContent = (currentIndex + 1) + ' / ' + brandCars.length;
+        if (breadcrumbNameEl) breadcrumbNameEl.textContent = car.name;
+        if (carNameEl) carNameEl.textContent = car.name;
+        
+        // HANYA TAMPILKAN TIPE BODI & TIPE MESIN TANPA MEREK
+        if (categoryTagEl) {
+          categoryTagEl.textContent = ((car.bodyType || 'SUV').toUpperCase()) + ' · ' + ((car.engineType || 'BEV').toUpperCase());
+        }
+        if (taglineEl) {
+          taglineEl.textContent = car.tagline || (car.name + ' resmi di Indonesia.');
+        }
+        if (priceEl) priceEl.textContent = car.price || 'Rp -';
+
+        if (brochureBtn) {
+          if (car.brochureUrl) {
+            brochureBtn.href = car.brochureUrl;
+            brochureBtn.classList.remove('hidden');
+          } else {
+            brochureBtn.classList.add('hidden');
+          }
+        }
+        if (compareBtn) {
+          compareBtn.href = '/komparasi?car1=' + encodeURIComponent(car.slug) + (themePreview ? '&theme_preview=' + encodeURIComponent(themePreview) : '');
+        }
+        if (detailBtn) {
+          detailBtn.href = '/mobil/' + encodeURIComponent(car.slug) + (themePreview ? '?theme_preview=' + encodeURIComponent(themePreview) : '');
+        }
+
+        if (specBatteryEl) specBatteryEl.textContent = specs.battery_capacity_kwh ? (specs.battery_capacity_kwh + ' kWh') : '-';
+        if (specBatteryTypeEl) specBatteryTypeEl.textContent = specs.battery_type || 'Baterai EV';
+        
+        if (specRangeEl) specRangeEl.textContent = car.consumption || (specs.electric_range_km ? (specs.electric_range_km + ' km') : '-');
+        if (specRangeStdEl) specRangeStdEl.textContent = specs.range_standard ? ('Standar ' + specs.range_standard) : 'Jarak Maks';
+
+        if (specPowerEl) specPowerEl.textContent = car.hp || (specs.horsepower ? (specs.horsepower + ' PS') : '-');
+        if (specEngineEl) specEngineEl.textContent = specs.engine_name || 'Motor Listrik';
+
+        if (specTorqueEl) specTorqueEl.textContent = specs.torque_nm ? (specs.torque_nm + ' Nm') : (car.torque || '-');
+        if (specAccEl) specAccEl.textContent = specs.acceleration_0_100 ? (specs.acceleration_0_100 + 's') : (car.acc || '-');
+        
+        if (specDrivetrainEl) specDrivetrainEl.textContent = specs.drivetrain || 'RWD / FWD';
+        if (specTransEl) specTransEl.textContent = specs.transmission || 'Single Speed';
+
+        if (descBox && descEl) {
+          if (car.description) {
+            descEl.textContent = car.description;
+            descBox.classList.remove('hidden');
+          } else {
+            descBox.classList.add('hidden');
+          }
+        }
+
+        pillButtons.forEach(function(pill) {
+          const pIdx = parseInt(pill.getAttribute('data-index') || '-1', 10);
+          if (pIdx === currentIndex) {
+            pill.className = 'model-pill-btn touch-spring shrink-0 px-3 py-1 rounded-xl text-xs transition-all cursor-pointer border bg-sky-500 text-white font-bold border-sky-400 shadow-md shadow-sky-500/20 active-model-pill';
+            pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+          } else {
+            pill.className = 'model-pill-btn touch-spring shrink-0 px-3 py-1 rounded-xl text-xs transition-all cursor-pointer border bg-white dark:bg-white/5 border-slate-200/70 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-sky-400/50 hover:text-sky-600 dark:hover:text-sky-300 font-medium';
+          }
+        });
+
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('model', car.slug);
+          window.history.replaceState({}, '', url.toString());
+        } catch (_) {}
+      }
+
+      if (prevBtn) prevBtn.addEventListener('click', function() { updateShowcase(currentIndex - 1); });
+      if (nextBtn) nextBtn.addEventListener('click', function() { updateShowcase(currentIndex + 1); });
+
+      pillButtons.forEach(function(pill) {
+        pill.addEventListener('click', function() {
+          const idx = parseInt(pill.getAttribute('data-index') || '0', 10);
+          updateShowcase(idx);
+        });
+      });
+
+      window.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowLeft') updateShowcase(currentIndex - 1);
+        if (e.key === 'ArrowRight') updateShowcase(currentIndex + 1);
+      });
+
+    } catch (err) {
+      console.error('Error in brand showcase:', err);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initBrandShowcase);
+  } else {
+    initBrandShowcase();
+  }
+  document.addEventListener('astro:page-load', initBrandShowcase);
+</script>

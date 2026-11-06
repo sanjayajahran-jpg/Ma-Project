@@ -1,0 +1,413 @@
+---
+// article.astro — EVnesia V2 Mobile-First Article Experience (Section 8.4 of UI_DESIGN_SPEC_EVNESIA_V2_MOBILE_FIRST.md)
+const { request, params, article, siteConfig: prefetchedConfig } = Astro.props as any;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CarCardRail from "../components/CarCardRail.astro";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+import { allArticles } from "@/data";
+import { articleUrl } from "@/types";
+import { extractToc, injectBacaJuga } from "@/lib/format";
+import {
+  fetchAllArticlesFromApi,
+  fetchSiteConfigFromApi,
+  getAdjacentFromList,
+  getRelatedFromList,
+  isFallbackDataEnabled,
+  portalDomainFromScope,
+  siteUrlFromScope,
+} from "@/lib/api";
+
+if (!article) {
+  return Astro.redirect("/404", 302);
+}
+
+const siteConfig = prefetchedConfig ?? await fetchSiteConfigFromApi(request);
+const siteUrl = siteUrlFromScope(request);
+
+const sourceArticles = await fetchAllArticlesFromApi(20, request);
+const articlesPool = sourceArticles.length ? sourceArticles : isFallbackDataEnabled() ? allArticles : [];
+
+const { newer, older } = getAdjacentFromList(articlesPool, article);
+const relatedArticles = getRelatedFromList(articlesPool, article, 4);
+
+// Format Dates and Reading Time
+const pubDate = article.publishedAt || article.published_at;
+const formattedDate = pubDate
+  ? new Date(pubDate).toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  : "Hari ini";
+
+const readingMinutes = article.readingTime || Math.max(2, Math.ceil((article.bodyHtml || "").split(/\s+/).length / 200));
+
+// TOC and Baca Juga injection
+const toc = extractToc(article.bodyHtml || "");
+const bacaJugaItems = article.bacaJuga ?? [];
+const { html: bodyHtmlInjected } = injectBacaJuga(article.bodyHtml || "", bacaJugaItems);
+
+// Detect mentioned electrified cars in the article text or title
+const textToScan = `${article.title || ""} ${article.dek || ""} ${article.bodyHtml || ""}`.toLowerCase();
+const mentionedCars = ELECTRIFIED_CARS_DATA.filter((c: any) => {
+  const nameL = (c.name || "").toLowerCase();
+  const slugL = (c.slug || "").replace(/-/g, " ");
+  // Match key tokens
+  const shortName = nameL.replace(/(ev|phev|hev|awd|rwd|sport|sedan|suv)/g, "").trim();
+  return (
+    (shortName.length > 3 && textToScan.includes(shortName)) ||
+    textToScan.includes(nameL) ||
+    textToScan.includes(slugL)
+  );
+}).slice(0, 4);
+
+// Default featured car if none mentioned directly
+const featuredCar = mentionedCars[0] || ELECTRIFIED_CARS_DATA.find((c: any) => c.slug === "byd-seal") || ELECTRIFIED_CARS_DATA[0];
+
+const isReviewArticle = 
+  (article.category?.slug || "").includes("ulasan") || 
+  (article.title || "").toLowerCase().includes("review") || 
+  (article.title || "").toLowerCase().includes("uji") || 
+  (article.title || "").toLowerCase().includes("test drive");
+---
+
+<BaseLayout
+  title={`${article.seoTitle ?? article.title} — EVHub.id`}
+  description={article.seoDescription ?? article.dek ?? "Liputan otomotif dan kendaraan listrik terkini di EVHub.id."}
+  image={article.cover || "/images/cars/default-car.png"}
+  siteConfig={siteConfig}
+>
+  <!-- Bilah Progres Baca Tipis di Bawah Header Kapsul -->
+  <div id="read-progress-bar" class="fixed top-14 sm:top-16 left-0 right-0 h-1 bg-sky-400 origin-left z-50 transform scale-x-0 transition-transform duration-100 ease-out shadow-[0_0_8px_rgba(56,189,248,0.8)]"></div>
+
+  <article class="pt-16 sm:pt-20 pb-24 mx-auto max-w-4xl px-3 sm:px-6">
+    
+    <!-- Top Meta & Breadcrumb -->
+    <nav class="flex items-center justify-between text-xs text-slate-400 mb-3" aria-label="Breadcrumb">
+      <div class="flex items-center gap-1.5 truncate">
+        <a href="/?theme_preview=evnesia-v2" class="hover:text-white transition-colors">Beranda</a>
+        <span class="text-slate-600">›</span>
+        <a href={`/kategori/${article.category?.slug || 'berita'}`} class="hover:text-sky-400 font-semibold text-sky-300">
+          {article.category?.name || "Berita"}
+        </a>
+      </div>
+
+      <span class="px-2 py-0.5 rounded-full bg-slate-900 border border-white/10 text-[10px] font-mono text-slate-300 shrink-0">
+        {readingMinutes} menit baca
+      </span>
+    </nav>
+
+    <!-- Main Title & Dek -->
+    <header class="space-y-3 mb-6">
+      <h1 class="text-xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight">
+        {article.title}
+      </h1>
+
+      {article.dek && (
+        <p class="text-sm sm:text-base text-slate-300 font-medium leading-relaxed">
+          {article.dek}
+        </p>
+      )}
+
+      <!-- Author Byline Bar & Share Actions -->
+      <div class="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-blue-600/30 border border-blue-400/30 overflow-hidden flex items-center justify-center text-white font-bold text-xs">
+            {article.author?.avatar ? (
+              <img src={article.author.avatar} alt={article.author.name} class="w-full h-full object-cover" />
+            ) : (
+              <span>{article.author?.name?.charAt(0) || "E"}</span>
+            )}
+          </div>
+          <div>
+            <span class="font-bold text-white block leading-none">
+              {article.author?.name || "Redaksi EVHub.id"}
+            </span>
+            <span class="text-[10px] font-mono text-slate-400 mt-0.5 block">
+              {formattedDate}
+            </span>
+          </div>
+        </div>
+
+        <!-- Social Share Pills -->
+        <div class="flex items-center gap-1.5">
+          <a
+            href={`https://api.whatsapp.com/send?text=${encodeURIComponent(article.title + " - " + Astro.url.href)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="px-2.5 py-1 rounded-full glass border border-white/10 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/20 active:scale-95 transition-all flex items-center gap-1"
+            aria-label="Bagikan ke WhatsApp"
+          >
+            <span>WhatsApp</span>
+          </a>
+          <button
+            id="share-copy-btn"
+            type="button"
+            class="px-2.5 py-1 rounded-full glass border border-white/10 text-[11px] font-bold text-slate-300 hover:text-white active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+            aria-label="Salin tautan"
+          >
+            <span>Salin</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Studio Cover Photo -->
+    <div class="relative overflow-hidden rounded-2xl glass p-1.5 border border-white/15 mb-6 bg-slate-950">
+      <div class="aspect-video w-full rounded-xl overflow-hidden bg-slate-900 relative">
+        <img
+          src={article.cover || "/images/cars/default-car.png"}
+          alt={article.coverAlt || article.title}
+          class="w-full h-full object-cover"
+          loading="eager"
+        />
+      </div>
+      {article.coverCaption && (
+        <p class="text-[11px] text-slate-400 italic px-2 pt-2 text-center">
+          {article.coverCaption}
+        </p>
+      )}
+    </div>
+
+    <!-- Review Floating / Collapsible Quick Spec Summary (Section 8.4) -->
+    {isReviewArticle && featuredCar && (
+      <div class="mb-6 p-4 rounded-2xl glass border border-sky-500/30 bg-linear-to-r from-sky-950/40 via-slate-900/60 to-slate-950 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-300">
+              Ringkasan Spek Cepat Model Terkait
+            </span>
+          </div>
+          <a href={`/mobil/${featuredCar.slug}`} class="text-[11px] font-bold text-sky-400 hover:underline">
+            Lihat Detail Mobil →
+          </a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-center">
+            <span class="text-[9px] uppercase font-bold text-slate-400 block">Jarak Tempuh</span>
+            <span class="text-sm font-black text-emerald-400 font-metric">{featuredCar.consumption || "450 km"}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-center">
+            <span class="text-[9px] uppercase font-bold text-slate-400 block">Tenaga Puncak</span>
+            <span class="text-sm font-black text-sky-400 font-metric">{featuredCar.hp || "204 PS"}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-center">
+            <span class="text-[9px] uppercase font-bold text-slate-400 block">Kapasitas Baterai</span>
+            <span class="text-sm font-black text-white font-metric">{featuredCar.specs?.battery_capacity_kwh || 60} kWh</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-950/80 border border-white/10 text-center">
+            <span class="text-[9px] uppercase font-bold text-slate-400 block">Harga OTR</span>
+            <span class="text-xs font-black text-white font-metric truncate block">{featuredCar.price}</span>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <!-- Table of Contents (if available) -->
+    {toc.length > 1 && (
+      <nav class="mb-6 p-4 rounded-2xl glass border border-white/10 bg-slate-900/40 text-xs">
+        <span class="text-[11px] font-extrabold uppercase tracking-wider text-sky-400 block mb-2">
+          Daftar Isi Artikel
+        </span>
+        <ul class="space-y-1.5 list-disc list-inside text-slate-300">
+          {toc.map((item: any) => (
+            <li>
+              <a href={`#${item.id}`} class="hover:text-sky-300 transition-colors">
+                {item.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )}
+
+    <!-- Article Prose Content -->
+    <div
+      id="article-prose"
+      class="prose prose-invert prose-slate max-w-none text-slate-200 text-sm sm:text-base leading-relaxed space-y-4
+        prose-headings:text-white prose-headings:font-black prose-headings:tracking-tight
+        prose-h2:text-lg sm:prose-h2:text-2xl prose-h2:border-b prose-h2:border-white/10 prose-h2:pb-2 prose-h2:mt-8
+        prose-h3:text-base sm:prose-h3:text-lg prose-h3:text-sky-300
+        prose-a:text-sky-400 prose-a:underline hover:prose-a:text-sky-300
+        prose-blockquote:border-l-4 prose-blockquote:border-blue-500 prose-blockquote:bg-blue-950/20 prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-xl prose-blockquote:italic prose-blockquote:text-slate-300
+        prose-img:rounded-2xl prose-img:border prose-img:border-white/10 prose-img:my-4"
+      set:html={bodyHtmlInjected}
+    />
+
+    <!-- Interaksi 8.4: Mobil yang Disebut di Artikel Ini (Car Chip Rail) -->
+    {mentionedCars.length > 0 && (
+      <section class="mt-8 pt-6 border-t border-white/10">
+        <div class="flex items-center gap-1.5 mb-3">
+          <span class="w-1.5 h-3.5 rounded-full bg-emerald-400"></span>
+          <h3 class="text-xs sm:text-sm font-extrabold text-white tracking-tight">
+            Mobil Listrik yang Disebut dalam Artikel
+          </h3>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {mentionedCars.map((c: any) => (
+            <a
+              href={`/mobil/${c.slug}`}
+              class="glass-card p-2.5 rounded-xl border border-white/10 hover:border-sky-400/40 active:scale-98 transition-all flex items-center justify-between group"
+            >
+              <div class="flex items-center gap-2.5 overflow-hidden">
+                <img
+                  src={c.img}
+                  alt={c.name}
+                  class="w-12 h-10 object-contain drop-shadow-sm shrink-0"
+                  onerror="this.onerror=null; this.src='/images/cars/default-car.png';"
+                />
+                <div class="truncate">
+                  <span class="text-[9px] font-bold text-sky-400 uppercase tracking-wider block">
+                    {c.brand} · {c.bodyType?.toUpperCase()}
+                  </span>
+                  <span class="text-xs font-bold text-white group-hover:text-sky-300 transition-colors block truncate">
+                    {c.name}
+                  </span>
+                </div>
+              </div>
+
+              <div class="text-right shrink-0 pl-2">
+                <span class="text-xs font-black text-white font-metric block">
+                  {c.price}
+                </span>
+                <span class="text-[9px] text-emerald-400 font-bold block">
+                  {c.consumption || "450 km"}
+                </span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- Author Profile Card -->
+    <div class="mt-8 p-4 rounded-2xl glass border border-white/10 bg-slate-900/60 flex items-center gap-3">
+      <div class="w-12 h-12 rounded-full bg-linear-to-tr from-blue-600 to-sky-400 p-0.5 shrink-0">
+        <div class="w-full h-full rounded-full bg-slate-950 flex items-center justify-center overflow-hidden text-white font-bold text-base">
+          {article.author?.avatar ? (
+            <img src={article.author.avatar} alt={article.author.name} class="w-full h-full object-cover" />
+          ) : (
+            <span>{article.author?.name?.charAt(0) || "E"}</span>
+          )}
+        </div>
+      </div>
+      <div>
+        <span class="text-[10px] uppercase font-bold text-sky-400 block tracking-wider">Penulis Artikel</span>
+        <h4 class="text-sm font-bold text-white">{article.author?.name || "Redaksi EVHub.id"}</h4>
+        <p class="text-xs text-slate-300 mt-0.5 leading-relaxed">
+          {article.author?.bio || "Jurnalis dan pengamat kendaraan listrik di EVHub.id Indonesia."}
+        </p>
+      </div>
+    </div>
+
+    <!-- Artikel Sebelumnya & Selanjutnya -->
+    {(older || newer) && (
+      <div class="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-6 border-t border-white/10 text-xs">
+        {older ? (
+          <a
+            href={articleUrl(older)}
+            class="p-3 rounded-xl glass border border-white/10 hover:border-sky-400/30 transition-all flex flex-col justify-between group"
+          >
+            <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">← Artikel Sebelumnya</span>
+            <span class="font-bold text-white group-hover:text-sky-300 transition-colors line-clamp-2">
+              {older.title}
+            </span>
+          </a>
+        ) : <div />}
+
+        {newer ? (
+          <a
+            href={articleUrl(newer)}
+            class="p-3 rounded-xl glass border border-white/10 hover:border-sky-400/30 transition-all flex flex-col justify-between text-right group"
+          >
+            <span class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Artikel Selanjutnya →</span>
+            <span class="font-bold text-white group-hover:text-sky-300 transition-colors line-clamp-2">
+              {newer.title}
+            </span>
+          </a>
+        ) : <div />}
+      </div>
+    )}
+
+    <!-- Interaksi 8.4: "Lanjut Baca" (iOS Wallet-style stacked cards / horizontal swipe rail) -->
+    {relatedArticles.length > 0 && (
+      <section class="mt-10 pt-6 border-t border-white/10">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-3.5 rounded-full bg-sky-400"></span>
+            <h3 class="text-xs sm:text-sm font-extrabold text-white tracking-tight">
+              Lanjut Baca: Rekomendasi Terkait
+            </h3>
+          </div>
+          <a href={`/kategori/${article.category?.slug || 'berita'}`} class="text-[11px] font-semibold text-sky-400 hover:text-sky-300">
+            Koleksi Berita →
+          </a>
+        </div>
+
+        <div class="rail py-1">
+          {relatedArticles.map((rel: any) => {
+            const relCatSlug = rel.category?.slug || "berita";
+            const relHref = `/${relCatSlug}/${rel.slug || rel.id}`;
+            const relCover = rel.cover || rel.image || "/images/cars/default-car.png";
+
+            return (
+              <a
+                href={relHref}
+                class="snap-start shrink-0 w-[min(72%,260px)] sm:w-67.5 glass-card p-2.5 rounded-xl border border-white/10 hover:border-sky-400/40 active:scale-97 transition-all flex flex-col justify-between group"
+              >
+                <div class="w-full h-28 rounded-lg overflow-hidden bg-slate-900 border border-white/10 relative mb-2">
+                  <img src={relCover} alt={rel.title} class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                  <span class="absolute top-1.5 left-1.5 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[9px] font-bold text-sky-300 border border-white/10">
+                    {rel.category?.name || "Berita"}
+                  </span>
+                </div>
+
+                <div class="space-y-1">
+                  <h4 class="text-xs font-bold text-white group-hover:text-sky-300 transition-colors line-clamp-2 leading-snug">
+                    {rel.title}
+                  </h4>
+                  <span class="text-[9px] text-slate-500 font-mono block">
+                    {rel.readingTime || 3} mnt baca
+                  </span>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
+  </article>
+
+  <!-- Client-side reading progress script & copy share -->
+  <script is:inline>
+    // 1. Reading progress bar handler
+    function updateProgress() {
+      const bar = document.getElementById('read-progress-bar');
+      if (!bar) return;
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalHeight <= 0) return;
+      const progress = Math.min(1, Math.max(0, window.scrollY / totalHeight));
+      bar.style.transform = `scaleX(${progress})`;
+    }
+    window.addEventListener('scroll', updateProgress, { passive: true });
+    updateProgress();
+
+    // 2. Copy share link
+    const copyBtn = document.getElementById('share-copy-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          copyBtn.textContent = 'Tersalin!';
+          setTimeout(() => {
+            copyBtn.textContent = 'Salin';
+          }, 2000);
+        });
+      });
+    }
+  </script>
+</BaseLayout>

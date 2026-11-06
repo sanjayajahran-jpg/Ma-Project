@@ -1,0 +1,309 @@
+---
+// category.astro — EVnesia V2 Mobile-First News & Article Category Hub
+const { request, params } = Astro.props as any;
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CarCardRail from "../components/CarCardRail.astro";
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+import { categories, getByCategory, allArticles } from "@/data";
+import { articleUrl } from "@/types";
+import {
+  fetchArticlesPaginated,
+  fetchCategoriesFromApi,
+  fetchSiteConfigFromApi,
+  isFallbackDataEnabled,
+  siteUrlFromScope,
+} from "@/lib/api";
+
+const slug = (params?.slug || "berita").toLowerCase().trim();
+const page = Math.max(1, parseInt(Astro.url.searchParams.get("page") || "1"));
+const PER_PAGE = 10;
+
+const [sourceCategories, siteConfig] = await Promise.all([
+  fetchCategoriesFromApi(request),
+  fetchSiteConfigFromApi(request),
+]);
+
+const allowFallback = isFallbackDataEnabled();
+const allCats = sourceCategories.length ? sourceCategories : allowFallback ? categories : [];
+
+// Find current category or fallback to 'berita'
+const fallbackCategory = {
+  slug: slug || "berita",
+  name: slug === "berita" ? "Berita Otomotif & EV" : (slug ? slug.charAt(0).toUpperCase() + slug.slice(1) : "Berita"),
+  description: slug === "berita" 
+    ? "Kabar terkini, analisis industri, peluncuran model terbaru, dan kebijakan kendaraan listrik Indonesia."
+    : `Kumpulan artikel dan ulasan seputar ${slug}.`,
+};
+
+const currentCategory = allCats.find((c: any) => c.slug === slug) || fallbackCategory;
+
+// Fetch articles for this category
+let items: any[] = [];
+let totalCount = 0;
+try {
+  const result = await fetchArticlesPaginated({ category: slug, page, limit: PER_PAGE }, request);
+  items = result.items || [];
+  totalCount = result.total || 0;
+} catch (e) {
+  items = [];
+}
+
+if (!items.length && allowFallback) {
+  const localItems = getByCategory(slug);
+  items = localItems.length ? localItems : allArticles.slice(0, PER_PAGE);
+  totalCount = localItems.length || allArticles.length;
+}
+
+const totalPages = Math.max(1, Math.ceil(totalCount / PER_PAGE));
+const leadArticle = items[0];
+const remainingArticles = items.slice(1);
+
+// Curated sibling categories for pill switcher
+const CATEGORY_TABS = [
+  { label: "Semua Berita", slug: "berita" },
+  { label: "Ulasan & Test Drive", slug: "ulasan" },
+  { label: "Ekosistem & SPKLU", slug: "spklu" },
+  { label: "Panduan Pembeli", slug: "panduan" },
+  { label: "Teknologi", slug: "teknologi" },
+];
+
+// Spotlight cars for sidebar/rail
+const spotlightCars = ELECTRIFIED_CARS_DATA.slice(0, 5);
+---
+
+<BaseLayout
+  title={`${currentCategory.name} — Portal Berita & Ulasan EVHub.id`}
+  description={currentCategory.description}
+  siteConfig={siteConfig}
+  navCategories={allCats}
+>
+  <div class="pt-14 sm:pt-16 pb-20">
+    <div class="mx-auto max-w-5xl px-3 sm:px-6">
+      
+      <!-- Breadcrumb -->
+      <nav aria-label="Breadcrumb" class="py-2.5 flex items-center gap-1.5 text-xs text-slate-400">
+        <a href="/?theme_preview=evnesia-v2" class="hover:text-white transition-colors">Beranda</a>
+        <span class="text-slate-600">›</span>
+        <span class="text-sky-400 font-semibold">{currentCategory.name}</span>
+      </nav>
+
+      <!-- Category Hero Banner -->
+      <div class="relative overflow-hidden rounded-2xl glass p-4 sm:p-6 border border-white/10 bg-linear-to-b from-slate-900/90 via-slate-950 to-slate-950 mb-6">
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+          <div>
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-sky-400">
+                Pusat Informasi & Redaksi
+              </span>
+            </div>
+            <h1 class="text-xl sm:text-3xl font-black text-white tracking-tight">
+              {currentCategory.name}
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+              {currentCategory.description}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0 self-start sm:self-center">
+            <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-slate-300">
+              {totalCount} Artikel Terbit
+            </span>
+          </div>
+        </div>
+
+        <!-- Category Horizontal Filter Tabs -->
+        <div class="mt-4 pt-3 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
+          {CATEGORY_TABS.map((tab) => {
+            const isActive = slug === tab.slug;
+            return (
+              <a
+                href={`/kategori/${tab.slug}`}
+                class={`shrink-0 px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/30 border border-blue-400/30"
+                    : "bg-slate-900/90 text-slate-400 hover:text-white border border-white/10 hover:border-white/20"
+                }`}
+              >
+                {tab.label}
+              </a>
+            );
+          })}
+        </div>
+      </div>
+
+      <!-- Main Layout: Articles + Featured Cars -->
+      <div class="space-y-6">
+
+        <!-- 1. Lead Featured Article (if exists) -->
+        {leadArticle && (
+          <a
+            href={`/${leadArticle.category?.slug || slug}/${leadArticle.slug || leadArticle.id}`}
+            class="group block relative overflow-hidden rounded-2xl glass-card border border-white/15 hover:border-sky-400/50 transition-all duration-300"
+          >
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-0">
+              <div class="md:col-span-7 h-52 sm:h-72 overflow-hidden relative bg-slate-900">
+                <img
+                  src={leadArticle.cover || leadArticle.image || "/images/cars/default-car.png"}
+                  alt={leadArticle.title}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="eager"
+                />
+                <div class="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/20 to-transparent md:hidden"></div>
+                
+                <span class="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-black uppercase tracking-wider shadow-md">
+                  Sorotan Utama
+                </span>
+              </div>
+
+              <div class="md:col-span-5 p-4 sm:p-6 flex flex-col justify-between bg-slate-950/70">
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2 text-[10px] font-bold text-sky-400">
+                    <span>{leadArticle.category?.name || currentCategory.name}</span>
+                    <span>·</span>
+                    <span class="text-slate-400 font-mono">{leadArticle.readingTime || 4} mnt baca</span>
+                  </div>
+
+                  <h2 class="text-base sm:text-xl font-black text-white group-hover:text-sky-300 transition-colors leading-snug">
+                    {leadArticle.title}
+                  </h2>
+
+                  <p class="text-xs text-slate-300 line-clamp-3 leading-relaxed">
+                    {leadArticle.dek || leadArticle.excerpt || "Baca liputan selengkapnya mengenai perkembangan industri mobil listrik nasional di EVHub.id."}
+                  </p>
+                </div>
+
+                <div class="pt-4 mt-2 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+                  <span class="font-medium text-slate-300">{leadArticle.author?.name || "Redaksi EVHub.id"}</span>
+                  <span class="font-mono text-[11px] text-slate-500">
+                    {leadArticle.publishedAt ? new Date(leadArticle.publishedAt).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : "Baru saja"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </a>
+        )}
+
+        <!-- 2. Grid of Remaining Articles -->
+        {remainingArticles.length > 0 && (
+          <div>
+            <div class="flex items-center gap-1.5 mb-3">
+              <span class="w-1.5 h-3.5 rounded-full bg-sky-400"></span>
+              <h3 class="text-xs sm:text-sm font-extrabold text-white tracking-tight">
+                Daftar Artikel & Liputan
+              </h3>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+              {remainingArticles.map((art: any) => {
+                const artCatSlug = art.category?.slug || slug;
+                const artHref = `/${artCatSlug}/${art.slug || art.id}`;
+                const coverImg = art.cover || art.image || "/images/cars/default-car.png";
+                
+                return (
+                  <a
+                    href={artHref}
+                    class="group glass-card rounded-2xl p-3 border border-white/10 hover:border-sky-400/40 active:scale-98 transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div class="w-full h-36 rounded-xl overflow-hidden bg-slate-900 border border-white/10 relative mb-2.5">
+                        <img
+                          src={coverImg}
+                          alt={art.title}
+                          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                        <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-md text-[9px] font-bold text-sky-300 border border-white/15">
+                          {art.category?.name || currentCategory.name}
+                        </span>
+                        <span class="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[9px] font-mono text-slate-300">
+                          {art.readingTime || 3} mnt
+                        </span>
+                      </div>
+
+                      <h4 class="text-xs sm:text-sm font-bold text-white group-hover:text-sky-300 transition-colors line-clamp-2 leading-snug">
+                        {art.title}
+                      </h4>
+
+                      <p class="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                        {art.dek || art.excerpt || ""}
+                      </p>
+                    </div>
+
+                    <div class="pt-2.5 mt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-slate-400">
+                      <span class="font-medium text-slate-300 truncate max-w-35">
+                        {art.author?.name || "Redaksi"}
+                      </span>
+                      <span class="font-mono text-slate-500 shrink-0">
+                        {art.publishedAt ? new Date(art.publishedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : "Terkini"}
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <!-- 3. Pagination Controls -->
+        {totalPages > 1 && (
+          <div class="pt-4 flex items-center justify-center gap-2">
+            {page > 1 && (
+              <a
+                href={`/kategori/${slug}?page=${page - 1}`}
+                class="px-4 py-2 rounded-xl glass border border-white/10 text-xs font-bold text-slate-300 hover:text-white"
+              >
+                ← Sebelumnya
+              </a>
+            )}
+            <span class="px-4 py-2 rounded-xl bg-blue-600/30 border border-blue-400/40 text-xs font-mono font-bold text-white">
+              Halaman {page} dari {totalPages}
+            </span>
+            {page < totalPages && (
+              <a
+                href={`/kategori/${slug}?page=${page + 1}`}
+                class="px-4 py-2 rounded-xl glass border border-white/10 text-xs font-bold text-slate-300 hover:text-white"
+              >
+                Selanjutnya →
+              </a>
+            )}
+          </div>
+        )}
+
+        <!-- 4. Terkait: Mobil Listrik Terpopuler Saat Ini -->
+        <div class="pt-6 border-t border-white/10">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-1.5">
+              <span class="w-1.5 h-3.5 rounded-full bg-emerald-400"></span>
+              <h3 class="text-xs sm:text-sm font-extrabold text-white tracking-tight">
+                Eksplorasi Mobil Listrik Terkait
+              </h3>
+            </div>
+            <a href="/katalog-mobil" class="text-[11px] font-semibold text-sky-400 hover:text-sky-300">
+              Katalog Lengkap →
+            </a>
+          </div>
+
+          <div class="rail py-1">
+            {spotlightCars.map((car: any) => (
+              <CarCardRail
+                slug={car.slug}
+                brand={car.brand}
+                name={car.name}
+                category={car.bodyType?.toUpperCase() || "SUV"}
+                engineType={car.engineType || "BEV"}
+                price={car.price}
+                range={car.consumption || `${car.specs?.electric_range_km || 450} km`}
+                img={car.img}
+              />
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</BaseLayout>

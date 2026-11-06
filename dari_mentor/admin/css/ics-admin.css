@@ -1,0 +1,48 @@
+.ics-stat-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 1rem;
+	margin: 1rem 0 2rem;
+}
+.ics-stat-card {
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 8px;
+	padding: 1rem 1.25rem;
+	text-align: center;
+}
+.ics-stat-label {
+	display: block;
+	color: #666;
+	font-size: 0.8rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 0.5rem;
+}
+.ics-stat-value {
+	display: block;
+	font-size: 2rem;
+	font-weight: 700;
+	color: #034879;
+}
+.ics-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 4px;
+	font-size: 0.75rem;
+	font-weight: 600;
+}
+.ics-badge-sync {
+	background: #e7f0fe;
+	color: #034879;
+}
+.ics-badge-ai {
+	background: #fef3e7;
+	color: #9a5400;
+}
+.ics-map-row {
+	margin-bottom: 0.5rem;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}

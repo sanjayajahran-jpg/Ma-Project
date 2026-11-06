@@ -1,0 +1,224 @@
+---
+// Header.astro — V2 Mobile-First 48px Header (Section 3.1 & 9 of UI_DESIGN_SPEC_EVNESIA_V2_MOBILE_FIRST.md)
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = "/" } = Astro.props;
+
+const NAV_ITEMS = [
+  { label: "Beranda", href: "/?theme_preview=evnesia-v2" },
+  { label: "Katalog", href: "/katalog-mobil" },
+  { label: "Bandingkan", href: "/komparasi" },
+  { label: "Berita", href: "/kategori/berita" },
+  { label: "Tools", href: "/kalkulator" },
+];
+---
+
+<header id="v2-header" class="fixed top-2 left-0 right-0 z-40 px-3 sm:px-6 pointer-events-none transition-all duration-300">
+  <div class="mx-auto max-w-5xl pointer-events-auto">
+    <div class="glass glass-pill px-3 sm:px-5 h-12 sm:h-14 flex items-center justify-between border border-slate-200/80 dark:border-white/15 bg-white/80 dark:bg-slate-950/80 shadow-xl backdrop-blur-md">
+      
+      <!-- Brand Logo -->
+      <a href="/?theme_preview=evnesia-v2" class="flex items-center gap-2 group focus:outline-none" aria-label="EVHub.id Beranda">
+        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-linear-to-tr from-blue-600 via-sky-500 to-emerald-400 p-0.5 shadow-sm group-hover:scale-105 transition-transform">
+          <div class="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
+            <svg class="w-3.5 h-3.5 text-sky-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-1">
+          <span class="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white leading-none">
+            EV<span class="text-sky-500">Hub</span><span class="text-emerald-500">.id</span>
+          </span>
+          <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border border-emerald-400/30">
+            V2
+          </span>
+        </div>
+      </a>
+
+      <!-- Desktop Nav Tabs (Only Cars) -->
+      <nav class="hidden md:flex items-center gap-1 bg-slate-100 dark:bg-white/5 p-1 rounded-full border border-slate-200/80 dark:border-white/10" aria-label="Navigasi Utama">
+        {NAV_ITEMS.map((item) => {
+          const isActive = currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href));
+          return (
+            <a
+              href={item.href}
+              class={`px-3 py-1 text-xs font-semibold rounded-full transition-all duration-200 ${
+                isActive
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
+                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/10"
+              }`}
+            >
+              {item.label}
+            </a>
+          );
+        })}
+      </nav>
+
+      <!-- Right Actions: Theme Toggle, Search & Mobile Menu -->
+      <div class="flex items-center gap-1.5">
+        <!-- Theme Toggle Button (Light / Dark) -->
+        <button
+          type="button"
+          id="v2-theme-toggle"
+          class="w-7 h-7 sm:w-8 sm:h-8 rounded-full glass flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-white/10 active:scale-95 transition-all cursor-pointer"
+          aria-label="Ganti Tema Terang / Gelap"
+          title="Ganti Tema Terang / Gelap"
+        >
+          <!-- Sun Icon (visible in dark mode) -->
+          <svg class="w-3.5 h-3.5 hidden dark:block text-amber-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <!-- Moon Icon (visible in light mode) -->
+          <svg class="w-3.5 h-3.5 block dark:hidden text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+
+        <a
+          href="/cari"
+          class="w-7 h-7 sm:w-8 sm:h-8 rounded-full glass flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-white/10 active:scale-95 transition-all"
+          aria-label="Cari Mobil & Berita"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </a>
+
+        <!-- Mobile Menu Drawer Toggle -->
+        <button
+          type="button"
+          id="v2-btn-menu"
+          class="md:hidden w-7 h-7 rounded-full glass flex items-center justify-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200/80 dark:border-white/10 active:scale-95 transition-all"
+          aria-label="Menu"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</header>
+
+<!-- Mobile Slide Sheet Drawer -->
+<div id="v2-drawer" class="fixed inset-0 z-50 pointer-events-none opacity-0 transition-opacity duration-200" aria-hidden="true">
+  <div id="v2-drawer-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+  <div id="v2-drawer-panel" class="absolute top-0 right-0 bottom-0 w-[80vw] max-w-xs bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-white/15 p-5 flex flex-col justify-between shadow-2xl transition-transform duration-200 translate-x-full">
+    <div>
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+        <span class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          Navigasi EVHub.id
+        </span>
+        <button type="button" id="v2-btn-close-menu" class="w-7 h-7 rounded-full glass flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white" aria-label="Tutup menu">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <nav class="mt-4 space-y-1" aria-label="Menu Mobile">
+        {NAV_ITEMS.map((item) => (
+          <a
+            href={item.href}
+            class="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+          >
+            <span>{item.label}</span>
+            <span class="text-xs text-slate-400 dark:text-slate-500">→</span>
+          </a>
+        ))}
+      </nav>
+
+      <div class="mt-6 pt-3 border-t border-slate-200 dark:border-white/10">
+        <span class="text-[10px] uppercase font-bold text-slate-400 block mb-2">Pintas</span>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <a href="/spklu" class="p-2 rounded-xl glass text-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>SPKLU</span>
+          </a>
+          <a href="/komparasi" class="p-2 rounded-xl glass text-center text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center justify-center gap-1.5">
+            <svg class="w-3.5 h-3.5 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            <span>Komparasi</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme Toggle at bottom of drawer -->
+    <div class="pt-4 border-t border-slate-200 dark:border-white/10">
+      <button
+        type="button"
+        id="v2-drawer-theme-toggle"
+        class="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-white/10 flex items-center justify-between font-bold text-xs cursor-pointer active:scale-98 transition-all"
+      >
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-amber-500 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="5"></circle><path stroke-linecap="round" stroke-linejoin="round" d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
+          <svg class="w-4 h-4 text-slate-700 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+          <span>Mode Tampilan</span>
+        </span>
+        <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-slate-300 dark:border-white/10">
+          <span class="hidden dark:inline">Gelap</span>
+          <span class="inline dark:hidden">Terang</span>
+        </span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const btnOpen = document.getElementById('v2-btn-menu');
+  const btnClose = document.getElementById('v2-btn-close-menu');
+  const drawer = document.getElementById('v2-drawer');
+  const panel = document.getElementById('v2-drawer-panel');
+  const backdrop = document.getElementById('v2-drawer-backdrop');
+
+  const themeToggle = document.getElementById('v2-theme-toggle');
+  const drawerThemeToggle = document.getElementById('v2-drawer-theme-toggle');
+
+  function openDrawer() {
+    drawer?.classList.remove('pointer-events-none', 'opacity-0');
+    drawer?.classList.add('pointer-events-auto', 'opacity-100');
+    panel?.classList.remove('translate-x-full');
+    panel?.classList.add('translate-x-0');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    drawer?.classList.remove('pointer-events-auto', 'opacity-100');
+    drawer?.classList.add('pointer-events-none', 'opacity-0');
+    panel?.classList.remove('translate-x-0');
+    panel?.classList.add('translate-x-full');
+    document.body.style.overflow = '';
+  }
+
+  function toggleColorTheme() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const newTheme = isDark ? 'light' : 'dark';
+    
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      document.documentElement.setAttribute('data-color-scheme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
+      document.documentElement.setAttribute('data-color-scheme', 'light');
+    }
+
+    try {
+      localStorage.setItem('color_theme', newTheme);
+      document.cookie = `color_theme=${newTheme}; path=/; max-age=31536000; SameSite=Lax`;
+    } catch (e) {}
+  }
+
+  btnOpen?.addEventListener('click', openDrawer);
+  btnClose?.addEventListener('click', closeDrawer);
+  backdrop?.addEventListener('click', closeDrawer);
+
+  themeToggle?.addEventListener('click', toggleColorTheme);
+  drawerThemeToggle?.addEventListener('click', toggleColorTheme);
+</script>

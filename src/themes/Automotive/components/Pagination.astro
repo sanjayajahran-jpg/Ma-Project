@@ -1,0 +1,71 @@
+---
+/**
+ * Pagination (S6-1). MOCK: dataset kecil → umumnya 1 halaman.
+ * PRODUKSI: current/total dari respons API (cursor/keyset).
+ */
+interface Props {
+  current: number;
+  total: number;
+  base: string; // mis. "/kategori/ekonomi"
+}
+const { current, total, base } = Astro.props;
+const pageHref = (n: number) => {
+  const separator = base.includes("?") ? "&" : "?";
+  return n === 1 ? base : `${base}${separator}page=${n}`;
+};
+const visiblePages = Array.from({ length: total }, (_, i) => i + 1).filter(
+  (page) => page === 1 || page === total || Math.abs(page - current) <= 2,
+);
+const pages: Array<number | null> = [];
+visiblePages.forEach((page, index) => {
+  if (index > 0 && page - visiblePages[index - 1] > 1) pages.push(null);
+  pages.push(page);
+});
+---
+
+{
+  total > 1 && (
+    <nav class="mt-12 flex items-center justify-center gap-1.5" aria-label="Navigasi halaman">
+      <a
+        href={current > 1 ? pageHref(current - 1) : undefined}
+        aria-disabled={current === 1}
+        class:list={[
+          "rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider transition border shadow-2xs",
+          current === 1
+            ? "pointer-events-none opacity-30 border-transparent text-slate-400"
+            : "border-slate-200/80 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-700 dark:text-slate-200 hover:border-cyan-500/50 hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20",
+        ]}
+      >
+        ← Sebelumnya
+      </a>
+      {pages.map((n) => n === null ? (
+        <span class="px-2 text-sm text-slate-400" aria-hidden="true">…</span>
+      ) : (
+          <a
+            href={pageHref(n)}
+            aria-current={n === current ? "page" : undefined}
+            class:list={[
+              "min-w-9 rounded-xl px-3 py-2 text-center text-xs font-bold tabular-nums transition border shadow-2xs",
+              n === current
+                ? "bg-cyan-600 text-white border-cyan-600 shadow-md shadow-cyan-600/30 font-black"
+                : "border-slate-200/80 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-700 dark:text-slate-200 hover:border-cyan-500/50 hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20",
+            ]}
+          >
+            {n}
+          </a>
+        ))}
+      <a
+        href={current < total ? pageHref(current + 1) : undefined}
+        aria-disabled={current === total}
+        class:list={[
+          "rounded-xl px-3.5 py-2 text-xs font-bold uppercase tracking-wider transition border shadow-2xs",
+          current === total
+            ? "pointer-events-none opacity-30 border-transparent text-slate-400"
+            : "border-slate-200/80 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-700 dark:text-slate-200 hover:border-cyan-500/50 hover:bg-cyan-50/40 dark:hover:bg-cyan-950/20",
+        ]}
+      >
+        Berikutnya →
+      </a>
+    </nav>
+  )
+}

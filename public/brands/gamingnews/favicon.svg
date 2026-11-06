@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Gaming News</title>
+  <defs>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00D9FF"/>
+      <stop offset="1" stop-color="#7CFF00"/>
+    </linearGradient>
+  </defs>
+  <path fill="#07101F" d="M4 14 14 4h36l10 10v36L50 60H14L4 50z"/>
+  <path fill="none" stroke="url(#edge)" stroke-width="3" d="m10 17 7-7h30l7 7v30l-7 7H17l-7-7z"/>
+  <path fill="#7CFF00" d="M20 21h25v7H28v10h10v-4h-6v-5h14v14l-6 5H21l-6-6V27z"/>
+  <path fill="#00D9FF" d="m43 11 10 7-10 6z"/>
+</svg>

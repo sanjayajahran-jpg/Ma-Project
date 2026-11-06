@@ -1,0 +1,455 @@
+---
+// Interactive Automotive Brand Logo Grid Component for EVnesia
+// Features official automotive brand logos with active model counts and direct filter links
+import ELECTRIFIED_CARS_DATA from "@/data/electrified-cars.json";
+
+interface Props {
+  title?: string;
+  subtitle?: string;
+  activeBrand?: string;
+}
+
+const {
+  title = "Pabrikan Kendaraan Elektrifikasi",
+  subtitle = "Pilih merek untuk menjelajahi seluruh lini model mobil listrik (BEV) dan hybrid (HEV/PHEV) resmi di Indonesia",
+  activeBrand = ""
+} = Astro.props;
+
+// Helper normalize brand
+const normBrand = (s: string) => (s || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, "");
+
+// Calculate real model counts dynamically from dataset
+const getModelCount = (name: string, fallback: number = 0) => {
+  const target = normBrand(name);
+  const matched = ELECTRIFIED_CARS_DATA.filter((c: any) => {
+    const b = normBrand(c.brand);
+    return b === target || b.startsWith(target) || target.startsWith(b);
+  });
+  return matched.length > 0 ? matched.length : fallback;
+};
+
+const BRANDS = [
+  {
+    name: "Aletra",
+    slug: "aletra",
+    country: "Indonesia / Tiongkok",
+    modelsCount: getModelCount("Aletra", 3),
+    focus: "Electric MPV",
+    logoUrl: "/images/brands/aletra-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><polygon points="50,18 84,78 68,78 50,44 32,78 16,78" fill="currentColor"/><polygon points="50,56 60,78 40,78" fill="none" stroke="currentColor" stroke-width="4"/></svg>`
+  },
+  {
+    name: "BAIC",
+    slug: "baic",
+    country: "Tiongkok",
+    modelsCount: getModelCount("BAIC", 2),
+    focus: "Hybrid & Off-road EV",
+    logoUrl: "/images/brands/baic-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="36" cy="50" r="14" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="64" cy="50" r="14" fill="none" stroke="currentColor" stroke-width="5"/></svg>`
+  },
+  {
+    name: "BMW",
+    slug: "bmw",
+    country: "Jerman",
+    modelsCount: getModelCount("BMW", 8),
+    focus: "BMW i & Hybrid",
+    logoUrl: "/images/brands/bmw-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="50" cy="50" r="28" fill="none" stroke="currentColor" stroke-width="4"/><path d="M50 22 L50 78 M22 50 L78 50" stroke="currentColor" stroke-width="4"/><path d="M50 22 A28 28 0 0 1 78 50 L50 50 Z" fill="currentColor"/><path d="M22 50 A28 28 0 0 1 50 78 L50 50 Z" fill="currentColor"/></svg>`
+  },
+  {
+    name: "BYD",
+    slug: "byd",
+    country: "Tiongkok",
+    modelsCount: getModelCount("BYD", 7),
+    focus: "100% BEV & DM-i",
+    logoUrl: "/images/brands/byd-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><ellipse cx="50" cy="50" rx="44" ry="28" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="24" font-weight="900" text-anchor="middle" font-family="sans-serif" fill="currentColor" letter-spacing="2">BYD</text></svg>`
+  },
+  {
+    name: "Changan",
+    slug: "changan",
+    country: "Tiongkok",
+    modelsCount: getModelCount("Changan", 4),
+    focus: "Deepal & Nevo EV",
+    logoUrl: "/images/brands/changan-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="6"/><path d="M30 40 L50 65 L70 40" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+  },
+  {
+    name: "Chery",
+    slug: "chery",
+    country: "Tiongkok",
+    modelsCount: getModelCount("Chery", 10),
+    focus: "BEV & CSH Hybrid",
+    logoUrl: "/images/brands/chery-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><ellipse cx="50" cy="50" rx="44" ry="24" fill="none" stroke="currentColor" stroke-width="6"/><path d="M30 62 L50 28 L70 62 M38 52 L62 52" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>`
+  },
+  {
+    name: "Citroën",
+    slug: "citroen",
+    country: "Prancis",
+    modelsCount: getModelCount("Citroën", 2),
+    focus: "Comfort EV & Hybrid",
+    logoUrl: "/images/brands/citroen-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><path d="M50 20 L25 45 L35 55 L50 40 L65 55 L75 45 Z M50 50 L25 75 L35 85 L50 70 L65 85 L75 75 Z" fill="currentColor"/></svg>`
+  },
+  {
+    name: "DFSK",
+    slug: "dfsk",
+    country: "Tiongkok",
+    modelsCount: getModelCount("DFSK", 3),
+    focus: "Commercial EV & SUV",
+    logoUrl: "/images/brands/dfsk-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "GAC Aion",
+    slug: "gac",
+    country: "Tiongkok",
+    modelsCount: getModelCount("GAC Aion", 4),
+    focus: "Aion & Hyper BEV",
+    logoUrl: "/images/brands/gac-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/><ellipse cx="50" cy="50" rx="30" ry="16" fill="none" stroke="currentColor" stroke-width="5"/></svg>`
+  },
+  {
+    name: "Geely",
+    slug: "geely",
+    country: "Tiongkok",
+    modelsCount: getModelCount("Geely", 3),
+    focus: "Geometry & Galaxy EV",
+    logoUrl: "/images/brands/geely-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><rect x="20" y="25" width="60" height="50" rx="10" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "GWM",
+    slug: "gwm",
+    country: "Tiongkok",
+    modelsCount: getModelCount("GWM", 4),
+    focus: "Ora BEV & Haval HEV",
+    logoUrl: "/images/brands/gwm-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "Honda",
+    slug: "honda",
+    country: "Jepang",
+    modelsCount: getModelCount("Honda", 8),
+    focus: "e:HEV Hybrid",
+    logoUrl: "/images/brands/honda-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><rect x="15" y="20" width="70" height="64" rx="14" fill="none" stroke="currentColor" stroke-width="6"/><path d="M30 28 L34 76 M70 28 L66 76 M33 50 L67 50" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>`
+  },
+  {
+    name: "Hyundai",
+    slug: "hyundai",
+    country: "Korea Selatan",
+    modelsCount: getModelCount("Hyundai", 7),
+    focus: "Ioniq BEV & HEV",
+    logoUrl: "/images/brands/hyundai-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><ellipse cx="50" cy="50" rx="42" ry="30" fill="none" stroke="currentColor" stroke-width="7"/><path d="M36 34 v32 M64 34 v32 M36 49 C45 42 55 58 64 51" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/></svg>`
+  },
+  {
+    name: "Jaecoo",
+    slug: "jaecoo",
+    country: "Tiongkok",
+    modelsCount: getModelCount("Jaecoo", 3),
+    focus: "Premium PHEV SUV",
+    logoUrl: "/images/brands/jaecoo-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><rect x="15" y="30" width="70" height="40" rx="8" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "Jetour",
+    slug: "jetour",
+    country: "Tiongkok",
+    modelsCount: getModelCount("Jetour", 2),
+    focus: "Travel & Smart SUV",
+    logoUrl: "/images/brands/jetour-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "Kia",
+    slug: "kia",
+    country: "Korea Selatan",
+    modelsCount: getModelCount("Kia", 2),
+    focus: "EV Series & Hybrid",
+    logoUrl: "/images/brands/kia-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><ellipse cx="50" cy="50" rx="44" ry="24" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="20" font-weight="900" text-anchor="middle" font-family="sans-serif" fill="currentColor">KIA</text></svg>`
+  },
+  {
+    name: "Lexus",
+    slug: "lexus",
+    country: "Jepang",
+    modelsCount: getModelCount("Lexus", 10),
+    focus: "Luxury Hybrid & BEV",
+    logoUrl: "/images/brands/lexus-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><ellipse cx="50" cy="50" rx="44" ry="30" fill="none" stroke="currentColor" stroke-width="6"/><path d="M36 34 L36 66 L64 66" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/></svg>`
+  },
+  {
+    name: "Maxus",
+    slug: "maxus",
+    country: "Tiongkok",
+    modelsCount: getModelCount("Maxus", 2),
+    focus: "Mifa Luxury MPV",
+    logoUrl: "/images/brands/maxus-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "Mazda",
+    slug: "mazda",
+    country: "Jepang",
+    modelsCount: getModelCount("Mazda", 3),
+    focus: "e-Skyactiv Hybrid",
+    logoUrl: "/images/brands/mazda-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><ellipse cx="50" cy="50" rx="44" ry="32" fill="none" stroke="currentColor" stroke-width="6"/><path d="M30 50 C40 35 50 45 50 45 C50 45 60 35 70 50" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "Mercedes-Benz",
+    slug: "mercedes-benz",
+    country: "Jerman",
+    modelsCount: getModelCount("Mercedes-Benz", 5),
+    focus: "Mercedes-EQ Series",
+    logoUrl: "/images/brands/mercedes-benz-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/><path d="M50 14 L50 50 M50 50 L20 68 M50 50 L80 68" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>`
+  },
+  {
+    name: "MG",
+    slug: "mg",
+    country: "Inggris / Tiongkok",
+    modelsCount: getModelCount("MG", 6),
+    focus: "MG EV Series",
+    logoUrl: "/images/brands/mg-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><polygon points="50,15 85,32 85,68 50,85 15,68 15,32" fill="none" stroke="currentColor" stroke-width="6"/><text x="50" y="58" font-size="22" font-weight="900" text-anchor="middle" font-family="sans-serif" fill="currentColor">MG</text></svg>`
+  },
+  {
+    name: "MINI",
+    slug: "mini",
+    country: "Inggris / Jerman",
+    modelsCount: getModelCount("MINI", 5),
+    focus: "MINI Electric & Cooper SE",
+    logoUrl: "/images/brands/mini-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="28" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "Mitsubishi",
+    slug: "mitsubishi",
+    country: "Jepang",
+    modelsCount: getModelCount("Mitsubishi", 1),
+    focus: "L100 EV & PHEV",
+    logoUrl: "/images/brands/mitsubishi-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><polygon points="50,20 62,40 38,40" fill="currentColor"/></svg>`
+  },
+  {
+    name: "Nissan",
+    slug: "nissan",
+    country: "Jepang",
+    modelsCount: getModelCount("Nissan", 4),
+    focus: "e-POWER & Leaf EV",
+    logoUrl: "/images/brands/nissan-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "Tesla",
+    slug: "tesla",
+    country: "Amerika Serikat",
+    modelsCount: getModelCount("Tesla", 3),
+    focus: "100% BEV",
+    logoUrl: "/images/brands/tesla-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><path d="M50 32 L50 82 M22 28 C35 24 65 24 78 28 M30 36 C40 33 60 33 70 36 M50 32 C38 42 26 56 22 72 M50 32 C62 42 74 56 78 72" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>`
+  },
+  {
+    name: "Toyota",
+    slug: "toyota",
+    country: "Jepang",
+    modelsCount: getModelCount("Toyota", 14),
+    focus: "HEV & PHEV",
+    logoUrl: "/images/brands/toyota-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><ellipse cx="50" cy="50" rx="44" ry="32" fill="none" stroke="currentColor" stroke-width="6"/><ellipse cx="50" cy="40" rx="24" ry="14" fill="none" stroke="currentColor" stroke-width="6"/><ellipse cx="50" cy="52" rx="12" ry="26" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "VinFast",
+    slug: "vinfast",
+    country: "Vietnam",
+    modelsCount: getModelCount("VinFast", 9),
+    focus: "100% Smart BEV",
+    logoUrl: "/images/brands/vinfast-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><path d="M20 30 L50 75 L80 30 M35 30 L50 55 L65 30" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>`
+  },
+  {
+    name: "Volkswagen",
+    slug: "volkswagen",
+    country: "Jerman",
+    modelsCount: getModelCount("Volkswagen", 1),
+    focus: "ID. Buzz EV",
+    logoUrl: "/images/brands/volkswagen-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  },
+  {
+    name: "Volvo",
+    slug: "volvo",
+    country: "Swedia",
+    modelsCount: getModelCount("Volvo", 4),
+    focus: "Recharge BEV & PHEV",
+    logoUrl: "/images/brands/volvo-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="6"/><path d="M72 28 L84 16 M84 16 L72 16 M84 16 L84 28" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></svg>`
+  },
+  {
+    name: "Wuling",
+    slug: "wuling",
+    country: "Tiongkok",
+    modelsCount: getModelCount("Wuling", 9),
+    focus: "GSEV (BEV)",
+    logoUrl: "/images/brands/wuling-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><polygon points="50,20 62,38 50,56 38,38" fill="currentColor"/><polygon points="65,39 77,57 65,75 53,57" fill="currentColor"/><polygon points="35,39 47,57 35,75 23,57" fill="currentColor"/><polygon points="80,58 92,76 80,94 68,76" fill="currentColor"/><polygon points="20,58 32,76 20,94 8,76" fill="currentColor"/></svg>`
+  },
+  {
+    name: "XPENG",
+    slug: "xpeng",
+    country: "Tiongkok",
+    modelsCount: getModelCount("XPENG", 2),
+    focus: "Smart AI EV",
+    logoUrl: "/images/brands/xpeng-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><polygon points="20,20 40,20 80,80 60,80" fill="currentColor"/><polygon points="80,20 60,20 20,80 40,80" fill="currentColor"/></svg>`
+  },
+  {
+    name: "Zeekr",
+    slug: "zeekr",
+    country: "Tiongkok",
+    modelsCount: getModelCount("Zeekr", 1),
+    focus: "Luxury High-Performance EV",
+    logoUrl: "/images/brands/zeekr-logo.svg",
+    logoSvg: `<svg viewBox="0 0 100 100" class="w-8 h-8 fill-current text-slate-800"><circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" stroke-width="6"/></svg>`
+  }
+];
+
+// Sort brands alphabetically from A to Z
+const sortedBrands = [...BRANDS].sort((a, b) => a.name.localeCompare(b.name, 'id', { sensitivity: 'base' }));
+---
+
+<div class="space-y-3">
+  <!-- Header Title & Slide Controls -->
+  <div class="flex items-center justify-between gap-3 border-b border-slate-200/60 dark:border-white/10 pb-2.5">
+    <div>
+      <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-700 dark:text-cyan-400 text-[10px] font-extrabold uppercase tracking-wider mb-0.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+        Direktori Pabrikan Resmi (A-Z)
+      </div>
+      <h2 class="font-headline text-base sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        {title}
+      </h2>
+    </div>
+
+    <!-- Right Controls: View Catalog Link + Slider Arrows -->
+    <div class="flex items-center gap-2 shrink-0">
+      <a
+        href="/katalog-mobil"
+        class="hidden sm:inline-flex items-center gap-1 text-xs font-bold text-cyan-600 hover:text-cyan-700 dark:text-cyan-400 dark:hover:text-cyan-300 mr-2"
+      >
+        <span>Lihat Semua ({ELECTRIFIED_CARS_DATA.length} Unit)</span>
+        <span class="text-sm">→</span>
+      </a>
+
+      <!-- Prev Button -->
+      <button
+        type="button"
+        id="brand-slide-prev"
+        aria-label="Geser ke kiri"
+        class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 hover:bg-cyan-50 dark:hover:bg-cyan-950/60 text-slate-700 dark:text-white flex items-center justify-center transition shadow-xs cursor-pointer text-sm font-black"
+      >
+        ‹
+      </button>
+
+      <!-- Next Button -->
+      <button
+        type="button"
+        id="brand-slide-next"
+        aria-label="Geser ke kanan"
+        class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 hover:bg-cyan-50 dark:hover:bg-cyan-950/60 text-slate-700 dark:text-white flex items-center justify-center transition shadow-xs cursor-pointer text-sm font-black"
+      >
+        ›
+      </button>
+    </div>
+  </div>
+
+  <!-- 2-Row Horizontal Slideable Container (Space-saving, Sleek & Smooth on Mobile) -->
+  <div
+    id="brand-slider-container"
+    class="grid grid-rows-2 grid-flow-col auto-cols-29 sm:auto-cols-41.25 gap-2 sm:gap-2.5 overflow-x-auto scrollbar-none scroll-smooth snap-x snap-mandatory py-1 px-0.5"
+    tabindex="0"
+    role="region"
+    aria-label="Daftar Merek Mobil Geser Horizontal (A-Z)"
+  >
+    {sortedBrands.map((brand) => (
+      <a
+        href={`/katalog-mobil?brand=${brand.name}`}
+        data-brand-slug={brand.name}
+        data-astro-prefetch="hover"
+        class:list={[
+          "brand-card snap-start group relative overflow-hidden rounded-xl p-2 sm:p-2.5 border transition-all duration-300 flex items-center gap-2 sm:gap-2.5 backdrop-blur-md hover:-translate-y-0.5 shadow-2xs shrink-0 select-none",
+          activeBrand === brand.name
+            ? "bg-cyan-50 dark:bg-cyan-950/60 border-cyan-400 ring-2 ring-cyan-400/50"
+            : "bg-white dark:bg-slate-900/60 border-slate-200/80 dark:border-white/10 hover:border-cyan-400/60 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+        ]}
+      >
+        <!-- Brand Logo Icon (Clean Balanced Tile for Light & Dark Mode) -->
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-slate-100/90 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/60 flex items-center justify-center p-1 sm:p-1.5 shadow-2xs shrink-0 group-hover:scale-105 transition-transform">
+          {brand.logoUrl ? (
+            <img src={brand.logoUrl} alt={brand.name} class="w-5 h-5 sm:w-6 sm:h-6 object-contain filter drop-shadow-2xs dark:brightness-105" loading="lazy" />
+          ) : (
+            <div class="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-slate-800 dark:text-slate-200">
+              <Fragment set:html={brand.logoSvg} />
+            </div>
+          )}
+        </div>
+
+        <!-- Brand Name & Model Count -->
+        <div class="overflow-hidden space-y-0.5 min-w-0">
+          <h3 class="font-headline text-[11px] sm:text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors tracking-tight truncate leading-tight">
+            {brand.name}
+          </h3>
+          <span class="text-[9px] sm:text-[10px] font-bold text-slate-500 dark:text-slate-400 block truncate leading-tight">
+            {brand.modelsCount} Model
+          </span>
+        </div>
+      </a>
+    ))}
+  </div>
+</div>
+
+<script>
+  function initBrandSlider() {
+    const container = document.getElementById('brand-slider-container');
+    const prevBtn = document.getElementById('brand-slide-prev');
+    const nextBtn = document.getElementById('brand-slide-next');
+
+    if (container && prevBtn && nextBtn) {
+      prevBtn.addEventListener('click', () => {
+        container.scrollBy({ left: -320, behavior: 'smooth' });
+      });
+      nextBtn.addEventListener('click', () => {
+        container.scrollBy({ left: 320, behavior: 'smooth' });
+      });
+    }
+
+    const brandCards = document.querySelectorAll<HTMLAnchorElement>('.brand-card');
+    brandCards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        const brandName = card.dataset.brandSlug;
+        const filterFn = (window as any).filterCarFinderByBrand;
+
+        if (typeof filterFn === 'function' && brandName) {
+          e.preventDefault();
+          filterFn(brandName);
+
+          brandCards.forEach(c => c.classList.remove('ring-2', 'ring-cyan-400/50', 'border-cyan-400', 'bg-cyan-50', 'dark:bg-cyan-950/60'));
+          card.classList.add('ring-2', 'ring-cyan-400/50', 'border-cyan-400', 'bg-cyan-50', 'dark:bg-cyan-950/60');
+
+          const catalogSection = document.getElementById('car-finder-section') || document.querySelector('.car-finder-root');
+          if (catalogSection) {
+            catalogSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+  }
+
+  initBrandSlider();
+  document.addEventListener('astro:page-load', initBrandSlider);
+</script>

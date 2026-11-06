@@ -1,0 +1,80 @@
+---
+import PageLayout from "../layouts/PageLayout.astro";
+import StaticPage from "@/components/StaticPage.astro";
+import { fetchSiteConfigFromApi, portalDomainFromScope } from "@/lib/api";
+import { siteEmailForDomain, siteSocialForDomain, portalAddressForDomain } from "@/site";
+
+interface Props {
+  request: Request;
+  params: Record<string, string | undefined>;
+  url: URL;
+}
+const { request, params, url } = Astro.props;
+
+const portalDomain = portalDomainFromScope(request);
+const siteConfig = await fetchSiteConfigFromApi(request);
+const siteName =
+  siteConfig?.portal?.name ??
+  (portalDomain === "berdayanews.com" ? "Berdaya News" : portalDomain === "awasi.id" ? "AWASI.ID" : "EVnesia");
+const siteEmail = siteEmailForDomain(portalDomain);
+const partnershipEmail =
+  portalDomain === "awasi.id" ? "kerjasama@awasi.id" : portalDomain === "berdayanews.com" ? "kerjasama@berdayanews.com" : siteEmail;
+const social = siteSocialForDomain(portalDomain);
+const address = portalAddressForDomain(portalDomain);
+---
+
+<PageLayout
+  title="Tentang & Kontak"
+  lead={`${siteName} adalah media digital profesional yang menyajikan informasi cepat, relevan, dan bertanggung jawab untuk Indonesia.`}
+>
+  <StaticPage request={request} slug="kontak">
+  <h2 id="tentang">Tentang Kami</h2>
+  <p>
+    <strong>{siteName}</strong> adalah media digital yang berdedikasi menghadirkan informasi berkualitas,
+    terpercaya, dan berdampak bagi masyarakat.
+  </p>
+  <p>
+    Kami percaya jurnalisme yang baik bukan soal siapa yang paling cepat, tetapi siapa yang paling akurat dan jujur.
+    Setiap artikel melewati proses verifikasi, riset, dan penyuntingan sebelum terbit.
+  </p>
+
+  <h2 id="visi-misi">Visi &amp; Misi</h2>
+  <p><strong>Visi:</strong> Menjadi sumber berita digital terpercaya dan berpengaruh di Indonesia.</p>
+  <p><strong>Misi:</strong> Menghadirkan jurnalisme berkualitas yang mendidik, menginspirasi, dan memberdayakan pembaca.</p>
+
+  <h2 id="hubungi">Hubungi Kami</h2>
+  <p>
+    <strong>Redaksi &amp; Hak Jawab</strong><br />
+    Surel: <a href={`mailto:${siteEmail}`}>{siteEmail}</a><br />
+    Untuk koreksi atau hak jawab, sertakan tautan artikel dan penjelasan singkat.
+  </p>
+  <p>
+    <strong>Kerja Sama &amp; Iklan</strong><br />
+    Surel: <a href={`mailto:${partnershipEmail}`}>{partnershipEmail}</a><br />
+    Atau kunjungi halaman <a href="/pasang-iklan">Pasang Iklan</a> untuk detail paket.
+  </p>
+
+  <h2 id="alamat">Alamat Kantor</h2>
+  <address style="font-style: normal; line-height: 1.8;">
+    <strong>{siteName}</strong><br />
+    {address ? `${address.street}` : "Indonesia"}<br />
+    {address ? `${address.city}, Indonesia` : ""}<br />
+    <a href={address?.mapUrl ?? `https://maps.google.com/?q=${encodeURIComponent(address?.street ?? "Indonesia")}`} target="_blank" rel="noopener noreferrer">Lihat di Google Maps →</a>
+  </address>
+
+  <h2 id="media-sosial">Media Sosial</h2>
+  <ul>
+    <li>Twitter/X: <a href={social.twitter} target="_blank" rel="noopener noreferrer">{siteName}</a></li>
+    <li>Instagram: <a href={social.instagram} target="_blank" rel="noopener noreferrer">{siteName}</a></li>
+    <li>YouTube: <a href={social.youtube} target="_blank" rel="noopener noreferrer">{siteName}</a></li>
+  </ul>
+
+  <h2 id="lainnya">Informasi Lainnya</h2>
+  <ul>
+    <li><a href="/redaksi">Susunan Redaksi</a></li>
+    <li><a href="/redaksi#pedoman">Pedoman Pemberitaan Media Siber</a></li>
+    <li><a href="/disclosure">Pedoman Konten Bersponsor</a></li>
+    <li><a href="/privasi">Kebijakan Privasi</a></li>
+  </ul>
+  </StaticPage>
+</PageLayout>

@@ -1,0 +1,64 @@
+---
+/** Daftar isi dari heading artikel (S5-8) + scrollspy ringan. */
+interface Props {
+  items: { id: string; text: string }[];
+  class?: string;
+}
+const { items, class: cls = "" } = Astro.props;
+---
+
+{
+  items.length > 1 && (
+    <nav class:list={["toc", cls]} aria-label="Daftar isi">
+      <p class="text-[11px] font-extrabold uppercase tracking-widest text-cyan-600 dark:text-cyan-400 mb-3 flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></span>
+        Daftar Isi Ulasan
+      </p>
+      <ul class="space-y-2 border-l border-slate-200/80 dark:border-white/10">
+        {items.map((it) => (
+          <li>
+            <a
+              href={`#${it.id}`}
+              data-toc={it.id}
+              class="-ml-px block border-l-2 border-transparent pl-3 text-xs sm:text-sm text-slate-500 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 transition"
+            >
+              {it.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<script>
+  function initToc() {
+    const links = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>("[data-toc]")
+    );
+    if (!links.length) return;
+    const map = new Map(links.map((l) => [l.dataset.toc, l]));
+    const setActive = (id: string | null) => {
+      links.forEach((l) => {
+        const on = l.dataset.toc === id;
+        l.classList.toggle("text-ink", on);
+        l.classList.toggle("font-semibold", on);
+        l.style.borderColor = on ? "var(--color-brand)" : "transparent";
+      });
+    };
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const vis = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (vis && map.has(vis.target.id)) setActive(vis.target.id);
+      },
+      { rootMargin: "-80px 0px -70% 0px" }
+    );
+    links.forEach((l) => {
+      const el = document.getElementById(l.dataset.toc!);
+      if (el) obs.observe(el);
+    });
+  }
+  document.addEventListener("astro:page-load", initToc);
+</script>
